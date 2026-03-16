@@ -1,0 +1,42 @@
+week: 2026-2-28_wk04
+created: 2026-02-28
+updated: 2026-03-28
+
+snapshot:
+  US100:
+    close: 24911.2
+    weekly_change_pct: -0.42
+    bias: risk_off_cautious
+    key_levels: [25409.3, 24911.2, 23913.4, 22222.9, 21263.9]
+  JP225:
+    close: 58582
+    weekly_change_pct: +2.61
+    bias: resilience (high)
+    key_levels: [60059, 58582, 54814, 48108]
+  USDJPY:
+    close: 156.004
+    weekly_change_pct: +0.63
+    bias: sticky_high
+    key_levels: [159.348, 156.004, 150.345]
+  WTI:
+    close: 67.065
+    weekly_change_pct: +1.48
+    bias: geopol_bid
+    key_levels: [70.165, 67.065, 62.025, 58.685]
+  XAUUSD:
+    close: 5274.19
+    weekly_change_pct: +3.44
+    bias: bid_strong
+    key_levels: [5274.19, 4900, 4549.86, 4039.85]
+
+signals:
+  - geopol_persistent: "イラン攻撃後原油/金プレミアム継続"
+  - gold_strong_bid: "5,274更新、ヘッジ最強"
+  - JP_resilience: "58,582高値圏でUS連動乖離"
+  - US_breadth_weak: "24,911小反落、breadth悪化"
+  - employment_watch: "3/6米雇用統計前ボラ警戒"
+
+decision_bias:
+  risk: "深押し限定（23,913守り確認後）／追撃禁止"
+  hedge: "Gold/エネルギー比重さらに高め"
+  ammo: "現金温存最大、雇用統計後深押し待ち"

@@ -1,0 +1,89 @@
+# meta.yaml — GM Weekly Meta (wk03)
+week: 2026-1-24_wk03
+date_range: "2026-01-19 → 2026-01-24"
+created: "2026-01-19"
+updated: "2026-01-19"
+timezone: "Asia/Tokyo"
+convention: "close-based (FX=NY close / JP=Tokyo close / US=NY close)"
+
+regime:
+  name: "risk-on_cautious"
+  qualifiers: ["event_week", "liquidity_thin"]
+  confidence: "tbd"     # low/med/high
+  changed: "tbd"        # yes/no（前週から regime を変えたか）
+
+# --- fixed keys: signals（毎週必ず残す）
+signals:
+  # core fixed (yes/no)
+  us10y_accel: "tbd"          # yes/no
+  hy_oas_widening: "tbd"      # yes/no
+  vix_spike: "tbd"            # yes/no
+  wti_shock: "tbd"            # yes/no
+  eps_revision_chain: "tbd"   # yes/no
+
+  # extended (on/watch/off)
+  gold_bid: "tbd"             # on/watch/off
+  yields_sticky: "tbd"        # on/watch/off
+  breadth_weakening: "tbd"    # on/watch/off
+  jan_flow_support: "tbd"     # on/watch/off
+  earnings_risk_Feb: "tbd"    # on/watch/off
+
+# --- close snapshot（数値は週末に確定）
+close_snapshot:
+  us10y: "tbd"
+  us2y: "tbd"
+  curve_2s10s: "tbd"
+  vix: "tbd"
+  vvix: "tbd"
+  move: "tbd"
+  us100: "tbd"
+  spx: "tbd"
+  sox: "tbd"
+  r2000: "tbd"
+  jp225: "tbd"
+  usdjpy: "tbd"
+  xauusd: "tbd"
+  btcusd: "tbd"
+  wti: "tbd"
+
+# --- key gates/levels（snapshot / source of truth=STATUS.md）
+levels:
+  us100:
+    add_risk_close_above: 25670
+    reduce_risk_close_below: 23692
+    next_support: 22430
+  usdjpy:
+    reduce_risk_below: 154.7
+    key_support_zone: "154.7–154.3"
+    key_resistance_zone: "156.8–157.0"
+  jp225:
+    key_support: 48108
+  xau:
+    support: ["4375", "4328"]
+  btc:
+    support: ["84023"]
+    resistance: ["93587", "99750"]
+
+events:
+  - date: "2026-01-19"
+    label: "US holiday (liquidity thin)"
+  - date: "2026-01-22"
+    label: "US PCE deflator"
+  - date: "2026-01-23"
+    label: "BOJ policy decision"
+  - date: "2026-01-23"
+    label: "US PMI"
+
+watchlist:
+  assets: ["US100", "USDJPY", "JP225", "XAUUSD", "BTCUSD", "US10Y", "VIX", "HY OAS", "WTI"]
+  jp_etf: ["1655", "2243", "2638", "201A", "425A", "1627", "2847"]
+  jp_stocks: ["6965", "7011", "6506"]
+
+decision_log:
+  # 週中に「判断更新点」だけ追記（1行）
+  - date: "tbd"
+    decision: "tbd"
+    evidence: "tbd"
+    implication: "tbd"
+
+tags: ["gm", "weekly", "2026", "wk03"]

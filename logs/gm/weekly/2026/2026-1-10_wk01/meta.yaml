@@ -1,0 +1,154 @@
+# meta.yaml — GM Weekly Signals (wk01)
+week: 2026-1-10_wk01
+date:
+  start: 2026-01-06
+  end: 2026-01-10
+created: 2026-01-10
+updated: 2026-01-10
+timezone: Asia/Tokyo
+type: weekly_review
+
+close_convention:
+  fx: NY close (daily)
+  jp: Tokyo close
+  us: NY close
+
+regime:
+  primary: risk-on_usdjpy_up
+  confidence: 0.66
+  notes:
+    - Equity risk-on persists, but in high-zone compression (breakout risk + reversal risk)
+    - JPY weak supported by rate spread (JP10Y >2% but US10Y still ~4.17%)
+
+events:
+  realized:
+    nfp:
+      date: 2026-01-09
+      prior_k: 64
+      expected_k: 70
+      actual_k: 50
+  next:
+    fomc:
+      dates: ["2026-01-27", "2026-01-28"]
+    headline_risk:
+      - geopolitics
+      - US political / policy headlines
+
+markets:
+  us100:
+    close: 25760.7
+    w_change_pct: 2.19
+    structure: "weekly neckline squeeze / ascending compression"
+  jp225:
+    close: 53530
+    w_change_pct: 4.75
+    structure: "breakout to ATH"
+  usdjpy:
+    close: 157.918
+    w_change_pct: 0.71
+    structure: "up-channel, high-zone consolidation"
+  xauusd:
+    close: 4509.71
+    w_change_pct: 4.19
+    structure: "uptrend intact, high-zone range"
+  btcusd:
+    close: 90414.96
+    w_change_pct: -1.27
+    structure: "base building around 90k"
+  wti:
+    close: 58.435
+    w_change_pct: 2.51
+    structure: "base attempt 55–60"
+  rates:
+    us10y_pct: 4.169
+    jp10y_pct: 2.091
+  vol:
+    vix: 14.48
+
+signals:
+  risk_on: true
+  vol_compression: true
+  yen_weak: true
+  rates_sticky_high: true
+  rotation_strong: true
+  oil_base_attempt: true
+  btc_consolidation: true
+
+risk_off_triggers:
+  - "US10Y breaks and holds above 4.20% with equity breadth deterioration"
+  - "VIX > 20 (close-based) with index breakdown"
+  - "USDJPY breaks below last swing support (trend invalidation) + equity risk-off"
+  - "WTI shock up with credit spreads widening (not observed yet)"
+
+signals:
+  gold_bid:
+    state: watch
+    thesis: >
+      Risk-off初動の避難先が米国債一択になりにくく、"守り"が金へシフトする可能性。
+      株が底堅いのに金も強い場合は「守りながら攻める」局面＝後半で調整リスクが溜まりやすい。
+    triggers:
+      - Gold (XAUUSD) remains firm while equities stay elevated and VIX stays low
+      - Gold breaks/holds above prior weekly breakout zone (buy-the-dip behavior)
+    invalidation:
+      - Gold loses key support and fails to rebound on risk-off headlines (weak bid)
+    implications:
+      - Hedge preference: Gold > duration as mid-term risk buffer
+      - If gold_bid strengthens with yields_sticky, equity valuation stress rises
+
+  yields_sticky:
+    state: on
+    thesis: >
+      “景気指標が弱いのに長期金利が落ちない”＝タームプレミアム/供給要因/インフレ粘着で、
+      株のバリュエーションに中期ストレスが溜まりやすい。
+    triggers:
+      - US10Y holds around ~4.17-4.20 even after soft labor data (no meaningful flight-to-duration)
+      - 2-10 inversion continues to normalize (less negative) without growth re-acceleration
+    invalidation:
+      - Clear risk-off bid in Treasuries: US10Y breaks down and holds below key range supports
+    implications:
+      - Prefer “no chase”; buy dips only with defined levels
+      - Rotation tends to accelerate (growth lag / defensives & cyclicals selectively lead)
+
+  breadth_weakening:
+    state: watch
+    thesis: >
+      指数は高値圏でも、値下がり銘柄増・グロース弱いなど“中身の劣化”が続くと、
+      遅れて調整が出やすい（index-resilient / internals-fragile）。
+    triggers:
+      - Advancers/decliners deteriorate while headline indices hold highs
+      - Mega-cap / FANG underperform while SOX/R2K/Transports/Utilities lead (rotation uneven)
+      - Japan: index high but broad weakness persists (many decliners / growth weak)
+    invalidation:
+      - Broad participation returns (breadth improves) with leadership broadening
+    implications:
+      - Raise quality bar for adds; favor strongest leaders only
+      - Be ready for “slow bleed” or abrupt de-risk when catalysts hit
+
+  jan_flow_support:
+    state: on
+    thesis: >
+      年初フロー（新規資金・リバランス・機械的リスク増加）が下支えとなり、
+      1月は下げにくいが、押し目は“条件付き”で拾うフェーズ。
+    triggers:
+      - Indices remain supported despite event risk (NFP/Fed headlines)
+      - Volatility stays compressed (low VIX/MOVE) supporting systematic exposure
+    invalidation:
+      - Vol spikes + breakdown below key daily levels (support/21MA) with follow-through selling
+    implications:
+      - Maintain core but avoid leverage; prioritize staged entries on pullbacks
+      - Use event windows as add/reduce gates
+
+  earnings_risk_Feb:
+    state: watch
+    thesis: >
+      2月以降、決算/ガイダンスで“指数は耐えるが個別・セクターで分解が進む”調整が入りやすい。
+      低ボラ＋金利粘り＋ローテ加速の組み合わせは、ガイダンスショックに弱い。
+    triggers:
+      - Negative guidance surprises increase while indices are still elevated
+      - Leadership churn accelerates (winners rotate rapidly; laggards expand)
+      - Valuation-sensitive sectors underperform as yields stay sticky
+    invalidation:
+      - Earnings season passes with guidance stable and breadth improving
+    implications:
+      - Plan de-risk rules into earnings window; avoid chasing extended names pre-results
+      - Prefer additions after reactions (post-earnings confirmation), not before

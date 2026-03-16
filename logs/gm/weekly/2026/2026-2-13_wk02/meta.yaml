@@ -1,0 +1,73 @@
+# meta.yaml | 2026-2-13_wk02
+week: 2026-2-13_wk02
+created: 2026-02-15
+updated: 2026-02-15
+
+# 週次スナップショット（2/13 終値ベース / 画像は 2/15 作業時点）
+snapshot:
+  US100:
+    close: 24700.9
+    weekly_change_pct: -1.24
+    bias: risk_off_cautious
+    key_levels: [25249.5, 24700.9, 24000.0, 23131.4, 22222.9, 21263.9]
+  JP225:
+    close: 57479
+    weekly_change_pct: 1.83
+    bias: risk_on_overheat
+    key_levels: [57479.0, 56041.0, 54506.0, 52000.0, 51141.0, 48108.0]
+  USDJPY:
+    close: 152.629
+    weekly_change_pct: -2.90
+    bias: JPY_strengthen (intervention_tail)
+    key_levels: [153.486, 152.629, 150.603, 139.870, 135.000]
+  US10Y:
+    close: 4.106
+    weekly_change_pct: -3.75
+    bias: range_bound (sticky_low)
+    key_levels: [4.220, 4.106, 3.937, 3.504]
+  US2Y:
+    close: 3.434
+    weekly_change_pct: -2.43
+    bias: range_bound (sticky_low)
+    key_levels: [3.504, 3.434, 3.410, 3.048]
+  VIX:
+    close: 20.59
+    weekly_change_pct: -15.87
+    bias: rise_cautious
+    key_levels: [28.99, 20.59, 18.92, 13.38]
+  WTI:
+    close: 62.495
+    weekly_change_pct: -3.39
+    bias: geopol_bid (Iran_watch)
+    key_levels: [70.373, 62.495, 58.655, 54.855]
+  XAUUSD:
+    close: 5038.52
+    weekly_change_pct: -1.58
+    bias: bid_watch (hedge_function)
+    key_levels: [5093.65, 5038.52, 4920.81, 4498.96, 4391.92]
+  BTCUSD:
+    close: 69514.98
+    weekly_change_pct: -1.17
+    bias: range_bound (risk_off_linked)
+    key_levels: [99750.61, 69481.00, 65000.0, 57000.0, 49000.0]
+
+# signals (監視シグナル)
+signals:
+  - yields_sticky: "雇用上方修正でも金利下げ不透明（トランプタカ派指名影響）"
+  - gold_bid: "リスクオフでもGold底堅く、ヘッジ機能継続"
+  - breadth_weakening: "US100稲穂形状、SaaS売られ広範弱化兆候"
+  - jan_flow_support: "off（2月移行で剥落）"
+  - earnings_risk_Feb: "MSFT好調なのにSaaS急落、ガイダンス疑念増"
+  - geopolitics_watch: "イラン悪化懸念残存、原油/株波及リスク"
+  - intervention_tail: "USDJPY高値圏で急反転可能性（日米協調）"
+
+# decision_bias (判断バイアス)
+decision_bias:
+  risk: "add only on deep pullback; no chase (24000$警戒)"
+  hedge: "gold > bond hedge; watch VIX rise for shield thicken"
+  ammo: "keep dry powder for Feb earnings vol + geopol shock"
+
+notes:
+  - "雇用上方修正 → rate_cut_delay → tech/risk_off pressure"
+  - "JP overheat but US-linked; watch contagion"
+  - "VIX20 rise = vol increase sign; F&G36 cautious"

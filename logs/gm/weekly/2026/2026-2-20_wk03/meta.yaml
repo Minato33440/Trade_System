@@ -1,0 +1,74 @@
+# meta.yaml | 2026-2-20_wk03
+week: 2026-2-20_wk03
+created: 2026-02-22
+updated: 2026-02-22
+
+# 週次スナップショット（2/20 終値ベース / 画像は 2/22 作業時点）
+snapshot:
+  US100:
+    close: 25017.5
+    weekly_change_pct: 1.28
+    bias: risk_off_accel
+    key_levels: [25249.5, 25017.5, 23900.0, 23131.4, 22222.9, 21263.9]
+  JP225:
+    close: 57086
+    weekly_change_pct: -0.68
+    bias: risk_on_cautious (overheat_correction)
+    key_levels: [57479.0, 57086.0, 56000.0, 54506.0, 51141.0, 48108.0]
+  USDJPY:
+    close: 155.027
+    weekly_change_pct: 1.57
+    bias: sticky_high (intervention_tail)
+    key_levels: [159.348, 155.027, 157.0, 150.603, 139.870]
+  US10Y:
+    close: 4.121
+    weekly_change_pct: 0.37
+    bias: hike_watch (sticky_up)
+    key_levels: [4.220, 4.121, 4.044, 3.937]
+  US2Y:
+    close: 3.503
+    weekly_change_pct: 2.11
+    bias: hike_watch (sticky_up)
+    key_levels: [3.504, 3.503, 3.465, 3.410]
+  VIX:
+    close: 19.08
+    weekly_change_pct: -7.33
+    bias: range_cautious (rise_watch)
+    key_levels: [28.99, 22.0, 19.08, 18.92, 13.38]
+  WTI:
+    close: 66.085
+    weekly_change_pct: 5.74
+    bias: geopol_bid (Iran_escalation)
+    key_levels: [70.373, 66.085, 62.495, 58.655, 54.855]
+  XAUUSD:
+    close: 5098.85
+    weekly_change_pct: 1.20
+    bias: bid_strong (neckline_break)
+    key_levels: [5098.85, 5100.0, 4920.81, 4498.96, 4391.92]
+  BTCUSD:
+    close: 70000.0 (approx)
+    weekly_change_pct: 0.79
+    bias: bottom_firm (off_linked)
+    key_levels: [99750.61, 70000.0, 65000.0, 57000.0, 49000.0]
+
+# signals (監視シグナル)
+signals:
+  - geopol_escalation: "イラン侵攻懸念加速、空母展開で原油高/インフレ再燃"
+  - credit_stress: "ブルーアウルファンド解約停止、プライベートクレジット激震可能性"
+  - yields_sticky_up: "PMI弱含みでも利上げ可能性（物価高懸念）"
+  - gold_bid_strong: "リスクオフで5100突破、ヘッジ機能強化"
+  - breadth_weakening: "US100急落兆候、日本高値切り下げ"
+  - earnings_risk_Feb: "SaaS剥落継続、2月アノマリー下落警戒"
+  - intervention_tail: "USDJPY159.4高止まりから切り下げ、急反転可能性"
+
+# decision_bias (判断バイアス)
+decision_bias:
+  risk: "add only on very deep pullback; no chase (23900$警戒)"
+  hedge: "gold/cash heavy; prepare for C-2 shock"
+  ammo: "max dry powder for Feb anomaly vol + geopol shock"
+
+notes:
+  - "Iran deadline shorten → oil surge → rate_hike risk"
+  - "Credit fund halt → market quake watch"
+  - "PMI down but yields up → off accel"
+  - "VIX range but F&G37 cautious"

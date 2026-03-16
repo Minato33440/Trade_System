@@ -1,0 +1,60 @@
+week: 2026-3-13_wk03
+date_range: 2026-03-09 -> 2026-03-13
+created: 2026-03-15
+updated: 2026-03-15
+
+snapshot:
+  US100:
+    close: ~23913  # 週足サポート帯まで全戻し（要終値確認）
+    weekly_change_pct: TBD
+    bias: risk_off_accelerating
+    key_levels: [25409.3, 24643.02, 23913.4, 22222.9, 21263.9]
+  JP225:
+    close: TBD  # 防衛セクター支援で相対堅調
+    weekly_change_pct: TBD
+    bias: resilient_relative (defense_bid)
+    key_levels: [60059, 58582, 54814, 48108]
+  USDJPY:
+    close: 159.30
+    weekly_change_pct: TBD  # 先週比 +1.77円
+    bias: intervention_risk_zone
+    key_levels: [160.0, 159.30, 156.0, 154.747, 150.345]
+  WTI:
+    close: TBD
+    weekly_change_pct: TBD
+    bias: geopol_bid_sustained
+    key_levels: [100.0, 90.90, 67.065]
+  XAUUSD:
+    close: TBD
+    weekly_change_pct: TBD
+    bias: bid_strong
+    key_levels: [5300.0, 5146.10, 4900, 4549.86]
+  US10Y:
+    close: TBD
+    weekly_change_pct: TBD
+    bias: upward_pressure (rate_cut_delay)
+    key_levels: [4.50, 4.30, 4.13, 3.962]
+
+signals:
+  - iran_escalation_continues: "トランプ強硬指示も悪材料解釈、WTI/Gold高止まり"
+  - private_credit_shock_2nd: "MS/ブラックロック引き出し制限浮上、流動性リスク第2波"
+  - rate_cut_delay: "US10Y上昇、FRB利下げ先送り観測強まる"
+  - BOJ_hold_march: "上田総裁3月利上げ見送り発言→円安継続"
+  - USDJPY_intervention_risk: "159.30円到達、日銀介入リスク水準（~3円急落は一過性）"
+  - JP_defense_bid: "ゴールデンドーム参加期待＋月末日米首脳会談"
+  - full_retrace: "US100/JP225が週足サポートまで全戻し"
+
+decision_bias:
+  risk: "完全凍結（FOMC前NO-GO、紛争終結確認後のみ初動慎重対応）"
+  hedge: "Gold/エネルギー/防衛継続保有"
+  ammo: "弾薬最大温存（プライベートクレジット第2波深押し待ち）"
+  usdjpy: "159.30介入リスクあるも~3円一過性想定、ポジション変更なし"
+
+event_risk:
+  - "2026-03-18 FOMC（利下げ見送り確実視→声明トーン注目）"
+  - "イラン紛争展開（終結サプライズ or 拡大）"
+  - "月末 日米首脳会談（ゴールデンドーム参加協議）"
+  - "プライベートクレジット追加報道（波及リスク）"
+
+links:
+  charts: "./charts.md"

@@ -1,0 +1,122 @@
+week: "2026-1-3_wk52"
+date:
+  start: "2025-12-29"
+  end: "2026-01-03"
+created: "2026-01-03"
+updated: "2026-01-03"
+timezone: "Asia/Tokyo"
+type: "weekly_review"
+scope: "year-end thin liquidity; close-based gating"
+
+close_convention:
+  fx: "NY close (daily)"
+  jp: "Tokyo close"
+  us: "NY close"
+
+regime:
+  primary: "risk-on_cautious"
+  confidence: 0.62
+  notes:
+    - "Thin liquidity season → gap risk"
+    - "Gold strong alongside equities → hedged risk-on"
+
+policy_context:
+  fedwatch:
+    asof: "2026-01-03"
+    meetings:
+      "2026-01-28":
+        "325-350": 0.166
+        "350-375": 0.834
+      "2026-03-18":
+        "300-325": 0.069
+        "325-350": 0.442
+        "350-375": 0.489
+  boj:
+    note: "Market view (user premise): Jan hike delayed (monitor headlines/officials)"
+
+assets:
+  fx: ["USDJPY"]
+  indices: ["US100", "JP225"]
+  crypto: ["BTCUSD"]
+  metals: ["XAUUSD"]
+  jp_etf: ["201A"]
+
+levels:
+  US100:
+    trend: "uptrend_consolidation"
+    resistance: [25670.8]
+    support: [23692.0, 22430.8]
+  JP225:
+    trend: "uptrend"
+    support: [48108]
+  USDJPY:
+    trend: "uptrend_coiling"
+    resistance_zone: [156.8, 157.0]
+    support_zone: [154.7, 154.3]
+  XAUUSD:
+    trend: "uptrend_pullback"
+    support_zone: [4375.48, 4328.43]
+  BTCUSD:
+    trend: "base_attempt"
+    resistance: [93587.47, 99750.61]
+    support: [84023.10]
+  "201A":
+    trend: "triangle_endgame"
+    note: "Add only after break+hold confirmation"
+
+gates_close:
+  add_risk_if:
+    - "US100 daily close > 25670 AND 21MA holds as support (buy pullback, no chase)"
+  reduce_risk_if:
+    - "US100 daily close < 23692"
+    - "USDJPY daily/weekly breakdown < 154.7"
+  caution:
+    - "thin liquidity → wick hunts / gap moves"
+    - "USDJPY weakness can hit JP beta first"
+    - "BTC weakness is an accelerator, not the leader"
+
+execution_plan:
+  style:
+    - "No chase buys. Wait break+hold then buy pullback."
+    - "When risk-off: stop adds first, then trim high beta, keep core last."
+  notes:
+    - "Keep decisions close-based. Intraday wicks are noise in thin weeks."
+
+tags:
+  - "gm"
+  - "weekly"
+  - "2026-1-3_wk52"
+  - "risk:thin-liquidity"
+  - "regime:risk-on"
+  - "trigger:FedWatch"
+  - "asset:US100"
+  - "asset:JP225"
+  - "asset:USDJPY"
+  - "asset:XAUUSD"
+  - "asset:BTCUSD"
+  - "asset:NIFTY"
+
+
+# --- Signals (fixed keys: yes/no) ---
+us10y_accel: "no"           # 4w accel not confirmed from provided snapshot (daily rise ≠ accel)
+hy_oas_widening: "no"       # OAS not provided; low vol + calm credit proxies → provisional "no"
+vix_spike: "no"             # VIX 14.51 (low)
+wti_shock: "no"             # WTI not provided; cannot confirm shock → provisional "no"
+eps_revision_chain: "no"    # explicit downward revision chain not confirmed in provided material
+
+signal_evidence:
+  vol:
+    vix: 14.51
+    vvix: 90.1
+    move: 62.36
+  rates:
+    us10y: 4.189
+    us2y: 3.477
+    spread_2s10s: -0.712
+  regime_notes:
+    - "risk-on_cautious + rotation (SOX/R2K/Transports/Utilities up; FANG down)"
+    - "JP indices high zone but breadth weak (selective)"
+  event_risk:
+    nfp_date: "2026-01-09"
+    fomc_dates: ["2026-01-27", "2026-01-28"]
+    frb_chair_succession: "headline risk (political variable)"

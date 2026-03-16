@@ -1,0 +1,83 @@
+# meta.yaml | 2026-2-6_wk01
+week: 2026-2-6_wk01
+created: 2026-02-08
+updated: 2026-02-08
+
+# 週次スナップショット（2/6 終値ベース / 画像は 2/8 作業時点）
+snapshot:
+  US100:
+    close: 25010.9
+    weekly_change_pct: -2.00
+    bias: neutral_to_riskoff
+    key_levels: [26191.3, 25800.8, 25000.0, 23913.4, 22222.9, 21263.9]
+  JP225:
+    close: 56450
+    weekly_change_pct: 5.65
+    bias: risk-on_overheat
+    key_levels: [56450.0, 54506.0, 52000.0, 51141.0, 48108.0, 45139.0, 42140.0]
+  USDJPY:
+    close: 157.180
+    weekly_change_pct: 1.57
+    bias: JPY_weak (intervention_watch)
+    key_levels: [159.348, 157.219, 154.747, 152.731, 150.603, 139.870]
+  US10Y:
+    close: 4.208
+    weekly_change_pct: -0.73
+    bias: range (slightly_lower_yields)
+    key_levels: [4.299, 4.208, 4.195, 4.114, 3.937]
+  US2Y:
+    close: 3.495
+    weekly_change_pct: -0.82
+    bias: range_to_lower
+    key_levels: [3.672, 3.495, 3.438]
+  VIX:
+    close: 17.77
+    weekly_change_pct: 1.95
+    bias: calm_to_watch
+    key_levels: [20.00, 17.77, 13.38, 28.99]
+  WTI:
+    close: 63.165
+    weekly_change_pct: -3.22
+    bias: geo_risk_watch
+    key_levels: [65.201, 62.175, 61.215, 58.655, 55.568]
+  XAUUSD:
+    close: 4960.27
+    weekly_change_pct: 2.05
+    bias: risk_hedge_on (high_vol)
+    key_levels: [5200.0, 4960.0, 4900.0, 4549.86, 4258.11, 4039.85]
+  BTCUSD:
+    close: 69367.90
+    weekly_change_pct: -9.92
+    bias: risk-off
+    key_levels: [84023.10, 76741.63, 70986.67, 69367.90, 60000.00, 57602.45]
+
+# レジーム認識（今週〜来週入り口）
+regime:
+  summary: "US=AIcapex懸念でテック主導のリスクオフ / JP=選挙イベントでリスクオン継続だが過熱 / FX=円安加速→介入警戒 / コモディティ=原油・金は地政学/ヘッジ需要"
+
+macro_drivers:
+  - "米決算は総じて良好だが、データセンター(=AIインフラ)投資の過剰懸念でソフト系メガテックが売られやすい"
+  - "損切り指値を巻き込んだ下げで、短期のポジション調整(強制的なリスクオフ)が出やすい"
+  - "日本は衆院選イベント通過局面：期待先行→材料出尽くしの揺り戻しに注意"
+  - "円安が進み過ぎると、日米協調介入(口先→実弾)リスクが増える"
+  - "原油は地政学(イラン)と需給で荒れやすく、株・金利・為替へ波及"
+  - "金利は低下気味だが、高水準レンジ内。『利下げの遠のき/成長不安』の両シナリオが同居"
+
+# 来週に向けたゲート（判定条件）
+tactical_gates:
+  risk_add:
+    - "US100が25kを明確に守り、25.8k〜26.2kを回復して定着（VIX<20を同時維持）"
+    - "JP225が56k台を維持しつつ、押し目で54.5k付近がサポート化（上髭連発は除外）"
+  risk_reduce:
+    - "US100が23.9k割れで週足も陰線拡大（広範なリスクオフへ移行）"
+    - "VIXが20超で定着（ボラ上昇＝下げの第2波警戒）"
+    - "USDJPYが154.7割れへ急落（介入/ポジション巻き戻しで日本株に逆風）"
+  hedge_on:
+    - "XAUUSDが4.55kを維持しつつ4.9k再回復（ヘッジ優位）"
+    - "WTIが65.2を上抜けで定着（インフレ再燃/地政学ショックのヘッジを厚めに）"
+
+# ポートフォリオ運用メモ（コアは崩さず、短期の盾を厚く）
+portfolio_actions:
+  - "コア（AI社会基盤ETF/インド枠）は維持。短期は買い増しを急がず、押し目ラインを待つ"
+  - "米国株ベータは『25k攻防』が決着するまで抑制（現金比率で緩衝材）"
+  - "ヘッジ（ゴールド/現金）は厚め。BTCは『底固め確認』までは攻めない"

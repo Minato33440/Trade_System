@@ -1,0 +1,35 @@
+week: 2026-1-17_wk02
+date_range:
+  start: 2026-01-13
+  end: 2026-01-17
+timezone: Asia/Tokyo
+convention: close-based (FX=NY close / JP=Tokyo close / US=NY close)
+
+regime:
+  primary: risk-on_cautious
+  notes: "rotation + low vol; but yields sticky & gold bid"
+
+assets_focus:
+  - USDJPY
+  - US100
+  - JP225
+  - XAU
+  - BTC
+  - US10Y
+  - US02Y
+  - VIX
+
+signals:
+  - gold_bid
+  - yields_sticky
+  - breadth_weakening
+  - jan_flow_support
+  - earnings_risk_Feb
+
+decision_bias:
+  risk: "add only on pullback; no chase"
+  hedge: "avoid bond-only hedge; keep gold hedge functionality in mind"
+  ammo: "keep dry powder for Feb earnings volatility"
+
+notes:
+  - "If yields stay sticky while growth is priced rich, drawdowns can occur without a clean bond-rally hedge."

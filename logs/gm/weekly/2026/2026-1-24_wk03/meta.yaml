@@ -1,0 +1,97 @@
+# meta.yaml — GM Weekly Meta (wk03)
+week: 2026-1-24_wk03
+date_range: 2026-01-19 → 2026-01-24 (weekend close)
+created: 2026-01-19
+updated: 2026-01-24 (JST)
+timezone: Asia/Tokyo
+convention: close-based (FX=NY close / JP=Tokyo close / US=NY close)
+
+regime:
+  name: risk-on_cautious
+  confidence: med
+  changed: no  # 枠組みは維持。シグナル（gold/JPY）を更新。
+
+signals:
+  yields_sticky: unknown   # US金利スナップショット未入力
+  gold_bid: on             # 4,900台定着＋週で+8.45%
+  breadth_weakening: watch # BTC弱い/指数は粘る、の構図が残る
+  jan_flow_support: on     # 1月フロー下支えは継続前提（※裏付けデータは別途）
+  earnings_risk_Feb: watch # 2月決算を調整トリガー候補として残す
+  jpy_intervention_risk: on  # 1/23急落（長老メモ）で優先度を上げる
+  vix_spike: no
+
+key_gates:
+  add_risk:
+    - "US100 daily close > 25,670 AND 21MA holds as support（no chase; buy pullback）"
+  reduce_risk:
+    - "US100 daily close < 23,692"
+    - "USDJPY < 154.7"
+
+close_snapshot:
+  us100: 25546.7
+  jp225: 52771
+  usdjpy: 155.741
+  xauusd: 4982.37
+  btcusd: 89493.82
+  vix: 16.08
+  jp10y: 2.257
+  jp2y: 1.245
+  us10y: tbd
+  us2y: tbd
+  move: tbd
+  wti: tbd
+
+events_next_week:
+  - "01/27–28 FOMC"
+  - "01/28 衆院選 告示（長老メモ：選挙期間の円安株高アノマリー）"
+  - "JPY: 介入・レートチェック再発の可能性"
+
+decisions:
+  - "keep_framework: on（終値ゲート＋押し目のみ）"
+  - "gold_bid: watch → on（ヘッジ主役候補として格上げ）"
+  - "jpy_intervention_risk: off → on（通貨ショックを最優先監視に）"
+
+tags: [gm, weekly, 2026-1-24_wk03, regime:risk-on_cautious, signal:gold_bid, risk:jpy_intervention, trigger:FOMC]
+
+
+# --- key gates/levels（snapshot / source of truth=STATUS.md）
+levels:
+  us100:
+    add_risk_close_above: 25670
+    reduce_risk_close_below: 23692
+    next_support: 22430
+  usdjpy:
+    reduce_risk_below: 154.7
+    key_support_zone: "154.7–154.3"
+    key_resistance_zone: "156.8–157.0"
+  jp225:
+    key_support: 48108
+  xau:
+    support: ["4375", "4328"]
+  btc:
+    support: ["84023"]
+    resistance: ["93587", "99750"]
+
+events:
+  - date: "2026-01-19"
+    label: "US holiday (liquidity thin)"
+  - date: "2026-01-22"
+    label: "US PCE deflator"
+  - date: "2026-01-23"
+    label: "BOJ policy decision"
+  - date: "2026-01-23"
+    label: "US PMI"
+
+watchlist:
+  assets: ["US100", "USDJPY", "JP225", "XAUUSD", "BTCUSD", "US10Y", "VIX", "HY OAS", "WTI"]
+  jp_etf: ["1655", "2243", "2638", "201A", "425A", "1627", "2847"]
+  jp_stocks: ["6965", "7011", "6506"]
+
+decision_log:
+  # 週中に「判断更新点」だけ追記（1行）
+  - date: "tbd"
+    decision: "tbd"
+    evidence: "tbd"
+    implication: "tbd"
+
+tags: ["gm", "weekly", "2026", "wk03"]

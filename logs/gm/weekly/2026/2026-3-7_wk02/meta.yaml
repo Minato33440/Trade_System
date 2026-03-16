@@ -1,0 +1,59 @@
+week: 2026-3-7_wk02
+created: 2026-03-07
+updated: 2026-03-07
+
+snapshot:
+  US100:
+    close: 24643.02
+    weekly_change_pct: +0.38
+    bias: risk_off_cautious
+    key_levels: [25409.3, 24643.02, 23913.4, 22222.9, 21263.9]
+  JP225:
+    close: 58582
+    weekly_change_pct: +2.61
+    bias: resilience (high)
+    key_levels: [60059, 58582, 54814, 48108]
+  USDJPY:
+    close: 157.53
+    weekly_change_pct: +0.39
+    bias: sticky_high
+    key_levels: [159.348, 157.53, 155.0, 150.345]
+  WTI:
+    close: 90.90
+    weekly_change_pct: +43.62
+    bias: geopol_bid_explosion
+    key_levels: [100.0, 90.90, 67.065, 62.025, 58.685]
+  XAUUSD:
+    close: 5146.10
+    weekly_change_pct: +5.86
+    bias: bid_strong
+    key_levels: [5300.0, 5146.10, 4900, 4549.86, 4039.85]
+  BTCUSD:
+    close: 68136.49
+    weekly_change_pct: +8.67
+    bias: resilient_uptrend
+    key_levels: [72710, 68136.49, 65738, 60000]
+  US10Y:
+    close: 4.13
+    weekly_change_pct: -1.83
+    bias: downward_pressure
+    key_levels: [4.146, 4.13, 3.962]
+  US2Y:
+    close: 3.72
+    weekly_change_pct: -0.93
+    bias: downward_pressure
+    key_levels: [3.743, 3.72, 3.512]
+
+signals:
+  - geopol_explosion: "イラン侵攻本格化、ホルムズ封鎖でWTI/Goldプレミアム爆発"
+  - gold_strong_bid: "5146更新、ヘッジ最強"
+  - JP_resilience: "58582高値圏でUS連動乖離継続"
+  - US_breadth_weak: "24643小反落、breadth悪化継続"
+  - employment_weak: "3/6米雇用統計大幅下方修正"
+  - financial_shock: "SaaS急落ファンド解約停止、激震警戒"
+  - btc_resilient: "68136 +8.67%、VIX高でも底堅い"
+
+decision_bias:
+  risk: "深押し限定（23913守り確認後）／追撃禁止"
+  hedge: "Gold/エネルギー比重さらに高め"
+  ammo: "現金温存最大、FOMC後深押し待ち"

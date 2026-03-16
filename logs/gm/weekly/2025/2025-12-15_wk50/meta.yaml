@@ -1,0 +1,127 @@
+week: 2025-12-15_wk50
+created: 2025-12-20 23:00 JST
+type: weekly_review
+
+regime:
+  primary: mixed_regime
+  phases:
+    early_week: "NFP revision mixed + BOJ ahead → headline-driven JPY risk (caution)"
+    mid_week: "JPY strength pressure + risk assets prone to sell-the-rip (dip-buy only)"
+    late_week: "Post-BOJ: hike timing unclear → JPY strength not sustained, risk-on rebound possible"
+  notes:
+    - "Close-based gating emphasized due to headline whipsaws."
+
+triggers:
+  - US_jobs_revision_mixed
+  - US_CPI
+  - BOJ_rate_decision
+  - Ueda_press_conference
+
+assets:
+  fx: [USDJPY]
+  indices: [JP225, SPX, US100]
+  crypto: [BTCUSD]
+  metals: [XAUUSD]
+  jp_etf: [ETF_2243, ETF_2638]
+
+events:
+  - date: 2025-12-18
+    time_jst: "22:30"
+    name: US CPI
+    importance: high
+  - date: 2025-12-19
+    time_jst: "??:??"
+    name: BOJ Policy Rate Decision
+    importance: high
+  - date: 2025-12-19
+    time_jst: "15:00"
+    name: Ueda Press Conference
+    importance: high
+
+levels:
+  USDJPY:
+    spot: 157.703
+    resistance: [157.703]
+    support: [157.15, 156.59]
+    note: "Close below 156.59 = JPY strength re-ignition risk."
+  JP225:
+    spot: 50345
+    support: [47377]
+    resistance: [52619]
+    note: "Weekly TL lower-wick absorption; watch body hold."
+  SPX:
+    spot: 6845.5
+    support: [6667.6, 6426.9]
+    note: "Close below 6667 increases risk-off probability."
+  BTCUSD:
+    spot: 87957
+    resistance: [90100, 93600]
+    support: [84000, 80000]
+    note: "Close below 84k tends to accelerate risk-off."
+  XAUUSD:
+    spot: 4337.8
+    support: [4258.1, 4043.9, 3918.1]
+    note: "Even in risk-off, liquidation selling is possible."
+  ETF_2243:
+    spot: 2560
+    support: [2514, 2387]
+    confirmation_close: [2692]
+    note: "Do not chase; add only at support band."
+  ETF_2638:
+    spot: 2341
+    support: [2320, 2268]
+    confirmation_close: [2458]
+    note: "Do not chase; add only at support band."
+
+position:
+  jp_etf:
+    - symbol: 2243
+      stance: add_scaled_on_dip_only
+      target_total_yen: 500000
+      current_total_yen: 450000
+      action_this_week:
+        - "scaled add on dip"
+        - "trim 20 units post-BOJ bounce to rebuild cash buffer"
+    - symbol: 2638
+      stance: add_scaled_on_dip_only
+      target_total_yen: 500000
+      current_total_yen: 450000
+      action_this_week:
+        - "scaled add on dip"
+        - "trim 20 units post-BOJ bounce to rebuild cash buffer"
+  us_thematic_option:
+    - symbol: IONQ
+      action_this_week: "add +4lot (~¥30k)"
+    - symbol: RGTI
+      action_this_week: "add +5lot (~¥20k)"
+  cash_buffer_yen:
+    start_week_est: 200000
+    end_week_est: 150000
+
+scenarios:
+  risk_on_continuation:
+    conditions_close:
+      - "USDJPY holds 157.15/156.59"
+      - "JP225 keeps weekly TL body recovery"
+      - "SPX holds ~6845 and does not close below 6667"
+    actions:
+      - "No chase-buys; add 2243/2638 only at support bands"
+      - "Rebuild trimmed 20 units only on pullbacks"
+      - "Wait for confirmation closes: 2243=2692, 2638=2458"
+  risk_off_reignite:
+    gate_3_signals_close:
+      - "USDJPY < 156.59"
+      - "JP225 < 47377"
+      - "SPX < 6667"
+    confirm: "same-day 3 lights = provisional risk-off; staggered lights = caution mode"
+    actions:
+      - "Slow adds; preserve cash for lower re-entry"
+      - "Use BTC < 84k close as early accelerator signal"
+
+confidence:
+  macro: 0.62
+  technical: 0.58
+
+notes:
+  - "This week required close-based decision rules due to BOJ headline volatility."
+

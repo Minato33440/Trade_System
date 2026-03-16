@@ -1,0 +1,138 @@
+week: 2025-12-22_wk51
+created: "2025-12-21 18:00 JST"
+type: weekly_brief
+scope: "12/22–12/26 (holiday liquidity) close-based gating + dip-buy front-run"
+
+regime:
+  primary: mixed_regime
+  notes:
+    - "Post-BOJ: JPY strength not sustained, but headline-driven re-ignition risk remains."
+    - "Holiday liquidity: wick-hunts / mean-reversion more frequent; decisions must be close-based."
+
+assets:
+  fx: [USDJPY]
+  indices: [JP225, SPX, US100]
+  crypto: [BTCUSD]
+  metals: [XAUUSD]
+  jp_etf: [ETF_2243, ETF_2638]
+
+close_convention:
+  fx: "NY close (daily)"
+  jp: "Tokyo close"
+  us: "NY close"
+
+gates_close:
+  risk_off_3_lights:
+    - "USDJPY < 156.59 (NY close)"
+    - "JP225 < 47377 (Tokyo close)"
+    - "SPX < 6667 (NY close)"
+  caution:
+    - "JP225 < 48657 (Tokyo close) as early warning"
+    - "BTCUSD < 84000 (NY close) as accelerator"
+    - "US100 weakness can precede broader risk-off (numeric gate to be updated from chart)"
+
+levels:
+  USDJPY:
+    resistance: [157.703, 157.15]
+    support: [156.59, 154.33]
+  JP225:
+    resistance: [52619]
+    support: [48657, 47377]
+  SPX:
+    support: [6667, 6426]
+  BTCUSD:
+    support: [84000, 80000]
+  XAUUSD:
+    notes:
+      - "Risk-off can still trigger liquidation selling (gold not always bid)."
+  ETF_2243:
+    support: [2514, 2387]
+    confirmation_close: [2692]
+  ETF_2638:
+    support: [2320, 2268]
+    confirmation_close: [2458]
+
+execution_plan:
+  style:
+    - "No chase buys. Front-run via limit orders at support bands."
+    - "Rebuild trimmed units only after close-based confirmation, then buy on pullback."
+  jp_etf_orders_example:
+    ETF_2243: ["2514 (shallow)", "2387 (deep)"]
+    ETF_2638: ["2320 (shallow)", "2268 (deep)"]
+
+tags:
+  - gm
+  - weekly
+  - 2025-12-22_wk51
+  - holiday_liquidity
+  - close_based
+  - risk_on
+  - risk_off
+  - usdjpy
+  - jp225
+  - spx
+  - us100
+  - btc
+  - xau
+  - 2243
+  - 2638
+
+
+# meta.yaml | 2025-12-22_wk51
+week: 2025-12-22_wk51
+created: 2025-12-22 09:40 JST
+type: weekly_brief
+
+regime:
+  primary: risk_on_rebound_with_headline_whipsaw_risk
+  notes:
+    - "Post-BOJ uncertainty reduced; US equities reclaiming 4H 200EMA supports risk-on."
+    - "Christmas week liquidity -> whipsaw / itte-koi risk elevated."
+    - "USDJPY near highs -> tail risk of sharp reversal."
+
+assets:
+  fx: [USDJPY]
+  indices: [JP225, SPX, US100]
+  crypto: [BTCUSD]
+  metals: [XAUUSD]
+  jp_etf: [ETF_2243, ETF_2638]
+
+levels:
+  USDJPY:
+    resistance: [157.703]
+    support: [156.59, 154.34]
+    note: "NY close < 156.59 = JPY strength re-ignition risk."
+  JP225:
+    resistance: [52619]
+    support: [48657, 47377]
+    note: "Tokyo close < 47377 = risk-off light."
+  SPX:
+    support: [6667]
+    note: "NY close < 6667 increases risk-off probability."
+  BTCUSD:
+    support: [84000]
+    note: "NY close < 84k tends to accelerate risk-off."
+  ETF_2243:
+    support: [2514, 2387]
+    confirmation_close: [2692]
+    note: "No chase; add only on pullbacks (shallow or deep)."
+  ETF_2638:
+    support: [2320, 2268]
+    confirmation_close: [2458]
+    note: "No chase; add only on pullbacks (shallow or deep)."
+
+gates:
+  risk_off_3_lights_same_day:
+    - "USDJPY NY close < 156.59"
+    - "JP225 Tokyo close < 47377"
+    - "SPX NY close < 6667"
+  caution_mode:
+    - "staggered lights across days"
+    - "BTC NY close < 84k as accelerator"
+
+plan:
+  add_rule:
+    - "limit orders only"
+    - "two-layer pullback: shallow(4H 21MA/gap fill) + deep(support bands)"
+  hedge_trim_rule:
+    - "trim small (10-20 units each) if rejection near confirmation lines or US equities fail to confirm"
