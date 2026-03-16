@@ -1,0 +1,29 @@
+# .gitignore
+.mypy_cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+configs/*.yaml
+data/private_*.csv
+*.log
+env/
+*.swp
+tests/output/
+
+# 生成物・手動コピー元（API-bot が今後も出力する可能性あり）
+png_data/
+logs/png_data/
+
+# 週次 charts/ は画像等で Git 容量増大するため無視
+logs/gm/weekly/*/*/charts/
+# Node パッケージ
+node_modules/
+
+# 会話ログ（テキスト履歴）
+logs/text_log/
+
+# ログディレクトリ全体を無視（パフォーマンス向上のため）
+logs/
+

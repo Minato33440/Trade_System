@@ -1,0 +1,14 @@
+自動トレードモード：各フラグ機能追加
+pandas + numpy + yfinance + requests + python-dotenv 分析ループループ相当
+
+• python .\configs\rex_chat.py --trade
+：必須コア銘柄（常に表示）： 8ペア30日データ自動取得＋プロット生成＆挿入
+  対象ペア（GBPJPY, AUDJPY, US100, SP500, JP225, Copper, WTI, US2Y, JP2Y）
+
+• python .\configs\rex_chat.py --news
+：newspaper3k活用でGMキーワード（BRICS/CBDC/地政学）のニュースを自動フェッチ
+
+• python .\configs\rex_chat.py --trade--news
+：必須コア銘柄（常に表示）： 8ペア30日データ自動取得＋プロット生成＆挿入
+  対象ペア（GBPJPY, AUDJPY, US100, SP500, JP225, Copper, WTI, US2Y, JP2Y）
+  newspaper3k活用でGMキーワード（BRICS/CBDC/地政学）のニュースを自動フェッチ
