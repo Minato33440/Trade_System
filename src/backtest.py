@@ -1,4 +1,4 @@
-"""backtest.py — USDJPY MTF v2 バックテスト（Phase B完結版）。
+"""backtest.py - USDJPY MTF v2 バックテスト（Phase B完結版）。
 
 python src/backtest.py で実行。
 
@@ -42,6 +42,7 @@ from src.swing_detector import (
     get_nearest_swing_low,
 )
 from src.entry_logic import MAX_REENTRY, evaluate_entry
+from src.exit_logic import manage_exit
 
 # ── VectorBT があれば使う ────────────────────────────────────
 try:
@@ -98,7 +99,7 @@ def _scan_all_bars_for_entry(
     df_multi: pd.DataFrame,
     df_5m_raw: pd.DataFrame,
     direction_series: pd.Series,
-) -> tuple[pd.Series, pd.Series, pd.Series]:
+) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series, pd.Series]:
     """全5Mバーを走査して evaluate_entry() が True になるバーを探す。
 
     signals.py のシグナルに依存せず、4H方向が確定している全バーで
@@ -111,13 +112,16 @@ def _scan_all_bars_for_entry(
         direction_series: _build_direction_5m() でプリコンピュート済みの方向Series
 
     Returns:
-        (entries_long, entries_short, skip_reason_series)
+        (entries_long, entries_short, skip_reason_series, neck_4h_long, neck_4h_short)
         entries_long/short: bool Series（True のバーの次の始値でエントリー）
         skip_reason_series: str Series（スキップ理由のデバッグ情報）
+        neck_4h_long/short: float Series（エントリーバーの4Hネックライン価格）
     """
     entries_long = pd.Series(False, index=df_multi.index)
     entries_short = pd.Series(False, index=df_multi.index)
     skip_reasons = pd.Series("", index=df_multi.index, dtype=object)
+    neck_4h_long = pd.Series(float("nan"), index=df_multi.index, dtype=float)
+    neck_4h_short = pd.Series(float("nan"), index=df_multi.index, dtype=float)
 
     # ── 全期間を一括resample（パフォーマンス最適化） ──
     print("  [INFO] 4H/1H/15M resample中（一括プリコンピュート）...")
@@ -228,120 +232,157 @@ def _scan_all_bars_for_entry(
         if result["enter"]:
             if direction == "LONG":
                 entries_long.iloc[i + 1] = True   # 次の5M始値でエントリー
+                neck_4h_long.iloc[i + 1] = neck_4h
                 reentry_count_long += 1
             else:
                 entries_short.iloc[i + 1] = True
+                neck_4h_short.iloc[i + 1] = neck_4h
                 reentry_count_short += 1
 
-    return entries_long, entries_short, skip_reasons
+    return entries_long, entries_short, skip_reasons, neck_4h_long, neck_4h_short
 
 
-# ── シンプルバックテスト（方向対応版） ────────────────────────────
+# ── ミナト流3段階決済バックテスト（Phase C） ────────────────────
 def _simple_backtest_directional(
     close: pd.Series,
     high: pd.Series,
     low: pd.Series,
+    open_5m: pd.Series,
     entries_long: pd.Series,
     entries_short: pd.Series,
+    neck_4h_long: pd.Series,
+    neck_4h_short: pd.Series,
+    df_15m_full: pd.DataFrame,
     commission: float = 0.0005,
     slippage: float = 0.0002,
-    stop_atr_mult: float = 1.3,
-    hold_bars: int = 48,        # デフォルト: 4時間足3本 ≒ 5M 144本（仮）
 ) -> Dict[str, Any]:
-    """Long/Short 両方向対応のシンプルバックテスト。
+    """Long/Short 両方向対応のバックテスト（ミナト流3段階決済版）。
 
-    エントリー: entries_long/short が True の足の Open（次足始値）
-    ストップ:   ATR(14) × stop_atr_mult + 最大50pipsキャップ
-    決済:       固定バー数保持（将来的にexit_logic.pyで高度化）
+    エントリー: entries_long/short が True の足の Close（スリッページ込み）
+    決済:       exit_logic.manage_exit() による3段階ダウ崩れ決済
+      段階1: 4Hネック未到達 → 5Mダウ崩れで全決済
+      段階2: 4Hネック到達 → 半値決済 + 残り50%保有
+      段階3: 4Hネック越え後 → 15Mダウ崩れで残り全決済
     """
-    from src.signals import _atr as calc_atr_signal  # ATR計算流用
-
-    atr = calc_atr_signal(high, low, close, period=14)
-
-    close_arr = close.values.astype(float)
-    high_arr = high.values.astype(float)
-    low_arr = low.values.astype(float)
-    atr_arr = atr.values.astype(float)
     entries_long_arr = entries_long.values.astype(bool)
     entries_short_arr = entries_short.values.astype(bool)
+    neck_4h_long_arr = neck_4h_long.values.astype(float)
+    neck_4h_short_arr = neck_4h_short.values.astype(float)
+
+    ts_5m = close.index.values
+    ts_15m = df_15m_full.index.values
 
     trades: List[Dict[str, Any]] = []
+    exit_events: List[str] = []  # 決済理由の記録（理由内訳集計用）
+
     in_pos = False
     entry_idx = 0
     entry_price = 0.0
     direction = ""
-    stop_price = 0.0
+    neck_4h = 0.0
+    position_size = 0.0
+    position_pnl = 0.0  # ポジション中の累積pnl（pips）
 
-    for i in range(len(close_arr)):
+    for i in range(len(close)):
         if in_pos:
-            # ── ストップ判定（バー内High/Lowで判断） ──
-            atr_val = atr_arr[entry_idx] if not np.isnan(atr_arr[entry_idx]) else 0.01
-            stop_dist = min(atr_val * stop_atr_mult, 0.50)  # 最大50pipsキャップ（USDJPY）
+            # ── 5M/15Mウィンドウを取得してmanage_exitを呼ぶ ──
+            win_start = max(0, i - 50)
+            close_5m_w = close.iloc[win_start: i + 1]
+            open_5m_w = open_5m.iloc[win_start: i + 1]
 
-            if direction == "LONG":
-                stop_price = entry_price - stop_dist
-                hit_stop = low_arr[i] <= stop_price
-                hit_target = (i - entry_idx) >= hold_bars
-                exit_price = (
-                    stop_price * (1 - slippage)
-                    if hit_stop
-                    else close_arr[i] * (1 - slippage)
-                )
-                pnl_per_unit = exit_price - entry_price
-            else:  # SHORT
-                stop_price = entry_price + stop_dist
-                hit_stop = high_arr[i] >= stop_price
-                hit_target = (i - entry_idx) >= hold_bars
-                exit_price = (
-                    stop_price * (1 + slippage)
-                    if hit_stop
-                    else close_arr[i] * (1 + slippage)
-                )
-                pnl_per_unit = entry_price - exit_price
+            idx_15m = int(np.searchsorted(ts_15m, ts_5m[i], side="right")) - 1
+            if idx_15m < 0:
+                idx_15m = 0
+            win_start_15m = max(0, idx_15m - 50)
+            close_15m_w = df_15m_full["Close"].iloc[win_start_15m: idx_15m + 1]
+            open_15m_w = df_15m_full["Open"].iloc[win_start_15m: idx_15m + 1]
 
-            if hit_stop or hit_target:
-                pnl_pips = pnl_per_unit * 100  # 円→pips換算（USDJPY）
+            result = manage_exit(
+                entry_price=entry_price,
+                direction=direction,
+                close_5m=close_5m_w,
+                open_5m=open_5m_w,
+                close_15m=close_15m_w,
+                open_15m=open_15m_w,
+                neck_4h=neck_4h,
+                position_size=position_size,
+            )
+
+            current_price = float(close.iloc[i])
+
+            if result["action"] == "exit_half":
+                # 半値決済（50%クローズ）
+                if direction == "LONG":
+                    ep = current_price * (1 - slippage)
+                    partial_pnl = (ep - entry_price) * 0.5 * 100
+                else:
+                    ep = current_price * (1 + slippage)
+                    partial_pnl = (entry_price - ep) * 0.5 * 100
+                position_pnl += partial_pnl
+                position_size = 0.5
+                exit_events.append(result["reason"])
+
+            elif result["action"] == "exit_all":
+                # 残り全量決済
+                if direction == "LONG":
+                    ep = current_price * (1 - slippage)
+                    partial_pnl = (ep - entry_price) * position_size * 100
+                else:
+                    ep = current_price * (1 + slippage)
+                    partial_pnl = (entry_price - ep) * position_size * 100
+                position_pnl += partial_pnl
+                exit_events.append(result["reason"])
+
                 trades.append({
                     "entry_bar": entry_idx,
                     "exit_bar": i,
                     "direction": direction,
                     "entry_price": entry_price,
-                    "exit_price": exit_price,
-                    "pnl_pips": pnl_pips,
-                    "exit_reason": "STOP" if hit_stop else "HOLD_BARS",
+                    "exit_price": ep,
+                    "pnl_pips": position_pnl,
+                    "exit_reason": result["reason"],
                     "hold_bars": i - entry_idx,
                 })
                 in_pos = False
+                position_size = 0.0
 
         if not in_pos:
-            if entries_long_arr[i]:
-                entry_price = close_arr[i] * (1 + slippage)
+            if entries_long_arr[i] and not np.isnan(neck_4h_long_arr[i]):
+                entry_price = float(close.iloc[i]) * (1 + slippage)
                 entry_idx = i
                 direction = "LONG"
+                neck_4h = float(neck_4h_long_arr[i])
+                position_size = 1.0
+                position_pnl = 0.0
                 in_pos = True
-            elif entries_short_arr[i]:
-                entry_price = close_arr[i] * (1 - slippage)
+            elif entries_short_arr[i] and not np.isnan(neck_4h_short_arr[i]):
+                entry_price = float(close.iloc[i]) * (1 - slippage)
                 entry_idx = i
                 direction = "SHORT"
+                neck_4h = float(neck_4h_short_arr[i])
+                position_size = 1.0
+                position_pnl = 0.0
                 in_pos = True
 
-    # 未決済ポジションを最終バーで決済
+    # 未決済ポジションを最終バーで強制決済
     if in_pos:
+        current_price = float(close.iloc[-1])
         if direction == "LONG":
-            exit_price = close_arr[-1] * (1 - slippage)
-            pnl_pips = (exit_price - entry_price) * 100
+            ep = current_price * (1 - slippage)
+            partial_pnl = (ep - entry_price) * position_size * 100
         else:
-            exit_price = close_arr[-1] * (1 + slippage)
-            pnl_pips = (entry_price - exit_price) * 100
+            ep = current_price * (1 + slippage)
+            partial_pnl = (entry_price - ep) * position_size * 100
+        position_pnl += partial_pnl
         trades.append({
             "entry_bar": entry_idx,
-            "exit_bar": len(close_arr) - 1,
+            "exit_bar": len(close) - 1,
             "direction": direction,
             "entry_price": entry_price,
-            "exit_price": exit_price,
-            "pnl_pips": pnl_pips,
+            "exit_price": ep,
+            "pnl_pips": position_pnl,
             "exit_reason": "FINAL_BAR",
-            "hold_bars": len(close_arr) - 1 - entry_idx,
+            "hold_bars": len(close) - 1 - entry_idx,
         })
 
     if not trades:
@@ -351,7 +392,11 @@ def _simple_backtest_directional(
             "max_drawdown_pips": 0.0, "avg_hold_bars": 0,
             "total_pnl_pips": 0.0,
             "long_win_rate": 0.0, "short_win_rate": 0.0,
+            "exit_reason_counts": {},
         }
+
+    from collections import Counter
+    reason_counts = dict(Counter(exit_events))
 
     df_t = pd.DataFrame(trades)
     df_long = df_t[df_t["direction"] == "LONG"]
@@ -383,6 +428,7 @@ def _simple_backtest_directional(
         "max_drawdown_pips": round(max_dd, 2),
         "avg_hold_bars": round(float(df_t["hold_bars"].mean()), 1),
         "total_pnl_pips": round(float(df_t["pnl_pips"].sum()), 2),
+        "exit_reason_counts": reason_counts,
     }
 
 
@@ -399,7 +445,7 @@ def run_rex_mtf_backtest(
     t0 = time.time()
 
     print("=" * 70)
-    print("  REX MTF バックテスト — Phase B完結版（entry_logic統合）")
+    print("  REX MTF バックテスト - Phase B完結版（entry_logic統合）")
     print("=" * 70)
     print(f"データ: {df_path}")
     print(f"Lotサイズ: {lot_size} | Long倍率: {LONG_LOT_MULTIPLIER} | Short倍率: {SHORT_LOT_MULTIPLIER}")
@@ -424,14 +470,16 @@ def run_rex_mtf_backtest(
 
     # ── 4H方向プリコンピュート ──
     print("\n[STEP 2] 4H方向プリコンピュート（_build_direction_5m）...")
-    direction_series = _build_direction_5m(df_5m_raw, n=3, lookback=20)
+    direction_series = _build_direction_5m(df_5m_raw, n=2, lookback=30)
     dir_counts = direction_series.value_counts()
+    none_ratio = dir_counts.get('NONE', 0) / max(len(direction_series), 1) * 100
     print(f"  方向分布: LONG={dir_counts.get('LONG', 0)}, SHORT={dir_counts.get('SHORT', 0)}, NONE={dir_counts.get('NONE', 0)}")
+    print(f"  NONE比率: {none_ratio:.1f}%")
 
     # ── 全バースキャン ──
     print("\n[STEP 3] エントリースキャン（全5Mバー評価）...")
-    entries_long, entries_short, skip_reasons = _scan_all_bars_for_entry(
-        df_multi, df_5m_raw, direction_series
+    entries_long, entries_short, skip_reasons, neck_4h_long, neck_4h_short = (
+        _scan_all_bars_for_entry(df_multi, df_5m_raw, direction_series)
     )
 
     n_long = int(entries_long.sum())
@@ -439,28 +487,41 @@ def run_rex_mtf_backtest(
     print(f"  エントリー候補: LONG={n_long}件, SHORT={n_short}件")
 
     # スキップ理由の内訳
-    reason_counts = skip_reasons[skip_reasons != ""].value_counts()
+    skip_reason_counts = skip_reasons[skip_reasons != ""].value_counts()
     print("\n  スキップ理由の内訳:")
-    for reason, count in reason_counts.items():
+    for reason, count in skip_reason_counts.items():
         print(f"    {reason}: {count}件")
 
     if n_long == 0 and n_short == 0:
         print("\n  [WARNING] エントリーが0件です。パラメータを確認してください。")
         return
 
+    # ── 15M足（決済ロジック用） ──
+    print("\n[STEP 4] 15M足プリコンピュート（決済ロジック用）...")
+    df_15m_for_exit = df_5m_raw.resample("15min").agg(
+        {"High": "max", "Low": "min", "Open": "first", "Close": "last"}
+    ).dropna()
+    print(f"  15M: {len(df_15m_for_exit)}本")
+
     # ── バックテスト実行 ──
-    print("\n[STEP 4] バックテスト実行...")
+    print("\n[STEP 5] バックテスト実行（ミナト流3段階決済）...")
     close = df_multi["5M_Close"]
     high = df_multi["5M_High"]
     low = df_multi["5M_Low"]
+    open_5m = df_multi["5M_Open"]
 
-    res = _simple_backtest_directional(close, high, low, entries_long, entries_short)
+    res = _simple_backtest_directional(
+        close, high, low, open_5m,
+        entries_long, entries_short,
+        neck_4h_long, neck_4h_short,
+        df_15m_for_exit,
+    )
 
     elapsed = time.time() - t0
 
     # ── 結果出力 ──
     print("\n" + "=" * 70)
-    print("  バックテスト結果サマリ")
+    print("  REX MTF バックテスト結果サマリ（Phase C: 3段階決済版）")
     print("=" * 70)
     print(f"\n  総トレード数:         {res['total_trades']}")
     print(f"  うちLong:             {res['long_trades']}")
@@ -472,6 +533,10 @@ def run_rex_mtf_backtest(
     print(f"  最大DD (pips):        {res['max_drawdown_pips']:.2f}")
     print(f"  総損益 (pips):        {res['total_pnl_pips']:.2f}")
     print(f"  平均保有バー数:       {res['avg_hold_bars']}")
+
+    print("\n  決済理由の内訳:")
+    for reason, count in res.get("exit_reason_counts", {}).items():
+        print(f"    {reason}: {count}件")
 
     print(f"\n  実行時間:             {elapsed:.1f}秒")
 
@@ -489,20 +554,19 @@ def run_rex_mtf_backtest(
 
     pf = res["profit_factor"]
     if pf >= 1.5:
-        print(f"\n  → [OK] PF {pf:.2f} — 1.5以上！長期的にプラス期待")
+        print(f"\n  → [OK] PF {pf:.2f} - 1.5以上！長期的にプラス期待")
     else:
-        print(f"\n  → [NG] PF {pf:.2f} — 低い。リスクリワード改善が必要")
+        print(f"\n  → [NG] PF {pf:.2f} - 低い。リスクリワード改善が必要")
 
     max_dd = res["max_drawdown_pips"]
     if max_dd > 100.0:
         print(f"\n  → [警告] MaxDD {max_dd:.1f}pips超え！リスク管理を見直してください")
     else:
-        print(f"\n  → [OK] MaxDD {max_dd:.1f}pips — リスク管理良好")
+        print(f"\n  → [OK] MaxDD {max_dd:.1f}pips - リスク管理良好")
 
     print("\n" + "=" * 70)
     print("  [次のステップ]")
-    print("  Phase C: exit_logic.py — 5M/15Mダウ崩れ段階決済実装")
-    print("  Phase D: volume_alert.py — 出来高急増シグナル通知")
+    print("  Phase D: volume_alert.py - 出来高急増シグナル通知")
     print("=" * 70)
     print("\nボス、結果見てLong/Short別の勝率・MaxDDを確認してね！")
 
