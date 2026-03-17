@@ -1,22 +1,29 @@
 """チャート生成モジュール。
 
-8ペア正規化比較プロットの生成・保存を担当する。
-Swing High/Low の視覚化デバッグ機能も含む。
+8ペア正規化比較プロットおよびSwing High/Low視覚化デバッグ機能を提供する。
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
-from configs.settings import PNG_DATA_DIR
+# リポジトリルートをパスに追加
+_repo_root = Path(__file__).resolve().parents[1]
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
+
+try:
+    from configs.settings import PNG_DATA_DIR
+except ImportError:
+    PNG_DATA_DIR = _repo_root / "data" / "charts"
+
 from src.utils import ensure_dir_exists
 
 
 def save_normalized_plot(df: pd.DataFrame, filename: str = "multi_pairs_plot_8.png") -> Path:
-    """
-    DataFrame の各列を 0-1 正規化してプロットを保存する。
+    """DataFrame の各列を 0-1 正規化してプロットを保存する。
 
     Returns:
         保存先 Path
@@ -42,31 +49,29 @@ def save_normalized_plot(df: pd.DataFrame, filename: str = "multi_pairs_plot_8.p
     return plot_path
 
 
-def save_swing_plot(
-    close: pd.Series,
-    high: pd.Series,
-    low: pd.Series,
+def save_swing_debug_plot(
+    df_ohlc: pd.DataFrame,
     direction: str = "NONE",
-    pair: str = "USDJPY",
-    tf: str = "4H",
-    filename: Optional[str] = None,
+    tf_label: str = "4H",
+    n: int = 3,
+    filename: str = "swing_debug.png",
 ) -> Path:
-    """Swing High/Low を視覚化してデバッグ用PNGを保存する。
+    """Swing High/Low を視覚化したデバッグチャートを保存する。
 
-    - Swing High を赤い ▼ マーカーでプロット
-    - Swing Low  を緑の ▲ マーカーでプロット
-    - 直近SH を赤の水平破線で表示（ラベル: SH）
-    - 直近SL を緑の水平破線で表示（ラベル: SL）
-    - チャートタイトルに direction を表示（例: "USDJPY 4H [LONG]"）
+    チャートに含まれる情報:
+      - ローソク足（Close線で代替）
+      - Swing High: 赤い ▼ マーカー
+      - Swing Low: 緑の ▲ マーカー
+      - 直近SH: 赤の水平破線（ラベル: SH）
+      - 直近SL: 緑の水平破線（ラベル: SL）
+      - チャートタイトルに direction を表示
 
     Args:
-        close:     Close価格のSeries
-        high:      High価格のSeries
-        low:       Low価格のSeries
-        direction: 'LONG' / 'SHORT' / 'NONE'
-        pair:      通貨ペア名（タイトル表示用）
-        tf:        時間足（タイトル表示用）
-        filename:  保存ファイル名（Noneの場合は自動生成）
+        df_ohlc:   OHLC DataFrame（High/Low/Close列を含む）
+        direction: '4H方向文字列（LONG/SHORT/NONE）'
+        tf_label:  タイムフレームラベル（チャートタイトル用）
+        n:         Swing検出の前後確認本数
+        filename:  出力ファイル名
 
     Returns:
         保存先 Path
@@ -83,83 +88,106 @@ def save_swing_plot(
         get_nearest_swing_low,
     )
 
-    # Swing 検出
-    n = 5 if tf in ("4H", "4h") else 3
-    sh_mask = detect_swing_highs(high, n=n)
-    sl_mask = detect_swing_lows(low, n=n)
+    high = df_ohlc["High"]
+    low = df_ohlc["Low"]
+    close = df_ohlc["Close"]
 
-    # 直近SH/SL（最終バー直前）
-    last_idx = len(high) - 1
-    nearest_sh = get_nearest_swing_high(high, current_idx=last_idx, n=n, lookback=50)
-    nearest_sl = get_nearest_swing_low(low, current_idx=last_idx, n=n, lookback=50)
+    sh_flags = detect_swing_highs(high, n=n)
+    sl_flags = detect_swing_lows(low, n=n)
 
-    fig, ax = plt.subplots(figsize=(16, 7))
+    sh_price = get_nearest_swing_high(high, len(high) - 1, n=n, lookback=min(50, len(high) - 1))
+    sl_price = get_nearest_swing_low(low, len(low) - 1, n=n, lookback=min(50, len(low) - 1))
+
+    x = range(len(close))
+
+    fig, ax = plt.subplots(figsize=(16, 6))
 
     # Close ライン
-    ax.plot(close.values, color="steelblue", linewidth=1.0, label="Close", zorder=2)
+    ax.plot(x, close.values, color="steelblue", linewidth=1.0, label="Close", zorder=1)
 
-    # Swing High マーカー（赤 ▼）
-    sh_indices = [i for i, v in enumerate(sh_mask.values) if v]
-    if sh_indices:
-        ax.scatter(
-            sh_indices,
-            high.values[sh_indices],
-            marker="v",
-            color="red",
-            s=60,
-            label="Swing High",
-            zorder=3,
-        )
+    # High ライン（薄く）
+    ax.plot(x, high.values, color="gray", linewidth=0.5, alpha=0.4, label="High/Low")
+    ax.plot(x, low.values, color="gray", linewidth=0.5, alpha=0.4)
 
-    # Swing Low マーカー（緑 ▲）
-    sl_indices = [i for i, v in enumerate(sl_mask.values) if v]
-    if sl_indices:
-        ax.scatter(
-            sl_indices,
-            low.values[sl_indices],
-            marker="^",
-            color="green",
-            s=60,
-            label="Swing Low",
-            zorder=3,
-        )
+    # Swing High: 赤い ▼ マーカー
+    sh_x = [i for i, v in enumerate(sh_flags.values) if v]
+    sh_y = [float(high.values[i]) for i in sh_x]
+    ax.scatter(sh_x, sh_y, marker="v", color="red", s=80, zorder=5, label="Swing High ▼")
 
-    # 直近SH 水平破線（赤）
-    if not pd.isna(nearest_sh):
-        ax.axhline(
-            y=nearest_sh,
-            color="red",
-            linestyle="--",
-            linewidth=1.2,
-            alpha=0.8,
-            label=f"SH: {nearest_sh:.3f}",
-        )
+    # Swing Low: 緑の ▲ マーカー
+    sl_x = [i for i, v in enumerate(sl_flags.values) if v]
+    sl_y = [float(low.values[i]) for i in sl_x]
+    ax.scatter(sl_x, sl_y, marker="^", color="green", s=80, zorder=5, label="Swing Low ▲")
 
-    # 直近SL 水平破線（緑）
-    if not pd.isna(nearest_sl):
-        ax.axhline(
-            y=nearest_sl,
-            color="green",
-            linestyle="--",
-            linewidth=1.2,
-            alpha=0.8,
-            label=f"SL: {nearest_sl:.3f}",
-        )
+    # 直近SH: 赤の水平破線
+    ax.axhline(y=sh_price, color="red", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SH: {sh_price:.3f}")
 
-    title = f"{pair} {tf} [{direction}]"
-    ax.set_title(title, fontsize=14, fontweight="bold")
-    ax.set_xlabel("Bar")
+    # 直近SL: 緑の水平破線
+    ax.axhline(y=sl_price, color="green", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SL: {sl_price:.3f}")
+
+    # タイトルに方向を表示
+    ax.set_title(f"USDJPY {tf_label} [{direction}]  SH={sh_price:.3f}  SL={sl_price:.3f}", fontsize=13)
+    ax.set_xlabel("Bar index")
     ax.set_ylabel("Price")
-    ax.legend(loc="upper left")
-    ax.grid(True, alpha=0.4)
-    plt.tight_layout()
+    ax.legend(loc="upper left", fontsize=8)
+    ax.grid(True, alpha=0.3)
 
-    if filename is None:
-        filename = f"swing_{pair}_{tf}_{direction}.png"
+    plt.tight_layout()
 
     plot_path = PNG_DATA_DIR / filename
     ensure_dir_exists(plot_path.parent)
-    plt.savefig(plot_path, dpi=100)
+    plt.savefig(plot_path, dpi=120)
     plt.close()
-    print(f"[plotter] Swing chart saved: {plot_path}")
+    return plot_path
+
+
+def save_entry_debug_plot(
+    df_multi: pd.DataFrame,
+    entries_long: pd.Series,
+    entries_short: pd.Series,
+    n_bars_tail: int = 500,
+    filename: str = "entry_debug.png",
+) -> Path:
+    """エントリーポイントを視覚化したデバッグチャートを保存する。
+
+    Args:
+        df_multi:      前処理済みのMulti-TF DataFrame
+        entries_long:  Long エントリーフラグ Series
+        entries_short: Short エントリーフラグ Series
+        n_bars_tail:   末尾から何本分を表示するか
+        filename:      出力ファイル名
+
+    Returns:
+        保存先 Path
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise RuntimeError("matplotlib が未インストールです")
+
+    close = df_multi["5M_Close"].iloc[-n_bars_tail:]
+    el = entries_long.iloc[-n_bars_tail:]
+    es = entries_short.iloc[-n_bars_tail:]
+
+    x = range(len(close))
+    long_x = [i for i, v in enumerate(el.values) if v]
+    long_y = [float(close.values[i]) for i in long_x]
+    short_x = [i for i, v in enumerate(es.values) if v]
+    short_y = [float(close.values[i]) for i in short_x]
+
+    fig, ax = plt.subplots(figsize=(16, 6))
+    ax.plot(x, close.values, color="steelblue", linewidth=0.8, label="5M Close")
+    ax.scatter(long_x, long_y, marker="^", color="lime", s=100, zorder=5, label=f"Long Entry ({len(long_x)}件)")
+    ax.scatter(short_x, short_y, marker="v", color="red", s=100, zorder=5, label=f"Short Entry ({len(short_x)}件)")
+    ax.set_title(f"USDJPY 5M エントリーポイント（末尾{n_bars_tail}本）  Long:{len(long_x)} Short:{len(short_x)}", fontsize=12)
+    ax.set_xlabel("Bar index")
+    ax.set_ylabel("Price")
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plot_path = PNG_DATA_DIR / filename
+    ensure_dir_exists(plot_path.parent)
+    plt.savefig(plot_path, dpi=120)
+    plt.close()
     return plot_path

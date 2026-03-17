@@ -28,8 +28,6 @@ irm https://claude.ai/install.ps1 | iex
 
 ```bash
 claude --version
-```
-
 ---
 
 ## Step 2：Claude アカウントでログイン
@@ -37,7 +35,6 @@ claude --version
 ```bash
 claude
 ```
-
 はじめて起動するとブラウザが開くので、**claude.ai と同じアカウント**でログインします。
 
 > ⚠️ `ANTHROPIC_API_KEY` 環境変数が設定されている場合、サブスクリプションではなく API キーが優先されます。Pro プランで使う場合はこの変数を削除またはコメントアウトしてください。

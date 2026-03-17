@@ -1,0 +1,5 @@
+# VSCodeの自動仮想環境設定：.venv\Scripts\Activate.ps1
+　動作を無効にしたい場合は、settings.jsonに以下の設定を追加
+{
+    "python.terminal.activateEnvironment": false
+}
