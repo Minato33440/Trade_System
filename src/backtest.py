@@ -8,7 +8,7 @@ from __future__ import annotations
 import sys
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -20,6 +20,10 @@ if str(_repo_root) not in sys.path:
 
 from src.data_fetch import fetch_multi_tf
 from src.signals import mtf_minato_short_v2
+from src.swing_detector import get_direction_4h
+
+# ── configセクション ─────────────────────────────────────────
+MAX_REENTRY = 1  # 同一押し目機会での最大再試行回数（将来の変更用）
 
 # ── VectorBT があれば使う、なければ自前シミュレーション ──────
 try:
@@ -37,22 +41,41 @@ def _simple_backtest(
     slippage: float = 0.0002,
     risk_pct: float = 0.005,
     hold_bars: int = 10,
+    high_4h: Optional[pd.Series] = None,
+    low_4h: Optional[pd.Series] = None,
 ) -> Dict[str, Any]:
-    """シグナルに従い固定バー数保持で損益を積み上げるシンプルシミュレーション。"""
+    """シグナルに従い固定バー数保持で損益を積み上げるシンプルシミュレーション。
+
+    high_4h / low_4h を渡すと get_direction_4h() によるトレンドフィルタが有効になり、
+    LONG / SHORT ごとにトレード件数を集計する。
+    """
     equity = 1.0
     trades: List[Dict[str, Any]] = []
     in_pos = False
     entry_idx = 0
     entry_price = 0.0
+    current_direction = "NONE"
+
+    # 再エントリー管理
+    reentry_count = 0           # 同一押し目内の再試行カウント
+    last_sl_bar = -1            # 直近Swing Lowが更新されたバー（リセット判定用）
 
     close_arr = close.values.astype(float)
     entries_arr = entries.values.astype(bool)
+    use_direction = (high_4h is not None) and (low_4h is not None)
 
     for i in range(len(close_arr)):
+        # ── ポジション決済判定 ──────────────────────────────
         if in_pos and (i - entry_idx) >= hold_bars:
-            # 決済
-            exit_price = close_arr[i] * (1 - slippage)
-            pnl = (exit_price - entry_price) / entry_price - commission * 2
+            if current_direction == "SHORT":
+                # SHORT: 利確方向は価格下落
+                exit_price = close_arr[i] * (1 + slippage)
+                pnl = (entry_price - exit_price) / entry_price - commission * 2
+            else:
+                # LONG（デフォルト）: 利確方向は価格上昇
+                exit_price = close_arr[i] * (1 - slippage)
+                pnl = (exit_price - entry_price) / entry_price - commission * 2
+
             equity *= (1 + pnl * risk_pct * 100)
             trades.append({
                 "entry_bar": entry_idx,
@@ -61,18 +84,63 @@ def _simple_backtest(
                 "exit_price": exit_price,
                 "pnl_pct": pnl * 100,
                 "hold_bars": i - entry_idx,
+                "direction": current_direction,
             })
             in_pos = False
 
+            # 損切後の再エントリー判定
+            if pnl < 0 and use_direction:
+                post_direction = get_direction_4h(high_4h, low_4h, i, n=5, lookback=20)
+                if reentry_count < MAX_REENTRY and post_direction == current_direction:
+                    reentry_count += 1
+                    # 再エントリーロジック（同方向で再試行）
+                    # NOTE: 次のループでentries_arr[i]がTrueなら自動的に再エントリー
+                else:
+                    reentry_count = 0  # 優位性消滅 or 上限到達 → リセット
+
         if not in_pos and entries_arr[i]:
-            entry_price = close_arr[i] * (1 + slippage)
-            entry_idx = i
-            in_pos = True
+            # ── エントリー判定の直前: 方向フィルタ ──────────
+            if use_direction:
+                direction = get_direction_4h(high_4h, low_4h, i, n=5, lookback=20)
+                if direction == "NONE":
+                    continue  # トレンドレスはスキップ
+
+                if direction == "LONG":
+                    # 押し目買いロジック（既存ロジックをここに収容）
+                    entry_price = close_arr[i] * (1 + slippage)
+                    entry_idx = i
+                    in_pos = True
+                    current_direction = "LONG"
+
+                elif direction == "SHORT":
+                    # 戻り売りロジック（LONGと対称・方向を逆にする）
+                    # 今回はLONGと同ロット数で実装
+                    # TODO: 将来のロット調整はここで行う（ボラ差によるサイズ縮小）
+                    entry_price = close_arr[i] * (1 - slippage)
+                    entry_idx = i
+                    in_pos = True
+                    current_direction = "SHORT"
+
+                # 新しいSwing Lowが形成されたタイミングで再エントリーカウントをリセット
+                # （現在はhold_bars経過後の決済タイミングで判定）
+                if i != last_sl_bar:
+                    last_sl_bar = i
+
+            else:
+                # 4Hデータなし: 既存ロジック（方向フィルタなし）
+                entry_price = close_arr[i] * (1 + slippage)
+                entry_idx = i
+                in_pos = True
+                current_direction = "LONG"  # デフォルトLONG扱い
 
     # 未決済ポジションがあれば最終バーで決済
     if in_pos:
-        exit_price = close_arr[-1] * (1 - slippage)
-        pnl = (exit_price - entry_price) / entry_price - commission * 2
+        if current_direction == "SHORT":
+            exit_price = close_arr[-1] * (1 + slippage)
+            pnl = (entry_price - exit_price) / entry_price - commission * 2
+        else:
+            exit_price = close_arr[-1] * (1 - slippage)
+            pnl = (exit_price - entry_price) / entry_price - commission * 2
         equity *= (1 + pnl * risk_pct * 100)
         trades.append({
             "entry_bar": entry_idx,
@@ -81,11 +149,14 @@ def _simple_backtest(
             "exit_price": exit_price,
             "pnl_pct": pnl * 100,
             "hold_bars": len(close_arr) - 1 - entry_idx,
+            "direction": current_direction,
         })
 
     if not trades:
         return {
             "total_trades": 0,
+            "long_trades": 0,
+            "short_trades": 0,
             "win_rate": 0.0,
             "profit_factor": 0.0,
             "max_drawdown_pct": 0.0,
@@ -94,6 +165,9 @@ def _simple_backtest(
         }
 
     df_trades = pd.DataFrame(trades)
+    long_count = int((df_trades["direction"] == "LONG").sum())
+    short_count = int((df_trades["direction"] == "SHORT").sum())
+
     wins = df_trades[df_trades["pnl_pct"] > 0]
     losses = df_trades[df_trades["pnl_pct"] <= 0]
     gross_profit = float(wins["pnl_pct"].sum()) if len(wins) else 0.0
@@ -108,6 +182,8 @@ def _simple_backtest(
 
     return {
         "total_trades": len(trades),
+        "long_trades": long_count,
+        "short_trades": short_count,
         "win_rate": float(len(wins) / len(trades) * 100),
         "profit_factor": round(pf, 2),
         "max_drawdown_pct": round(max_dd, 2),
@@ -224,16 +300,23 @@ def run_usdjpy_mtf_v2(
     sessions = ["tokyo", "london", "ny", "all"]
     results: Dict[str, Dict[str, Any]] = {}
 
+    # 4Hデータ取得（方向フィルタ用）
+    high_4h = df_multi.get("4H_High")
+    low_4h = df_multi.get("4H_Low")
+
     for sess in sessions:
         print(f"\n--- セッション: {sess.upper()} ---")
-        # シグナル生成
-        entries = mtf_minato_short_v2(df_multi, session=sess)
+        # シグナル生成（tupleでLong/Short個別に返却される）
+        entries_long, entries_short = mtf_minato_short_v2(df_multi, session=sess)
+        entries = entries_long | entries_short
         n_signals = int(entries.sum())
-        print(f"  シグナル数: {n_signals}")
+        print(f"  シグナル数: {n_signals} (LONG: {int(entries_long.sum())}, SHORT: {int(entries_short.sum())})")
 
         if n_signals == 0:
             results[sess] = {
                 "total_trades": 0,
+                "long_trades": 0,
+                "short_trades": 0,
                 "win_rate": 0.0,
                 "profit_factor": 0.0,
                 "max_drawdown_pct": 0.0,
@@ -251,7 +334,7 @@ def run_usdjpy_mtf_v2(
                 close = df_multi[col_candidate].copy()
                 print(f"  価格データ: {col_candidate} を使用")
                 break
-        
+
         if close is None or close.empty:
             print("  [ERROR] Close列が見つかりません")
             continue
@@ -262,11 +345,11 @@ def run_usdjpy_mtf_v2(
             res = _vbt_backtest(close, entries)
         else:
             print("  [自前シミュレーションで実行（pip install vectorbt で高精度版に切替可能）]")
-            res = _simple_backtest(close, entries)
+            res = _simple_backtest(close, entries, high_4h=high_4h, low_4h=low_4h)
 
         results[sess] = res
 
-        print(f"  トレード数:       {res['total_trades']}")
+        print(f"  トレード数:       {res['total_trades']} (LONG: {res.get('long_trades', 'N/A')}, SHORT: {res.get('short_trades', 'N/A')})")
         print(f"  勝率:             {res['win_rate']:.1f}%")
         print(f"  Profit Factor:    {res['profit_factor']}")
         print(f"  最大DD:           {res['max_drawdown_pct']:.2f}%")
@@ -283,7 +366,8 @@ def run_usdjpy_mtf_v2(
 
     # 先行エントリー成功率（ストップ狩り回避率）の概算
     # 全セッション合計のうち early entry が何割を占めるか
-    all_entries = mtf_minato_short_v2(df_multi, session="all")
+    all_entries_long, all_entries_short = mtf_minato_short_v2(df_multi, session="all")
+    all_entries = all_entries_long | all_entries_short
     total_sigs = int(all_entries.sum())
     if total_sigs > 0:
         vol_15m = df_multi.get("15M_Volume", pd.Series(0, index=df_multi.index))
@@ -376,22 +460,30 @@ def run_usdjpy_mtf_v2_advanced(
     if not HAS_VBT:
         print("\n[WARNING] vectorbt未インストール。pip install vectorbt を推奨。")
     
+    # 4Hデータ取得（方向フィルタ用）
+    high_4h_adv = df_multi.get("4H_High")
+    low_4h_adv = df_multi.get("4H_Low")
+
     for sess in sessions:
         print(f"\n{'='*70}")
         print(f"  セッション: {sess.upper()}")
         print(f"{'='*70}")
-        
-        # シグナル生成（現在は日足ルール常時ON）
-        # TODO: signals.pyにuse_daily引数を追加して4H優位性のみもテスト
-        entries = mtf_minato_short_v2(df_multi, session=sess)
+
+        # シグナル生成（tupleでLong/Short個別に返却される）
+        entries_long, entries_short = mtf_minato_short_v2(df_multi, session=sess)
+        entries = entries_long | entries_short
         n_signals = int(entries.sum())
-        
-        print(f"  総シグナル数: {n_signals}")
+        n_long_sig = int(entries_long.sum())
+        n_short_sig = int(entries_short.sum())
+
+        print(f"  総シグナル数: {n_signals} (LONG: {n_long_sig}, SHORT: {n_short_sig})")
         
         if n_signals == 0:
             results_list.append({
                 "セッション": sess.upper(),
                 "総トレード数": 0,
+                "LONGトレード数": 0,
+                "SHORTトレード数": 0,
                 "4H優位性シグナル": 0,
                 "Lot数": lot_size,
                 "平均利確Pips": 0.0,
@@ -401,8 +493,6 @@ def run_usdjpy_mtf_v2_advanced(
                 "Profit Factor": 0.0,
                 "最大DD(%)": 0.0,
                 "勝率(%)": 0.0,
-                "ロング勝率(%)": 0.0,
-                "ショート勝率(%)": 0.0,
             })
             print("  → トレードなし")
             continue
@@ -455,14 +545,12 @@ def run_usdjpy_mtf_v2_advanced(
                 # 期待値（Expectancy）
                 expectancy = (win_rate / 100.0) * avg_win_pips - ((100 - win_rate) / 100.0) * avg_loss_pips
                 
-                # ロング/ショート別（現在のsignals.pyはショートのみなので暫定0）
-                long_win_rate = 0.0
-                short_win_rate = win_rate  # 全てショート扱い
-                
                 results_list.append({
                     "セッション": sess.upper(),
                     "総トレード数": total_trades,
-                    "4H優位性シグナル": n_signals,  # 現状は同じ
+                    "LONGトレード数": n_long_sig,
+                    "SHORTトレード数": n_short_sig,
+                    "4H優位性シグナル": n_signals,
                     "Lot数": lot_size,
                     "平均利確Pips": round(avg_win_pips, 2),
                     "平均損切Pips": round(avg_loss_pips, 2),
@@ -471,25 +559,25 @@ def run_usdjpy_mtf_v2_advanced(
                     "Profit Factor": round(profit_factor, 2),
                     "最大DD(%)": round(max_dd, 2),
                     "勝率(%)": round(win_rate, 2),
-                    "ロング勝率(%)": round(long_win_rate, 2),
-                    "ショート勝率(%)": round(short_win_rate, 2),
                 })
-                
-                print(f"  トレード数: {total_trades}")
+
+                print(f"  トレード数: {total_trades} (LONG: {n_long_sig}, SHORT: {n_short_sig})")
                 print(f"  勝率: {win_rate:.2f}%")
                 print(f"  期待値: {expectancy:.2f} pips")
                 print(f"  Profit Factor: {profit_factor:.2f}")
                 print(f"  最大DD: {max_dd:.2f}%")
-                
+
                 # MaxDD警告
                 if max_dd > 10.0:
                     print(f"  [警告] 最大DD {max_dd:.2f}% が10%を超えています！リスク管理を見直してください。")
-                
+
             except Exception as e:
                 print(f"  [ERROR] VectorBT計算エラー: {e}")
                 results_list.append({
                     "セッション": sess.upper(),
                     "総トレード数": n_signals,
+                    "LONGトレード数": n_long_sig,
+                    "SHORTトレード数": n_short_sig,
                     "4H優位性シグナル": n_signals,
                     "Lot数": lot_size,
                     "平均利確Pips": 0.0,
@@ -499,26 +587,48 @@ def run_usdjpy_mtf_v2_advanced(
                     "Profit Factor": 0.0,
                     "最大DD(%)": 0.0,
                     "勝率(%)": 0.0,
-                    "ロング勝率(%)": 0.0,
-                    "ショート勝率(%)": 0.0,
                 })
         else:
-            # VectorBT未インストール時の簡易計算
-            results_list.append({
-                "セッション": sess.upper(),
-                "総トレード数": n_signals,
-                "4H優位性シグナル": n_signals,
-                "Lot数": lot_size,
-                "平均利確Pips": 0.0,
-                "平均損切Pips": 0.0,
-                "2年損益合計(円)": 0,
-                "期待値(pips)": 0.0,
-                "Profit Factor": 0.0,
-                "最大DD(%)": 0.0,
-                "勝率(%)": 0.0,
-                "ロング勝率(%)": 0.0,
-                "ショート勝率(%)": 0.0,
-            })
+            # VectorBT未インストール時: _simple_backtest で方向フィルタ付きシミュレーション
+            close_ser = df_multi.get("5M_Close")
+            if close_ser is not None and not close_ser.empty:
+                res = _simple_backtest(
+                    close_ser, entries,
+                    high_4h=high_4h_adv, low_4h=low_4h_adv,
+                )
+                print(f"  トレード数: {res['total_trades']} (LONG: {res['long_trades']}, SHORT: {res['short_trades']})")
+                print(f"  勝率: {res['win_rate']:.2f}%  Profit Factor: {res['profit_factor']}  最大DD: {res['max_drawdown_pct']:.2f}%")
+                results_list.append({
+                    "セッション": sess.upper(),
+                    "総トレード数": res["total_trades"],
+                    "LONGトレード数": res["long_trades"],
+                    "SHORTトレード数": res["short_trades"],
+                    "4H優位性シグナル": n_signals,
+                    "Lot数": lot_size,
+                    "平均利確Pips": 0.0,
+                    "平均損切Pips": 0.0,
+                    "2年損益合計(円)": 0,
+                    "期待値(pips)": 0.0,
+                    "Profit Factor": res["profit_factor"],
+                    "最大DD(%)": res["max_drawdown_pct"],
+                    "勝率(%)": round(res["win_rate"], 2),
+                })
+            else:
+                results_list.append({
+                    "セッション": sess.upper(),
+                    "総トレード数": n_signals,
+                    "LONGトレード数": n_long_sig,
+                    "SHORTトレード数": n_short_sig,
+                    "4H優位性シグナル": n_signals,
+                    "Lot数": lot_size,
+                    "平均利確Pips": 0.0,
+                    "平均損切Pips": 0.0,
+                    "2年損益合計(円)": 0,
+                    "期待値(pips)": 0.0,
+                    "Profit Factor": 0.0,
+                    "最大DD(%)": 0.0,
+                    "勝率(%)": 0.0,
+                })
     
     # ========== 結果出力（Markdownテーブル） ==========
     print("\n" + "=" * 70)
