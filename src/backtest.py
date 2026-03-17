@@ -1,12 +1,26 @@
-"""backtest.py — USDJPY MTF v2 バックテスト。
+"""backtest.py — USDJPY MTF v2 バックテスト（Phase B完結版）。
 
 python src/backtest.py で実行。
-vectorbt 未インストールの場合は自前ループでシミュレーションする。
+
+変更履歴:
+  Phase A: swing_detector.py 追加・Long/Short分岐骨格
+  Phase A補足: 4H実足Swing検出（resampled 4H）によるNONE問題修正
+  Phase B: entry_logic.py 追加・3段階エントリー条件実装
+  Phase B完結(指示書#003):
+    - signals.py シグナル依存を廃止（コメントアウトで残存）
+    - 全5Mバー走査（_scan_all_bars_for_entry）に移行
+    - Long/Short 両方向 同ロット数で実装（データ取り優先）
+    - MAX_REENTRY = 1 の再エントリー管理変数追加
+
+設計思想:
+  「4H上昇ダウが継続している限り、押し目条件が揃うたびにエントリーを繰り返す」
+  エリオット波数カウントは不要。
+  Long/Short 両方向同ロット（将来のロット調整は TODO コメントで明示）。
 """
 from __future__ import annotations
 
 import sys
-from datetime import date, timedelta
+import time
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -18,10 +32,18 @@ _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-from src.data_fetch import fetch_multi_tf
-from src.signals import mtf_minato_short_v2
+# ── 既存シグナルモジュール（signals.py依存はコメントアウトで残存）──
+# from src.signals import mtf_minato_short_v2  # Phase B完結で廃止
 
-# ── VectorBT があれば使う、なければ自前シミュレーション ──────
+# ── 新モジュール ──────────────────────────────────────────────
+from src.swing_detector import (
+    _build_direction_5m,
+    get_nearest_swing_high,
+    get_nearest_swing_low,
+)
+from src.entry_logic import MAX_REENTRY, evaluate_entry
+
+# ── VectorBT があれば使う ────────────────────────────────────
 try:
     import vectorbt as vbt
     HAS_VBT = True
@@ -29,270 +51,470 @@ except ImportError:
     HAS_VBT = False
 
 
-# ── 自前シンプルバックテスト（VectorBT 非依存） ─────────────
-def _simple_backtest(
+# ── 定数 ──────────────────────────────────────────────────────
+# TODO: ショートのロット縮小幅はデータ取り後のリスクリワード比較で決定
+LONG_LOT_MULTIPLIER = 1.0   # ロングLot倍率
+SHORT_LOT_MULTIPLIER = 1.0  # ショートLot倍率（初期はLONGと同じ）
+
+
+# ── データ読み込みヘルパー ─────────────────────────────────────
+def _load_and_preprocess(
+    df_path: str = "data/raw/usdjpy_multi_tf_2years.parquet",
+) -> pd.DataFrame:
+    """Parquetデータを読み込み、UTC→JST変換・ffill前処理を行う。"""
+    df_path_obj = Path(df_path)
+    if not df_path_obj.is_absolute():
+        project_root = Path(__file__).resolve().parent.parent
+        df_path_obj = project_root / df_path
+
+    if not df_path_obj.exists():
+        raise FileNotFoundError(
+            f"データファイルが見つかりません: {df_path_obj}\n"
+            f"  → REX_Trade_Systemディレクトリで python src/data_fetch.py を先に実行してください"
+        )
+
+    df_multi = pd.read_parquet(df_path_obj)
+
+    if not isinstance(df_multi.index, pd.DatetimeIndex):
+        df_multi.index = pd.DatetimeIndex(df_multi.index)
+
+    if hasattr(df_multi.index, "tz") and df_multi.index.tz is not None:
+        df_multi.index = df_multi.index.tz_convert("Asia/Tokyo")
+    else:
+        df_multi.index = df_multi.index.tz_localize("UTC").tz_convert("Asia/Tokyo")
+
+    tf_prefixes = ["5M", "15M", "1H", "4H", "D"]
+    processed_dfs = []
+    for prefix in tf_prefixes:
+        cols = [c for c in df_multi.columns if c.startswith(f"{prefix}_")]
+        if cols:
+            processed_dfs.append(df_multi[cols].copy().ffill())
+
+    return pd.concat(processed_dfs, axis=1)
+
+
+# ── 全バースキャン：新エントリーロジック ─────────────────────────
+def _scan_all_bars_for_entry(
+    df_multi: pd.DataFrame,
+    df_5m_raw: pd.DataFrame,
+    direction_series: pd.Series,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """全5Mバーを走査して evaluate_entry() が True になるバーを探す。
+
+    signals.py のシグナルに依存せず、4H方向が確定している全バーで
+    3段階エントリー条件をチェックする。
+
+    Args:
+        df_multi:         前処理済みのMulti-TF DataFrame（ffill済み）
+        df_5m_raw:        5M足の生DataFrame（High/Low/Open/Close列を含む）
+                          ※4H/1H/15Mへのresampleに使用
+        direction_series: _build_direction_5m() でプリコンピュート済みの方向Series
+
+    Returns:
+        (entries_long, entries_short, skip_reason_series)
+        entries_long/short: bool Series（True のバーの次の始値でエントリー）
+        skip_reason_series: str Series（スキップ理由のデバッグ情報）
+    """
+    entries_long = pd.Series(False, index=df_multi.index)
+    entries_short = pd.Series(False, index=df_multi.index)
+    skip_reasons = pd.Series("", index=df_multi.index, dtype=object)
+
+    # ── 全期間を一括resample（パフォーマンス最適化） ──
+    print("  [INFO] 4H/1H/15M resample中（一括プリコンピュート）...")
+    df_4h_full = df_5m_raw.resample("4h").agg(
+        {"High": "max", "Low": "min", "Open": "first", "Close": "last"}
+    ).dropna()
+    df_1h_full = df_5m_raw.resample("1h").agg(
+        {"High": "max", "Low": "min", "Open": "first", "Close": "last"}
+    ).dropna()
+    df_15m_full = df_5m_raw.resample("15min").agg(
+        {"High": "max", "Low": "min", "Open": "first", "Close": "last"}
+    ).dropna()
+    print(f"    4H: {len(df_4h_full)}本, 1H: {len(df_1h_full)}本, 15M: {len(df_15m_full)}本")
+
+    ts_4h = df_4h_full.index.values
+    ts_1h = df_1h_full.index.values
+    ts_15m = df_15m_full.index.values
+    ts_5m = df_multi.index.values
+
+    n_bars = len(df_multi)
+    warmup = 100  # 先頭100本はウォームアップ
+
+    # 再エントリー管理（同一押し目機会）
+    reentry_count_long = 0
+    reentry_count_short = 0
+    last_sl_long = float("nan")   # 最後に参照したSL（押し目機会の識別）
+    last_sh_short = float("nan")  # 最後に参照したSH（戻り機会の識別）
+
+    print(f"  [INFO] {n_bars}本のバーをスキャン中...")
+
+    for i in range(warmup, n_bars - 1):
+        ts = ts_5m[i]
+        direction = direction_series.iloc[i]
+
+        if direction == "NONE":
+            skip_reasons.iloc[i] = "NONE方向"
+            continue
+
+        # ── searchsorted でインデックスを取得 ──
+        idx_4h = int(np.searchsorted(ts_4h, ts, side="right")) - 1
+        idx_1h = int(np.searchsorted(ts_1h, ts, side="right")) - 1
+        idx_15m = int(np.searchsorted(ts_15m, ts, side="right")) - 1
+
+        if idx_4h < 10 or idx_1h < 6 or idx_15m < 6:
+            skip_reasons.iloc[i] = "データ不足"
+            continue
+
+        # ── 4H Swing値を取得 ──
+        sh_4h = get_nearest_swing_high(df_4h_full["High"], idx_4h, n=3, lookback=20)
+        sl_4h = get_nearest_swing_low(df_4h_full["Low"], idx_4h, n=3, lookback=20)
+
+        # ── 再エントリー管理：同一押し目機会の識別 ──
+        if direction == "LONG":
+            if not np.isnan(last_sl_long) and abs(sl_4h - last_sl_long) > (sh_4h - sl_4h) * 0.05:
+                # 新しいSwing Low → 押し目機会リセット
+                reentry_count_long = 0
+                last_sl_long = sl_4h
+            elif np.isnan(last_sl_long):
+                last_sl_long = sl_4h
+            if reentry_count_long > MAX_REENTRY:
+                skip_reasons.iloc[i] = "再エントリー上限"
+                continue
+        else:  # SHORT
+            if not np.isnan(last_sh_short) and abs(sh_4h - last_sh_short) > (sh_4h - sl_4h) * 0.05:
+                reentry_count_short = 0
+                last_sh_short = sh_4h
+            elif np.isnan(last_sh_short):
+                last_sh_short = sh_4h
+            if reentry_count_short > MAX_REENTRY:
+                skip_reasons.iloc[i] = "再エントリー上限"
+                continue
+
+        # ── 4Hネックライン（LONGはSH、SHORTはSL） ──
+        neck_4h = sh_4h if direction == "LONG" else sl_4h
+
+        # ── 1H Swing ──
+        low_1h = df_1h_full["Low"].iloc[: idx_1h + 1]
+        high_1h = df_1h_full["High"].iloc[: idx_1h + 1]
+
+        # ── 15Mネックライン ──
+        neck_15m_sh = get_nearest_swing_high(df_15m_full["High"], idx_15m, n=3, lookback=30)
+        neck_15m_sl = get_nearest_swing_low(df_15m_full["Low"], idx_15m, n=3, lookback=30)
+        neck_15m = neck_15m_sh if direction == "LONG" else neck_15m_sl
+
+        # ── 5M直近2本（確定足判定用） ──
+        close_5m_w = df_multi["5M_Close"].iloc[max(0, i - 2): i + 1]
+        open_5m_w = df_multi["5M_Open"].iloc[max(0, i - 2): i + 1]
+
+        current_price = float(df_multi["5M_Close"].iloc[i])
+
+        # ── evaluate_entry で3段階チェック ──
+        result = evaluate_entry(
+            price=current_price,
+            direction=direction,
+            swing_high_4h=sh_4h,
+            swing_low_4h=sl_4h,
+            neck_4h=neck_4h,
+            low_1h=low_1h,
+            high_1h=high_1h,
+            current_idx_1h=len(low_1h) - 1,
+            close_5m=close_5m_w,
+            open_5m=open_5m_w,
+            neck_15m=neck_15m,
+        )
+
+        skip_reasons.iloc[i] = result["reason"]
+
+        if result["enter"]:
+            if direction == "LONG":
+                entries_long.iloc[i + 1] = True   # 次の5M始値でエントリー
+                reentry_count_long += 1
+            else:
+                entries_short.iloc[i + 1] = True
+                reentry_count_short += 1
+
+    return entries_long, entries_short, skip_reasons
+
+
+# ── シンプルバックテスト（方向対応版） ────────────────────────────
+def _simple_backtest_directional(
     close: pd.Series,
-    entries: pd.Series,
+    high: pd.Series,
+    low: pd.Series,
+    entries_long: pd.Series,
+    entries_short: pd.Series,
     commission: float = 0.0005,
     slippage: float = 0.0002,
-    risk_pct: float = 0.005,
-    hold_bars: int = 10,
+    stop_atr_mult: float = 1.3,
+    hold_bars: int = 48,        # デフォルト: 4時間足3本 ≒ 5M 144本（仮）
 ) -> Dict[str, Any]:
-    """シグナルに従い固定バー数保持で損益を積み上げるシンプルシミュレーション。"""
-    equity = 1.0
+    """Long/Short 両方向対応のシンプルバックテスト。
+
+    エントリー: entries_long/short が True の足の Open（次足始値）
+    ストップ:   ATR(14) × stop_atr_mult + 最大50pipsキャップ
+    決済:       固定バー数保持（将来的にexit_logic.pyで高度化）
+    """
+    from src.signals import _atr as calc_atr_signal  # ATR計算流用
+
+    atr = calc_atr_signal(high, low, close, period=14)
+
+    close_arr = close.values.astype(float)
+    high_arr = high.values.astype(float)
+    low_arr = low.values.astype(float)
+    atr_arr = atr.values.astype(float)
+    entries_long_arr = entries_long.values.astype(bool)
+    entries_short_arr = entries_short.values.astype(bool)
+
     trades: List[Dict[str, Any]] = []
     in_pos = False
     entry_idx = 0
     entry_price = 0.0
-
-    close_arr = close.values.astype(float)
-    entries_arr = entries.values.astype(bool)
+    direction = ""
+    stop_price = 0.0
 
     for i in range(len(close_arr)):
-        if in_pos and (i - entry_idx) >= hold_bars:
-            # 決済
-            exit_price = close_arr[i] * (1 - slippage)
-            pnl = (exit_price - entry_price) / entry_price - commission * 2
-            equity *= (1 + pnl * risk_pct * 100)
-            trades.append({
-                "entry_bar": entry_idx,
-                "exit_bar": i,
-                "entry_price": entry_price,
-                "exit_price": exit_price,
-                "pnl_pct": pnl * 100,
-                "hold_bars": i - entry_idx,
-            })
-            in_pos = False
+        if in_pos:
+            # ── ストップ判定（バー内High/Lowで判断） ──
+            atr_val = atr_arr[entry_idx] if not np.isnan(atr_arr[entry_idx]) else 0.01
+            stop_dist = min(atr_val * stop_atr_mult, 0.50)  # 最大50pipsキャップ（USDJPY）
 
-        if not in_pos and entries_arr[i]:
-            entry_price = close_arr[i] * (1 + slippage)
-            entry_idx = i
-            in_pos = True
+            if direction == "LONG":
+                stop_price = entry_price - stop_dist
+                hit_stop = low_arr[i] <= stop_price
+                hit_target = (i - entry_idx) >= hold_bars
+                exit_price = (
+                    stop_price * (1 - slippage)
+                    if hit_stop
+                    else close_arr[i] * (1 - slippage)
+                )
+                pnl_per_unit = exit_price - entry_price
+            else:  # SHORT
+                stop_price = entry_price + stop_dist
+                hit_stop = high_arr[i] >= stop_price
+                hit_target = (i - entry_idx) >= hold_bars
+                exit_price = (
+                    stop_price * (1 + slippage)
+                    if hit_stop
+                    else close_arr[i] * (1 + slippage)
+                )
+                pnl_per_unit = entry_price - exit_price
 
-    # 未決済ポジションがあれば最終バーで決済
+            if hit_stop or hit_target:
+                pnl_pips = pnl_per_unit * 100  # 円→pips換算（USDJPY）
+                trades.append({
+                    "entry_bar": entry_idx,
+                    "exit_bar": i,
+                    "direction": direction,
+                    "entry_price": entry_price,
+                    "exit_price": exit_price,
+                    "pnl_pips": pnl_pips,
+                    "exit_reason": "STOP" if hit_stop else "HOLD_BARS",
+                    "hold_bars": i - entry_idx,
+                })
+                in_pos = False
+
+        if not in_pos:
+            if entries_long_arr[i]:
+                entry_price = close_arr[i] * (1 + slippage)
+                entry_idx = i
+                direction = "LONG"
+                in_pos = True
+            elif entries_short_arr[i]:
+                entry_price = close_arr[i] * (1 - slippage)
+                entry_idx = i
+                direction = "SHORT"
+                in_pos = True
+
+    # 未決済ポジションを最終バーで決済
     if in_pos:
-        exit_price = close_arr[-1] * (1 - slippage)
-        pnl = (exit_price - entry_price) / entry_price - commission * 2
-        equity *= (1 + pnl * risk_pct * 100)
+        if direction == "LONG":
+            exit_price = close_arr[-1] * (1 - slippage)
+            pnl_pips = (exit_price - entry_price) * 100
+        else:
+            exit_price = close_arr[-1] * (1 + slippage)
+            pnl_pips = (entry_price - exit_price) * 100
         trades.append({
             "entry_bar": entry_idx,
             "exit_bar": len(close_arr) - 1,
+            "direction": direction,
             "entry_price": entry_price,
             "exit_price": exit_price,
-            "pnl_pct": pnl * 100,
+            "pnl_pips": pnl_pips,
+            "exit_reason": "FINAL_BAR",
             "hold_bars": len(close_arr) - 1 - entry_idx,
         })
 
     if not trades:
         return {
-            "total_trades": 0,
-            "win_rate": 0.0,
-            "profit_factor": 0.0,
-            "max_drawdown_pct": 0.0,
-            "avg_hold_bars": 0,
-            "final_equity": equity,
+            "total_trades": 0, "long_trades": 0, "short_trades": 0,
+            "win_rate": 0.0, "profit_factor": 0.0,
+            "max_drawdown_pips": 0.0, "avg_hold_bars": 0,
+            "total_pnl_pips": 0.0,
+            "long_win_rate": 0.0, "short_win_rate": 0.0,
         }
 
-    df_trades = pd.DataFrame(trades)
-    wins = df_trades[df_trades["pnl_pct"] > 0]
-    losses = df_trades[df_trades["pnl_pct"] <= 0]
-    gross_profit = float(wins["pnl_pct"].sum()) if len(wins) else 0.0
-    gross_loss = float(losses["pnl_pct"].sum()) if len(losses) else 0.0
+    df_t = pd.DataFrame(trades)
+    df_long = df_t[df_t["direction"] == "LONG"]
+    df_short = df_t[df_t["direction"] == "SHORT"]
+
+    wins = df_t[df_t["pnl_pips"] > 0]
+    losses = df_t[df_t["pnl_pips"] <= 0]
+    gross_profit = float(wins["pnl_pips"].sum()) if len(wins) else 0.0
+    gross_loss = float(losses["pnl_pips"].sum()) if len(losses) else 0.0
     pf = abs(gross_profit / gross_loss) if gross_loss != 0 else float("inf")
 
-    # 最大ドローダウン（累積PnLベース）
-    cum_pnl = df_trades["pnl_pct"].cumsum()
+    cum_pnl = df_t["pnl_pips"].cumsum()
     running_max = cum_pnl.cummax()
-    dd = running_max - cum_pnl
-    max_dd = float(dd.max()) if len(dd) else 0.0
+    max_dd = float((running_max - cum_pnl).max()) if len(cum_pnl) else 0.0
+
+    def _wr(df):
+        if len(df) == 0:
+            return 0.0
+        return float((df["pnl_pips"] > 0).sum() / len(df) * 100)
 
     return {
         "total_trades": len(trades),
-        "win_rate": float(len(wins) / len(trades) * 100),
+        "long_trades": len(df_long),
+        "short_trades": len(df_short),
+        "win_rate": round(float(len(wins) / len(trades) * 100), 2),
+        "long_win_rate": round(_wr(df_long), 2),
+        "short_win_rate": round(_wr(df_short), 2),
         "profit_factor": round(pf, 2),
-        "max_drawdown_pct": round(max_dd, 2),
-        "avg_hold_bars": round(float(df_trades["hold_bars"].mean()), 1),
-        "final_equity": round(equity, 4),
+        "max_drawdown_pips": round(max_dd, 2),
+        "avg_hold_bars": round(float(df_t["hold_bars"].mean()), 1),
+        "total_pnl_pips": round(float(df_t["pnl_pips"].sum()), 2),
     }
 
 
-# ── VectorBT 版バックテスト ──────────────────────────────────
-def _vbt_backtest(
-    close: pd.Series,
-    entries: pd.Series,
-    commission: float = 0.0005,
-    slippage: float = 0.0002,
-    risk_pct: float = 0.005,
-) -> Dict[str, Any]:
-    """vectorbt を使ったバックテスト（インストール済みの場合のみ）。"""
-    exits = entries.shift(10).fillna(False)
-    pf = vbt.Portfolio.from_signals(
-        close,
-        entries=entries,
-        exits=exits,
-        fees=commission,
-        slippage=slippage,
-        size=risk_pct,
-        size_type="percent",
-        freq="5T",
+# ── メインバックテスト関数（Phase B完結版） ───────────────────────
+def run_rex_mtf_backtest(
+    df_path: str = "data/raw/usdjpy_multi_tf_2years.parquet",
+    lot_size: float = 1.0,
+) -> None:
+    """ミナト流MTF v2 バックテスト（Phase B完結・entry_logic統合版）。
+
+    signals.py 依存を廃止し、全5Mバーを走査してエントリー条件を評価する。
+    Long/Short 両方向を同ロットサイズで実装（データ取り優先フェーズ）。
+    """
+    t0 = time.time()
+
+    print("=" * 70)
+    print("  REX MTF バックテスト — Phase B完結版（entry_logic統合）")
+    print("=" * 70)
+    print(f"データ: {df_path}")
+    print(f"Lotサイズ: {lot_size} | Long倍率: {LONG_LOT_MULTIPLIER} | Short倍率: {SHORT_LOT_MULTIPLIER}")
+    print("  ※ Short倍率は初期データ取り優先のためLongと同値。")
+    print("     リスクリワード比較後にShort縮小幅を決定予定。")
+    print("=" * 70)
+
+    # ── データ読み込み ──
+    print("\n[STEP 1] データ読み込み + 前処理...")
+    df_multi = _load_and_preprocess(df_path)
+    print(f"  完了: {df_multi.shape}, 期間={df_multi.index.min()} ~ {df_multi.index.max()}")
+
+    # ── 5M生DataFrame（Open列が必要） ──
+    # df_multi は ffill 済みなので5M列を生として使う（5M足はほぼ欠損なし）
+    df_5m_raw = df_multi[["5M_High", "5M_Low", "5M_Open", "5M_Close"]].rename(
+        columns={
+            "5M_High": "High", "5M_Low": "Low",
+            "5M_Open": "Open", "5M_Close": "Close",
+        }
     )
-    stats = pf.stats()
-    
-    # VectorBT stats() は pandas Series を返すので .loc[] でアクセス
-    try:
-        total_trades = int(stats.loc["Total Trades"]) if "Total Trades" in stats.index else 0
-        win_rate = float(stats.loc["Win Rate [%]"]) if "Win Rate [%]" in stats.index else 0.0
-        profit_factor = float(stats.loc["Profit Factor"]) if "Profit Factor" in stats.index else 0.0
-        max_dd = float(stats.loc["Max Drawdown [%]"]) if "Max Drawdown [%]" in stats.index else 0.0
-        final_val = float(pf.final_value.values[0]) if hasattr(pf.final_value, 'values') else float(pf.final_value())
-        
-        return {
-            "total_trades": total_trades,
-            "win_rate": round(win_rate, 2),
-            "profit_factor": round(profit_factor, 2),
-            "max_drawdown_pct": round(abs(max_dd), 2),
-            "avg_hold_bars": 10.0,  # 固定exit後に算出
-            "final_equity": round(final_val, 4),
-        }
-    except Exception as e:
-        print(f"    [DETAIL] VectorBT stats parse error: {e}")
-        return {
-            "total_trades": 0,
-            "win_rate": 0.0,
-            "profit_factor": 0.0,
-            "max_drawdown_pct": 0.0,
-            "avg_hold_bars": 0.0,
-            "final_equity": 1.0,
-        }
+    # JSTインデックスのままresampleするためtz情報を保持
+
+    # ── 4H方向プリコンピュート ──
+    print("\n[STEP 2] 4H方向プリコンピュート（_build_direction_5m）...")
+    direction_series = _build_direction_5m(df_5m_raw, n=3, lookback=20)
+    dir_counts = direction_series.value_counts()
+    print(f"  方向分布: LONG={dir_counts.get('LONG', 0)}, SHORT={dir_counts.get('SHORT', 0)}, NONE={dir_counts.get('NONE', 0)}")
+
+    # ── 全バースキャン ──
+    print("\n[STEP 3] エントリースキャン（全5Mバー評価）...")
+    entries_long, entries_short, skip_reasons = _scan_all_bars_for_entry(
+        df_multi, df_5m_raw, direction_series
+    )
+
+    n_long = int(entries_long.sum())
+    n_short = int(entries_short.sum())
+    print(f"  エントリー候補: LONG={n_long}件, SHORT={n_short}件")
+
+    # スキップ理由の内訳
+    reason_counts = skip_reasons[skip_reasons != ""].value_counts()
+    print("\n  スキップ理由の内訳:")
+    for reason, count in reason_counts.items():
+        print(f"    {reason}: {count}件")
+
+    if n_long == 0 and n_short == 0:
+        print("\n  [WARNING] エントリーが0件です。パラメータを確認してください。")
+        return
+
+    # ── バックテスト実行 ──
+    print("\n[STEP 4] バックテスト実行...")
+    close = df_multi["5M_Close"]
+    high = df_multi["5M_High"]
+    low = df_multi["5M_Low"]
+
+    res = _simple_backtest_directional(close, high, low, entries_long, entries_short)
+
+    elapsed = time.time() - t0
+
+    # ── 結果出力 ──
+    print("\n" + "=" * 70)
+    print("  バックテスト結果サマリ")
+    print("=" * 70)
+    print(f"\n  総トレード数:         {res['total_trades']}")
+    print(f"  うちLong:             {res['long_trades']}")
+    print(f"  うちShort:            {res['short_trades']}")
+    print(f"\n  全体勝率:             {res['win_rate']:.2f}%")
+    print(f"  Long勝率:             {res['long_win_rate']:.2f}%")
+    print(f"  Short勝率:            {res['short_win_rate']:.2f}%")
+    print(f"\n  Profit Factor:        {res['profit_factor']}")
+    print(f"  最大DD (pips):        {res['max_drawdown_pips']:.2f}")
+    print(f"  総損益 (pips):        {res['total_pnl_pips']:.2f}")
+    print(f"  平均保有バー数:       {res['avg_hold_bars']}")
+
+    print(f"\n  実行時間:             {elapsed:.1f}秒")
+
+    # 総合評価
+    print("\n" + "=" * 70)
+    print("  総合評価")
+    print("=" * 70)
+
+    avg_pnl = res["total_pnl_pips"] / max(res["total_trades"], 1)
+    print(f"\n  期待値(pips/trade):   {avg_pnl:.2f}")
+    if avg_pnl >= 5.0:
+        print("  → [OK] 期待値+5pips以上！裁量で狙う価値あり")
+    else:
+        print("  → [NG] 期待値が低い。ルール見直し推奨")
+
+    pf = res["profit_factor"]
+    if pf >= 1.5:
+        print(f"\n  → [OK] PF {pf:.2f} — 1.5以上！長期的にプラス期待")
+    else:
+        print(f"\n  → [NG] PF {pf:.2f} — 低い。リスクリワード改善が必要")
+
+    max_dd = res["max_drawdown_pips"]
+    if max_dd > 100.0:
+        print(f"\n  → [警告] MaxDD {max_dd:.1f}pips超え！リスク管理を見直してください")
+    else:
+        print(f"\n  → [OK] MaxDD {max_dd:.1f}pips — リスク管理良好")
+
+    print("\n" + "=" * 70)
+    print("  [次のステップ]")
+    print("  Phase C: exit_logic.py — 5M/15Mダウ崩れ段階決済実装")
+    print("  Phase D: volume_alert.py — 出来高急増シグナル通知")
+    print("=" * 70)
+    print("\nボス、結果見てLong/Short別の勝率・MaxDDを確認してね！")
 
 
-# ── メインバックテスト関数 ───────────────────────────────────
+# ── 旧バックテスト（後方互換で残存、signals.py依存） ──────────────
 def run_usdjpy_mtf_v2(
     ticker: str = "USDJPY=X",
     years: int = 5,
 ) -> None:
-    """USDJPY MTF v2 バックテストを全セッションで実行し結果を表示。"""
-    print("=" * 60)
-    print(f"  USDJPY MTF v2 バックテスト （{years}年）")
-    print("=" * 60)
-
-    # データ取得
-    df_multi = fetch_multi_tf(ticker, years=years)
-    
-    print("\n[INFO] データ前処理: JST変換 + ffill() 処理中...")
-    
-    # ========== NaN対策 & JST変換 ==========
-    
-    # 1. Index を DatetimeIndex に変換（parquet から読み込んだ場合のため）
-    if not isinstance(df_multi.index, pd.DatetimeIndex):
-        df_multi.index = pd.DatetimeIndex(df_multi.index)
-    
-    # 2. UTC -> JST 変換（Polygonはデフォルトで UTC）
-    if hasattr(df_multi.index, 'tz') and df_multi.index.tz is not None:
-        df_multi.index = df_multi.index.tz_convert('Asia/Tokyo')
-    else:
-        # tz-naive の場合は UTC と仮定して変換
-        df_multi.index = df_multi.index.tz_localize('UTC').tz_convert('Asia/Tokyo')
-    
-    # 2. 各時間枠を分離して ffill() 処理
-    # signals.py は以下の列プレフィックスを期待: 5M_, 15M_, 1H_, 4H_, D_
-    tf_prefixes = ['5M', '15M', '1H', '4H', 'D']
-    print(f"  処理対象TF: {tf_prefixes}")
-    processed_dfs = []
-    
-    for prefix in tf_prefixes:
-        # 該当プレフィックスの列を抽出
-        cols = [c for c in df_multi.columns if c.startswith(f"{prefix}_")]
-        if not cols:
-            continue
-        
-        df_tf = df_multi[cols].copy()
-        # ffill() で欠損値を前方埋め（各時間枠は独立してffill）
-        df_tf = df_tf.ffill()
-        processed_dfs.append(df_tf)
-    
-    # 3. 再結合
-    if processed_dfs:
-        df_multi = pd.concat(processed_dfs, axis=1)
-        print(f"  処理完了: shape={df_multi.shape}, 期間={df_multi.index.min()} ~ {df_multi.index.max()}")
-    else:
-        print("  [ERROR] 有効な時間枠データが見つかりません")
-        return
-    
-    # ========== バックテスト実行 =========="
-
-    sessions = ["tokyo", "london", "ny", "all"]
-    results: Dict[str, Dict[str, Any]] = {}
-
-    for sess in sessions:
-        print(f"\n--- セッション: {sess.upper()} ---")
-        # シグナル生成
-        entries = mtf_minato_short_v2(df_multi, session=sess)
-        n_signals = int(entries.sum())
-        print(f"  シグナル数: {n_signals}")
-
-        if n_signals == 0:
-            results[sess] = {
-                "total_trades": 0,
-                "win_rate": 0.0,
-                "profit_factor": 0.0,
-                "max_drawdown_pct": 0.0,
-                "avg_hold_bars": 0,
-                "final_equity": 1.0,
-            }
-            print("  → トレードなし")
-            continue
-
-        # close 列を取得（最も細かい時間枠の Close を使用）
-        # 優先順位: 5M_Close > 15M_Close > 1H_Close > 4H_Close > D_Close
-        close = None
-        for col_candidate in ["5M_Close", "15M_Close", "1H_Close", "4H_Close", "D_Close"]:
-            if col_candidate in df_multi.columns:
-                close = df_multi[col_candidate].copy()
-                print(f"  価格データ: {col_candidate} を使用")
-                break
-        
-        if close is None or close.empty:
-            print("  [ERROR] Close列が見つかりません")
-            continue
-
-        # バックテスト実行
-        if HAS_VBT:
-            print("  [vectorbt で実行]")
-            res = _vbt_backtest(close, entries)
-        else:
-            print("  [自前シミュレーションで実行（pip install vectorbt で高精度版に切替可能）]")
-            res = _simple_backtest(close, entries)
-
-        results[sess] = res
-
-        print(f"  トレード数:       {res['total_trades']}")
-        print(f"  勝率:             {res['win_rate']:.1f}%")
-        print(f"  Profit Factor:    {res['profit_factor']}")
-        print(f"  最大DD:           {res['max_drawdown_pct']:.2f}%")
-        print(f"  平均保有バー数:   {res['avg_hold_bars']}")
-        print(f"  最終エクイティ:   {res['final_equity']}")
-
-    # サマリ
-    print("\n" + "=" * 60)
-    print("  セッション別サマリ")
-    print("=" * 60)
-    summary = pd.DataFrame(results).T
-    summary.index.name = "Session"
-    print(summary.to_string())
-
-    # 先行エントリー成功率（ストップ狩り回避率）の概算
-    # 全セッション合計のうち early entry が何割を占めるか
-    all_entries = mtf_minato_short_v2(df_multi, session="all")
-    total_sigs = int(all_entries.sum())
-    if total_sigs > 0:
-        vol_15m = df_multi.get("15M_Volume", pd.Series(0, index=df_multi.index))
-        avg_vol = vol_15m.rolling(5).mean()
-        early_mask = (vol_15m > avg_vol * 2) & all_entries
-        early_pct = int(early_mask.sum()) / total_sigs * 100
-        print(f"\n  先行エントリー率（ストップ狩り逆利用）: {early_pct:.1f}%")
-
-    print("\n完了！ これを src/ に保存して python src/backtest.py で回してみて！")
+    """[DEPRECATED] 旧バックテスト。signals.py依存版。互換性のため残存。"""
+    print("[WARNING] run_usdjpy_mtf_v2 は旧バージョンです。")
+    print("  run_rex_mtf_backtest() を使用してください。")
 
 
 def run_usdjpy_mtf_v2_advanced(
@@ -300,286 +522,14 @@ def run_usdjpy_mtf_v2_advanced(
     lot_size: float = 1.0,
     risk_percent: float = 0.5,
 ) -> None:
-    """
-    MTF v2 Advanced バックテスト（Polygon無料2年データ対応）
-    
-    テンプレート要件:
-    - 4H優位性（3波構造）＋日足トレンドON/OFF比較
-    - ロング/ショート別集計
-    - MaxDD 10%超で警告
-    - 期待値・PF・勝率をセッション別に出力
-    
-    Args:
-        df_path: parquetファイルパス（相対パスの場合はプロジェクトルートからの相対）
-        lot_size: 1Lot = 10万通貨
-        risk_percent: 1トレードあたり資金の何%リスクを取るか
-    """
-    print("=" * 70)
-    print("  USDJPY MTF v2 Advanced バックテスト")
-    print("=" * 70)
-    print(f"データ: {df_path}")
-    print(f"Lotサイズ: {lot_size} (10万通貨)")
-    print(f"リスク: {risk_percent}%")
-    print("=" * 70)
-    
-    # ========== データ読み込み＋前処理 ==========
-    # パスがプロジェクトルートからの相対パスの場合は絶対パスに変換
-    from pathlib import Path
-    df_path_obj = Path(df_path)
-    if not df_path_obj.is_absolute():
-        # プロジェクトルート（REX_Trade_System）を基準にする
-        project_root = Path(__file__).resolve().parent.parent
-        df_path_obj = project_root / df_path
-    
-    if not df_path_obj.exists():
-        print(f"\n[ERROR] ファイルが見つかりません: {df_path_obj}")
-        print(f"  カレントディレクトリ: {Path.cwd()}")
-        print(f"  プロジェクトルート: {Path(__file__).resolve().parent.parent}")
-        print("\n[解決方法]")
-        print("  1. REX_Trade_System ディレクトリで実行: cd REX_Trade_System && python src/backtest.py")
-        print("  2. または絶対パスを指定してください")
-        return
-    
-    print(f"[INFO] 読み込みパス: {df_path_obj}")
-    df_multi = pd.read_parquet(df_path_obj)
-    print(f"\n[INFO] データ読み込み完了: {df_multi.shape}")
-    
-    # DatetimeIndex変換
-    if not isinstance(df_multi.index, pd.DatetimeIndex):
-        df_multi.index = pd.DatetimeIndex(df_multi.index)
-    
-    # UTC -> JST変換
-    if hasattr(df_multi.index, 'tz') and df_multi.index.tz is not None:
-        df_multi.index = df_multi.index.tz_convert('Asia/Tokyo')
-    else:
-        df_multi.index = df_multi.index.tz_localize('UTC').tz_convert('Asia/Tokyo')
-    
-    print(f"[INFO] JST変換完了: {df_multi.index.min()} ~ {df_multi.index.max()}")
-    
-    # 各時間枠を分離してffill()
-    tf_prefixes = ['5M', '15M', '1H', '4H', 'D']
-    processed_dfs = []
-    for prefix in tf_prefixes:
-        cols = [c for c in df_multi.columns if c.startswith(f'{prefix}_')]
-        if cols:
-            df_tf = df_multi[cols].copy().ffill()
-            processed_dfs.append(df_tf)
-    
-    df_multi = pd.concat(processed_dfs, axis=1)
-    print(f"[INFO] NaN処理完了: total NaN = {df_multi.isna().sum().sum()}")
-    
-    # ========== セッション別バックテスト ==========
-    sessions = ["tokyo", "london", "ny", "all"]
-    results_list = []
-    
-    # VectorBT有無チェック
-    if not HAS_VBT:
-        print("\n[WARNING] vectorbt未インストール。pip install vectorbt を推奨。")
-    
-    for sess in sessions:
-        print(f"\n{'='*70}")
-        print(f"  セッション: {sess.upper()}")
-        print(f"{'='*70}")
-        
-        # シグナル生成（現在は日足ルール常時ON）
-        # TODO: signals.pyにuse_daily引数を追加して4H優位性のみもテスト
-        entries = mtf_minato_short_v2(df_multi, session=sess)
-        n_signals = int(entries.sum())
-        
-        print(f"  総シグナル数: {n_signals}")
-        
-        if n_signals == 0:
-            results_list.append({
-                "セッション": sess.upper(),
-                "総トレード数": 0,
-                "4H優位性シグナル": 0,
-                "Lot数": lot_size,
-                "平均利確Pips": 0.0,
-                "平均損切Pips": 0.0,
-                "2年損益合計(円)": 0,
-                "期待値(pips)": 0.0,
-                "Profit Factor": 0.0,
-                "最大DD(%)": 0.0,
-                "勝率(%)": 0.0,
-                "ロング勝率(%)": 0.0,
-                "ショート勝率(%)": 0.0,
-            })
-            print("  → トレードなし")
-            continue
-        
-        # 価格データ取得（5M_Closeを使用）
-        close = df_multi.get('5M_Close', df_multi.get('15M_Close', df_multi.get('1H_Close')))
-        if close is None or close.empty:
-            print("  [ERROR] Close列が見つかりません")
-            continue
-        
-        # ========== VectorBT バックテスト ==========
-        if HAS_VBT:
-            try:
-                import vectorbt as vbt
-                
-                # Portfolio作成
-                pf = vbt.Portfolio.from_signals(
-                    close=close,
-                    entries=entries,
-                    exits=None,  # 自動exit（次のエントリーまたは最終日）
-                    size=lot_size * 100000,  # 10万通貨 × Lot
-                    fees=0.0005,  # 0.05%
-                    slippage=0.0002,
-                    freq='5T',  # 5分足
-                )
-                
-                stats = pf.stats()
-                total_trades = int(stats.get('Total Trades', 0))
-                
-                # 勝率計算
-                win_rate = float(stats.get('Win Rate [%]', 0))
-                
-                # Profit Factor計算
-                total_profit = float(stats.get('Total Profit', 0))
-                total_loss = abs(float(stats.get('Total Loss', 0)))
-                profit_factor = (total_profit / total_loss) if total_loss > 0 else 0.0
-                
-                # 最大DD計算
-                max_dd = abs(float(stats.get('Max Drawdown [%]', 0)))
-                
-                # 平均利確/損切Pips（簡易計算: 1pips = 0.01円）
-                avg_win_pips = float(stats.get('Avg Winning Trade', 0)) * 100  # 円 -> pips
-                avg_loss_pips = abs(float(stats.get('Avg Losing Trade', 0))) * 100
-                
-                # 2年損益合計（円換算）
-                final_value = float(pf.final_value())
-                init_value = float(pf.init_cash())
-                total_pnl_yen = (final_value - init_value)
-                
-                # 期待値（Expectancy）
-                expectancy = (win_rate / 100.0) * avg_win_pips - ((100 - win_rate) / 100.0) * avg_loss_pips
-                
-                # ロング/ショート別（現在のsignals.pyはショートのみなので暫定0）
-                long_win_rate = 0.0
-                short_win_rate = win_rate  # 全てショート扱い
-                
-                results_list.append({
-                    "セッション": sess.upper(),
-                    "総トレード数": total_trades,
-                    "4H優位性シグナル": n_signals,  # 現状は同じ
-                    "Lot数": lot_size,
-                    "平均利確Pips": round(avg_win_pips, 2),
-                    "平均損切Pips": round(avg_loss_pips, 2),
-                    "2年損益合計(円)": int(total_pnl_yen),
-                    "期待値(pips)": round(expectancy, 2),
-                    "Profit Factor": round(profit_factor, 2),
-                    "最大DD(%)": round(max_dd, 2),
-                    "勝率(%)": round(win_rate, 2),
-                    "ロング勝率(%)": round(long_win_rate, 2),
-                    "ショート勝率(%)": round(short_win_rate, 2),
-                })
-                
-                print(f"  トレード数: {total_trades}")
-                print(f"  勝率: {win_rate:.2f}%")
-                print(f"  期待値: {expectancy:.2f} pips")
-                print(f"  Profit Factor: {profit_factor:.2f}")
-                print(f"  最大DD: {max_dd:.2f}%")
-                
-                # MaxDD警告
-                if max_dd > 10.0:
-                    print(f"  [警告] 最大DD {max_dd:.2f}% が10%を超えています！リスク管理を見直してください。")
-                
-            except Exception as e:
-                print(f"  [ERROR] VectorBT計算エラー: {e}")
-                results_list.append({
-                    "セッション": sess.upper(),
-                    "総トレード数": n_signals,
-                    "4H優位性シグナル": n_signals,
-                    "Lot数": lot_size,
-                    "平均利確Pips": 0.0,
-                    "平均損切Pips": 0.0,
-                    "2年損益合計(円)": 0,
-                    "期待値(pips)": 0.0,
-                    "Profit Factor": 0.0,
-                    "最大DD(%)": 0.0,
-                    "勝率(%)": 0.0,
-                    "ロング勝率(%)": 0.0,
-                    "ショート勝率(%)": 0.0,
-                })
-        else:
-            # VectorBT未インストール時の簡易計算
-            results_list.append({
-                "セッション": sess.upper(),
-                "総トレード数": n_signals,
-                "4H優位性シグナル": n_signals,
-                "Lot数": lot_size,
-                "平均利確Pips": 0.0,
-                "平均損切Pips": 0.0,
-                "2年損益合計(円)": 0,
-                "期待値(pips)": 0.0,
-                "Profit Factor": 0.0,
-                "最大DD(%)": 0.0,
-                "勝率(%)": 0.0,
-                "ロング勝率(%)": 0.0,
-                "ショート勝率(%)": 0.0,
-            })
-    
-    # ========== 結果出力（Markdownテーブル） ==========
-    print("\n" + "=" * 70)
-    print("  バックテスト結果サマリ")
-    print("=" * 70)
-    
-    df_results = pd.DataFrame(results_list)
-    
-    # Markdownテーブル出力
-    try:
-        print("\n" + df_results.to_markdown(index=False))
-    except (AttributeError, ImportError):
-        # pandas < 1.0 または tabulate未インストールの場合は通常の表形式
-        print("\n" + df_results.to_string(index=False))
-        print("\n[TIP] Markdownテーブル出力には pip install tabulate が必要です")
-    
-    # ========== 総合評価 ==========
-    print("\n" + "=" * 70)
-    print("  総合評価")
-    print("=" * 70)
-    
-    # ALL セッションの結果を取得
-    all_result = df_results[df_results['セッション'] == 'ALL']
-    if not all_result.empty:
-        expectancy_all = all_result['期待値(pips)'].values[0]
-        pf_all = all_result['Profit Factor'].values[0]
-        max_dd_all = all_result['最大DD(%)'].values[0]
-        
-        print(f"\n  期待値: {expectancy_all:.2f} pips")
-        if expectancy_all >= 5.0:
-            print("  -> [OK] 期待値+5pips以上！裁量で狙う価値あり")
-        else:
-            print("  -> [NG] 期待値が低い。ルール見直し推奨")
-        
-        print(f"\n  Profit Factor: {pf_all:.2f}")
-        if pf_all >= 1.5:
-            print("  -> [OK] PF 1.5以上！長期的にプラス期待")
-        else:
-            print("  -> [NG] PF低い。リスクリワード改善が必要")
-        
-        print(f"\n  最大DD: {max_dd_all:.2f}%")
-        if max_dd_all > 10.0:
-            print("  -> [警告] MaxDD 10%超え。一気に吐き出すリスク大")
-        else:
-            print("  -> [OK] MaxDD 10%以内。リスク管理良好")
-    
-    print("\n" + "=" * 70)
-    print("  完了！")
-    print("=" * 70)
-    print("\n[次のステップ]")
-    print("1. signals.py に use_daily 引数を追加（4H優位性のみ vs 日足ルール追加の比較）")
-    print("2. exit_pips 計算を追加（利確/損切の実Pipsを正確に算出）")
-    print("3. ロング/ショート別エントリーロジックを実装")
-    print("\nボス、結果見てMaxDDや期待値がどうだったか教えてね！")
+    """[DEPRECATED] 旧Advanced版。互換性のため残存。"""
+    print("[WARNING] run_usdjpy_mtf_v2_advanced は旧バージョンです。")
+    print("  run_rex_mtf_backtest() を使用してください。")
+    run_rex_mtf_backtest(df_path=df_path, lot_size=lot_size)
 
 
 if __name__ == "__main__":
-    # 新しいAdvanced版を実行
-    run_usdjpy_mtf_v2_advanced(
+    run_rex_mtf_backtest(
         df_path="data/raw/usdjpy_multi_tf_2years.parquet",
         lot_size=1.0,
-        risk_percent=0.5
     )
-
