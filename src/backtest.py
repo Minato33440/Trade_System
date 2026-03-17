@@ -287,6 +287,8 @@ def _simple_backtest_directional(
         if in_pos:
             # ── 5M/15Mウィンドウを取得してmanage_exitを呼ぶ ──
             win_start = max(0, i - 50)
+            high_5m_w = high.iloc[win_start: i + 1]
+            low_5m_w = low.iloc[win_start: i + 1]
             close_5m_w = close.iloc[win_start: i + 1]
             open_5m_w = open_5m.iloc[win_start: i + 1]
 
@@ -294,14 +296,20 @@ def _simple_backtest_directional(
             if idx_15m < 0:
                 idx_15m = 0
             win_start_15m = max(0, idx_15m - 50)
+            high_15m_w = df_15m_full["High"].iloc[win_start_15m: idx_15m + 1]
+            low_15m_w = df_15m_full["Low"].iloc[win_start_15m: idx_15m + 1]
             close_15m_w = df_15m_full["Close"].iloc[win_start_15m: idx_15m + 1]
             open_15m_w = df_15m_full["Open"].iloc[win_start_15m: idx_15m + 1]
 
             result = manage_exit(
                 entry_price=entry_price,
                 direction=direction,
+                high_5m=high_5m_w,
+                low_5m=low_5m_w,
                 close_5m=close_5m_w,
                 open_5m=open_5m_w,
+                high_15m=high_15m_w,
+                low_15m=low_15m_w,
                 close_15m=close_15m_w,
                 open_15m=open_15m_w,
                 neck_4h=neck_4h,
@@ -417,6 +425,20 @@ def _simple_backtest_directional(
             return 0.0
         return float((df["pnl_pips"] > 0).sum() / len(df) * 100)
 
+    # ── デバッグ統計 a/b/c ──────────────────────────────────────
+    # a) LONG/SHORT別 平均値幅（pips）
+    long_avg_pnl = round(float(df_long["pnl_pips"].mean()), 2) if len(df_long) else 0.0
+    short_avg_pnl = round(float(df_short["pnl_pips"].mean()), 2) if len(df_short) else 0.0
+
+    # b) 5Mダウ崩れ損切の平均損失（損失トレードのみ）
+    df_5m_stop = df_t[df_t["exit_reason"] == "5Mダウ崩れ（4Hネック未到達）"]
+    df_5m_stop_loss = df_5m_stop[df_5m_stop["pnl_pips"] < 0]
+    avg_loss_5m_dow = round(float(df_5m_stop_loss["pnl_pips"].mean()), 2) if len(df_5m_stop_loss) else 0.0
+
+    # c) 4Hネック到達率（半値決済が発動したポジションの割合）
+    neck_reach_count = reason_counts.get("4Hネックライン到達・半値決済", 0)
+    neck_reach_rate = round(neck_reach_count / max(len(trades), 1) * 100, 1)
+
     return {
         "total_trades": len(trades),
         "long_trades": len(df_long),
@@ -429,6 +451,12 @@ def _simple_backtest_directional(
         "avg_hold_bars": round(float(df_t["hold_bars"].mean()), 1),
         "total_pnl_pips": round(float(df_t["pnl_pips"].sum()), 2),
         "exit_reason_counts": reason_counts,
+        # デバッグ統計
+        "long_avg_pnl": long_avg_pnl,
+        "short_avg_pnl": short_avg_pnl,
+        "avg_loss_5m_dow": avg_loss_5m_dow,
+        "neck_reach_count": neck_reach_count,
+        "neck_reach_rate": neck_reach_rate,
     }
 
 
@@ -537,6 +565,18 @@ def run_rex_mtf_backtest(
     print("\n  決済理由の内訳:")
     for reason, count in res.get("exit_reason_counts", {}).items():
         print(f"    {reason}: {count}件")
+
+    print("\n" + "=" * 70)
+    print("  デバッグ統計")
+    print("=" * 70)
+    print(f"\n  [a] LONG/SHORT別 平均値幅:")
+    print(f"      Long  平均: {res['long_avg_pnl']:+.2f} pips")
+    print(f"      Short 平均: {res['short_avg_pnl']:+.2f} pips")
+    print(f"\n  [b] 5Mダウ崩れ損切 平均損失:")
+    print(f"      5Mダウ崩れ（損失のみ）: {res['avg_loss_5m_dow']:+.2f} pips")
+    print(f"      ATRストップ: 廃止（3段階決済に置き換え済み）")
+    print(f"\n  [c] 4Hネック到達率:")
+    print(f"      {res['total_trades']}件中{res['neck_reach_count']}件到達 = {res['neck_reach_rate']:.1f}%")
 
     print(f"\n  実行時間:             {elapsed:.1f}秒")
 

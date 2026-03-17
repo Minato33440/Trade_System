@@ -20,6 +20,8 @@ if str(_repo_root) not in sys.path:
 
 
 def check_5m_dow_break(
+    high_5m: pd.Series,
+    low_5m: pd.Series,
     close_5m: pd.Series,
     open_5m: pd.Series,
     direction: str,
@@ -29,12 +31,12 @@ def check_5m_dow_break(
     （確定足判定 = 実体がラインを越えた足）
 
     LONG の場合：
-      直近5M Swing Lowを割り込む5M実体 → True（ダウ崩れ）
-      body_high = min(open, close) がSwingLowを下回る
+      Low系列でSwing Lowを検出
+      body_high = min(open, close) がSwingLowを下回る → True（ダウ崩れ）
 
     SHORT の場合：
-      直近5M Swing Highを上抜ける5M実体 → True（ダウ崩れ）
-      body_low = max(open, close) がSwingHighを上回る
+      High系列でSwing Highを検出
+      body_low = max(open, close) がSwingHighを上回る → True（ダウ崩れ）
 
     戻り値: True = 崩れ確定（次の5M始値で決済執行）
     """
@@ -48,13 +50,13 @@ def check_5m_dow_break(
 
     if direction == "LONG":
         swing_low = get_nearest_swing_low(
-            close_5m, current_idx, n=n, lookback=20
+            low_5m, current_idx, n=n, lookback=20   # Low系列を使う
         )
         return body_high < swing_low  # 実体全体がSwingLow下 = 崩れ確定
 
     elif direction == "SHORT":
         swing_high = get_nearest_swing_high(
-            close_5m, current_idx, n=n, lookback=20
+            high_5m, current_idx, n=n, lookback=20  # High系列を使う
         )
         return body_low > swing_high  # 実体全体がSwingHigh上 = 崩れ確定
 
@@ -62,6 +64,8 @@ def check_5m_dow_break(
 
 
 def check_15m_dow_break(
+    high_15m: pd.Series,
+    low_15m: pd.Series,
     close_15m: pd.Series,
     open_15m: pd.Series,
     direction: str,
@@ -70,7 +74,7 @@ def check_15m_dow_break(
     """15M足のSwing押し戻しラインを15M実体が越えたか判定する。
     4Hネックライン越え後の最終決済用。
 
-    ロジックは check_5m_dow_break と同じ。TFが15Mになる点のみ異なる。
+    check_5m_dow_break と同じ修正済みロジック。TFが15Mになる点のみ異なる。
     """
     from src.swing_detector import get_nearest_swing_low, get_nearest_swing_high
 
@@ -82,13 +86,13 @@ def check_15m_dow_break(
 
     if direction == "LONG":
         swing_low = get_nearest_swing_low(
-            close_15m, current_idx, n=n, lookback=30
+            low_15m, current_idx, n=n, lookback=30   # Low系列を使う
         )
         return body_high < swing_low
 
     elif direction == "SHORT":
         swing_high = get_nearest_swing_high(
-            close_15m, current_idx, n=n, lookback=30
+            high_15m, current_idx, n=n, lookback=30  # High系列を使う
         )
         return body_low > swing_high
 
@@ -98,13 +102,16 @@ def check_15m_dow_break(
 def manage_exit(
     entry_price: float,
     direction: str,
+    high_5m: pd.Series,
+    low_5m: pd.Series,
     close_5m: pd.Series,
     open_5m: pd.Series,
+    high_15m: pd.Series,
+    low_15m: pd.Series,
     close_15m: pd.Series,
     open_15m: pd.Series,
     neck_4h: float,
     position_size: float = 1.0,
-    reentry_count: int = 0,
 ) -> dict:
     """ミナト流3段階決済を管理する。
 
@@ -137,10 +144,10 @@ def manage_exit(
 
     # 段階1: 4Hネック未到達 → 5Mダウ崩れで全決済
     if not at_neck_4h:
-        if check_5m_dow_break(close_5m, open_5m, direction):
+        if check_5m_dow_break(high_5m, low_5m, close_5m, open_5m, direction):
             return {
                 "action": "exit_all",
-                "exit_price_bar": True,   # 次の5M始値で執行
+                "exit_price_bar": True,
                 "reason": "5Mダウ崩れ（4Hネック未到達）",
                 "remaining_size": 0.0,
             }
@@ -152,20 +159,20 @@ def manage_exit(
         }
 
     # 段階2: 4Hネック到達 → 半値決済
-    if position_size == 1.0:  # まだ半値決済していない
+    if position_size == 1.0:
         return {
             "action": "exit_half",
-            "exit_price_bar": True,   # 次の5M始値で執行
+            "exit_price_bar": True,
             "reason": "4Hネックライン到達・半値決済",
             "remaining_size": 0.5,
         }
 
     # 段階3: 4Hネック越え・残り50%保有中 → 15Mダウ崩れで全決済
     if position_size == 0.5:
-        if check_15m_dow_break(close_15m, open_15m, direction):
+        if check_15m_dow_break(high_15m, low_15m, close_15m, open_15m, direction):
             return {
                 "action": "exit_all",
-                "exit_price_bar": True,   # 次の15M始値で執行
+                "exit_price_bar": True,
                 "reason": "15Mダウ崩れ（4Hネック越え後・最終決済）",
                 "remaining_size": 0.0,
             }
@@ -197,22 +204,26 @@ if __name__ == "__main__":
     idx_15m = pd.date_range("2024-01-01", periods=n // 3 + 1, freq="15min", tz="UTC")
 
     price_5m = 150.0 + np.cumsum(np.random.randn(n) * 0.02)
+    high_5m = pd.Series(price_5m + 0.05, index=idx_5m)
+    low_5m = pd.Series(price_5m - 0.05, index=idx_5m)
     close_5m = pd.Series(price_5m, index=idx_5m)
     open_5m = pd.Series(price_5m - 0.01, index=idx_5m)
 
     price_15m = 150.0 + np.cumsum(np.random.randn(len(idx_15m)) * 0.05)
+    high_15m = pd.Series(price_15m + 0.10, index=idx_15m)
+    low_15m = pd.Series(price_15m - 0.10, index=idx_15m)
     close_15m = pd.Series(price_15m, index=idx_15m)
     open_15m = pd.Series(price_15m - 0.01, index=idx_15m)
 
     # --- check_5m_dow_break テスト ---
-    result_5m = check_5m_dow_break(close_5m, open_5m, "LONG")
+    result_5m = check_5m_dow_break(high_5m, low_5m, close_5m, open_5m, "LONG")
     print(f"  check_5m_dow_break (LONG): {result_5m}")
 
-    result_5m_s = check_5m_dow_break(close_5m, open_5m, "SHORT")
+    result_5m_s = check_5m_dow_break(high_5m, low_5m, close_5m, open_5m, "SHORT")
     print(f"  check_5m_dow_break (SHORT): {result_5m_s}")
 
     # --- check_15m_dow_break テスト ---
-    result_15m = check_15m_dow_break(close_15m, open_15m, "LONG")
+    result_15m = check_15m_dow_break(high_15m, low_15m, close_15m, open_15m, "LONG")
     print(f"  check_15m_dow_break (LONG): {result_15m}")
 
     # --- manage_exit テスト（段階1: ネック未到達） ---
@@ -220,8 +231,12 @@ if __name__ == "__main__":
     r = manage_exit(
         entry_price=149.0,
         direction="LONG",
+        high_5m=high_5m,
+        low_5m=low_5m,
         close_5m=close_5m,
         open_5m=open_5m,
+        high_15m=high_15m,
+        low_15m=low_15m,
         close_15m=close_15m,
         open_15m=open_15m,
         neck_4h=neck_4h,
@@ -234,8 +249,12 @@ if __name__ == "__main__":
     r2 = manage_exit(
         entry_price=149.0,
         direction="LONG",
+        high_5m=high_5m,
+        low_5m=low_5m,
         close_5m=close_5m,
         open_5m=open_5m,
+        high_15m=high_15m,
+        low_15m=low_15m,
         close_15m=close_15m,
         open_15m=open_15m,
         neck_4h=neck_4h_low,
@@ -247,8 +266,12 @@ if __name__ == "__main__":
     r3 = manage_exit(
         entry_price=149.0,
         direction="LONG",
+        high_5m=high_5m,
+        low_5m=low_5m,
         close_5m=close_5m,
         open_5m=open_5m,
+        high_15m=high_15m,
+        low_15m=low_15m,
         close_15m=close_15m,
         open_15m=open_15m,
         neck_4h=neck_4h_low,
