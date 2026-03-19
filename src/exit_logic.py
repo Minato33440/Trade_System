@@ -1,11 +1,19 @@
-"""exit_logic.py — ミナト流3段階決済ロジック（Phase C実装）。
+"""exit_logic.py — ミナト流3段階決済ロジック（指示書#007 二段階SL版）。
 
 python src/exit_logic.py でセルフテスト実行可能。
 
-決済フロー:
-  【段階1: 4Hネック未到達】 5Mダウ崩れ → 全量決済
-  【段階2: 4Hネック到達】   半値決済 + 残り50%ストップを建値に移動
-  【段階3: 4Hネック越え後】 15Mダウ崩れ → 残り全量決済
+決済フロー（#007改訂）:
+  【フェーズ1: swing_confirmed=False】
+    15Mダウ崩れ → 全量早期損切（early_stop_15m）
+
+  【フェーズ2: swing_confirmed=True】
+    5Mダウ崩れ（押し安値トレール）→ 全量決済（5m_dow_break）
+
+  【4Hネック到達: 常時チェック】
+    半値決済 + 残り50%保有
+
+  【残り50%保有中: 4Hネック越え後】
+    15Mダウ崩れ → 残り全量決済
 """
 from __future__ import annotations
 
@@ -99,6 +107,45 @@ def check_15m_dow_break(
     return False
 
 
+def check_5m_swing_confirmed(
+    high_5m: pd.Series,
+    low_5m: pd.Series,
+    direction: str,
+    n: int = 2,
+) -> bool:
+    """エントリー後に最初の5M Swingが確定したか判定する。
+
+    LONG : detect_swing_highs(high_5m, n=2) に1つ以上TrueがあればSwing確定
+           → SLを15M基準から5M基準（押し安値トレール）に切り替えるトリガー
+    SHORT: detect_swing_lows(low_5m, n=2) で同様に判定。
+
+    重要: entry_idx から i+1 までのスライスを渡すこと。
+          エントリー前のSwingをカウントしないため。
+
+    Args:
+        high_5m: エントリー後の5M足High Series（entry_idx:i+1 スライス）
+        low_5m:  エントリー後の5M足Low Series（entry_idx:i+1 スライス）
+        direction: 'LONG' or 'SHORT'
+        n: Swing検出の前後確認本数（デフォルト2）
+
+    Returns:
+        True = 5M Swing確定 → SL切替トリガー発動
+    """
+    from src.swing_detector import detect_swing_highs, detect_swing_lows
+
+    if len(high_5m) < 2 * n + 1:
+        return False
+
+    if direction == "LONG":
+        swings = detect_swing_highs(high_5m, n=n)
+    elif direction == "SHORT":
+        swings = detect_swing_lows(low_5m, n=n)
+    else:
+        return False
+
+    return bool(swings.any())
+
+
 def manage_exit(
     entry_price: float,
     direction: str,
@@ -112,45 +159,68 @@ def manage_exit(
     open_15m: pd.Series,
     neck_4h: float,
     position_size: float = 1.0,
+    swing_confirmed: bool = False,
 ) -> dict:
-    """ミナト流3段階決済を管理する。
+    """ミナト流3段階決済を管理する（#007 二段階SL版）。
 
     決済フロー:
-      【段階1: 4Hネック未到達】
-        5Mダウ崩れ → 全量決済（利確・損切 共通）
+      【フルポジション（size=1.0）】
+        swing_confirmed=False（フェーズ1）:
+          15Mダウ崩れ → 全量早期損切（early_stop_15m）
+        swing_confirmed=True（フェーズ2）:
+          5Mダウ崩れ（押し安値トレール）→ 全量決済（5m_dow_break）
+        4Hネック到達（常時チェック）:
+          半値決済 + 残り50%保有
 
-      【段階2: 4Hネック到達】
-        半値決済（50%クローズ）
-        残り50%のストップを建値に移動（ノーリスク化）
-
-      【段階3: 4Hネック越え後】
-        15Mダウ崩れ → 残り全量決済
+      【半ポジション（size=0.5、4Hネック越え後）】
+        15Mダウ崩れ → 残り全量決済（最終決済）
 
     戻り値:
       {
         'action'        : 'hold' / 'exit_half' / 'exit_all'
-        'exit_price_bar': bool  # 次の足の始値で執行するか
-        'reason'        : str   # 決済理由
-        'remaining_size': float # 残りポジションサイズ
+        'exit_price_bar': bool
+        'reason'        : str
+        'remaining_size': float
       }
     """
     current_price = float(close_5m.iloc[-1])
 
-    # 4Hネック到達チェック
+    # 4Hネック到達チェック（swing_confirmedに関わらず常時）
     if direction == "LONG":
         at_neck_4h = current_price >= neck_4h
     else:
         at_neck_4h = current_price <= neck_4h
 
-    # 段階1: 4Hネック未到達 → 5Mダウ崩れで全決済
-    if not at_neck_4h:
-        if check_5m_dow_break(high_5m, low_5m, close_5m, open_5m, direction):
+    # ── フルポジション（size=1.0）の損切管理 ──
+    if position_size == 1.0:
+        if not swing_confirmed:
+            # フェーズ1: 15Mダウ崩れで早期損切
+            if check_15m_dow_break(high_15m, low_15m, close_15m, open_15m, direction):
+                return {
+                    "action": "exit_all",
+                    "exit_price_bar": True,
+                    "reason": "early_stop_15m",
+                    "remaining_size": 0.0,
+                }
+        else:
+            # フェーズ2: 5Mダウ崩れ（押し安値トレール）
+            if check_5m_dow_break(high_5m, low_5m, close_5m, open_5m, direction):
+                return {
+                    "action": "exit_all",
+                    "exit_price_bar": True,
+                    "reason": "5m_dow_break",
+                    "remaining_size": 0.0,
+                }
+
+        # 4Hネック到達 → 半値決済
+        if at_neck_4h:
             return {
-                "action": "exit_all",
+                "action": "exit_half",
                 "exit_price_bar": True,
-                "reason": "5Mダウ崩れ（4Hネック未到達）",
-                "remaining_size": 0.0,
+                "reason": "4Hネックライン到達・半値決済",
+                "remaining_size": 0.5,
             }
+
         return {
             "action": "hold",
             "exit_price_bar": False,
@@ -158,16 +228,7 @@ def manage_exit(
             "remaining_size": position_size,
         }
 
-    # 段階2: 4Hネック到達 → 半値決済
-    if position_size == 1.0:
-        return {
-            "action": "exit_half",
-            "exit_price_bar": True,
-            "reason": "4Hネックライン到達・半値決済",
-            "remaining_size": 0.5,
-        }
-
-    # 段階3: 4Hネック越え・残り50%保有中 → 15Mダウ崩れで全決済
+    # ── 半ポジション（size=0.5、4Hネック越え後）の最終決済 ──
     if position_size == 0.5:
         if check_15m_dow_break(high_15m, low_15m, close_15m, open_15m, direction):
             return {
@@ -226,57 +287,46 @@ if __name__ == "__main__":
     result_15m = check_15m_dow_break(high_15m, low_15m, close_15m, open_15m, "LONG")
     print(f"  check_15m_dow_break (LONG): {result_15m}")
 
-    # --- manage_exit テスト（段階1: ネック未到達） ---
+    # --- check_5m_swing_confirmed テスト ---
+    sc = check_5m_swing_confirmed(high_5m, low_5m, "LONG", n=2)
+    print(f"  check_5m_swing_confirmed (LONG, n=2): {sc}")
+
+    # --- manage_exit テスト（フェーズ1: swing未確定・ネック未到達） ---
     neck_4h = 152.0  # 現在価格(~150)より高い → 未到達
     r = manage_exit(
-        entry_price=149.0,
-        direction="LONG",
-        high_5m=high_5m,
-        low_5m=low_5m,
-        close_5m=close_5m,
-        open_5m=open_5m,
-        high_15m=high_15m,
-        low_15m=low_15m,
-        close_15m=close_15m,
-        open_15m=open_15m,
-        neck_4h=neck_4h,
-        position_size=1.0,
+        entry_price=149.0, direction="LONG",
+        high_5m=high_5m, low_5m=low_5m, close_5m=close_5m, open_5m=open_5m,
+        high_15m=high_15m, low_15m=low_15m, close_15m=close_15m, open_15m=open_15m,
+        neck_4h=neck_4h, position_size=1.0, swing_confirmed=False,
     )
-    print(f"\n  manage_exit 段階1(ネック未到達): action={r['action']}, reason={r['reason']}")
+    print(f"\n  manage_exit Phase1(swing=False, neck未到達): action={r['action']}, reason={r['reason']}")
 
-    # --- manage_exit テスト（段階2: ネック到達） ---
-    neck_4h_low = 148.0  # 現在価格(~150)より低い → 到達済み
+    # --- manage_exit テスト（フェーズ2: swing確定・ネック未到達） ---
+    r_p2 = manage_exit(
+        entry_price=149.0, direction="LONG",
+        high_5m=high_5m, low_5m=low_5m, close_5m=close_5m, open_5m=open_5m,
+        high_15m=high_15m, low_15m=low_15m, close_15m=close_15m, open_15m=open_15m,
+        neck_4h=neck_4h, position_size=1.0, swing_confirmed=True,
+    )
+    print(f"  manage_exit Phase2(swing=True,  neck未到達): action={r_p2['action']}, reason={r_p2['reason']}")
+
+    # --- manage_exit テスト（4Hネック到達 → 半値決済） ---
+    neck_4h_low = 148.0
     r2 = manage_exit(
-        entry_price=149.0,
-        direction="LONG",
-        high_5m=high_5m,
-        low_5m=low_5m,
-        close_5m=close_5m,
-        open_5m=open_5m,
-        high_15m=high_15m,
-        low_15m=low_15m,
-        close_15m=close_15m,
-        open_15m=open_15m,
-        neck_4h=neck_4h_low,
-        position_size=1.0,
+        entry_price=149.0, direction="LONG",
+        high_5m=high_5m, low_5m=low_5m, close_5m=close_5m, open_5m=open_5m,
+        high_15m=high_15m, low_15m=low_15m, close_15m=close_15m, open_15m=open_15m,
+        neck_4h=neck_4h_low, position_size=1.0, swing_confirmed=True,
     )
-    print(f"  manage_exit 段階2(ネック到達): action={r2['action']}, reason={r2['reason']}")
+    print(f"  manage_exit 4Hネック到達:                     action={r2['action']}, reason={r2['reason']}")
 
-    # --- manage_exit テスト（段階3: 残り50%保有中） ---
+    # --- manage_exit テスト（残り50%保有中） ---
     r3 = manage_exit(
-        entry_price=149.0,
-        direction="LONG",
-        high_5m=high_5m,
-        low_5m=low_5m,
-        close_5m=close_5m,
-        open_5m=open_5m,
-        high_15m=high_15m,
-        low_15m=low_15m,
-        close_15m=close_15m,
-        open_15m=open_15m,
-        neck_4h=neck_4h_low,
-        position_size=0.5,
+        entry_price=149.0, direction="LONG",
+        high_5m=high_5m, low_5m=low_5m, close_5m=close_5m, open_5m=open_5m,
+        high_15m=high_15m, low_15m=low_15m, close_15m=close_15m, open_15m=open_15m,
+        neck_4h=neck_4h_low, position_size=0.5, swing_confirmed=True,
     )
-    print(f"  manage_exit 段階3(残り50%): action={r3['action']}, reason={r3['reason']}")
+    print(f"  manage_exit 残り50%:                          action={r3['action']}, reason={r3['reason']}")
 
     print("\n[OK] exit_logic.py エラーなし")

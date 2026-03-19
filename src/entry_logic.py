@@ -1,18 +1,17 @@
-"""entry_logic.py — ミナト流 3段階MTFエントリー条件モジュール。
+"""entry_logic.py — ミナト流 MTFエントリー条件モジュール。
 
-Phase B 実装。
+Phase B → 指示書#007 リファクタ済み。
 
-エントリー条件（3段階フィルター）:
+エントリー条件（2段階フィルター + 指値注文）:
   Step1: 4H Fib61.8% 以内の押し目（Fib50%+ネックライン一致で高優位性★★★）
   Step2: 1H 2番底（LONG）/ 2番天井（SHORT）確認
-  Step3: 15M ネックラインを 5M 実体で越えた確定足判定
+  Step3 廃止: 15M確定足判定 → 指値注文（calc_limit_price）に置き換え
 
-エントリー執行: 確定足の次の5M足の始値でエントリー
+エントリー執行: 15Mネック + 10pips に指値設置 → 約定でエントリー
 
 設計思想:
   「4H上昇ダウが継続している限り、押し目条件が揃うたびにエントリーを繰り返す」
-  エリオット波数カウントは一切不要。
-  get_direction_4h() == 'LONG' が継続する限りループし続けるのが正しい動作。
+  Step1+2 成立時に指値価格を算出し、backtest.py 側で約定チェックを行う。
 """
 from __future__ import annotations
 
@@ -31,7 +30,9 @@ from src.swing_detector import detect_swing_highs, detect_swing_lows
 
 
 # ── 定数 ──────────────────────────────────────────────────────
-MAX_REENTRY = 1  # 同一押し目機会での最大再試行回数（将来の変更用）
+MAX_REENTRY = 1          # 同一押し目機会での最大再試行回数
+LIMIT_OFFSET_PIPS = 10.0 # 指値オフセット（固定）
+PIP_SIZE = 0.01          # USDJPYの1pip = 0.01円
 
 
 # ── Step1: 4H Fib条件 ─────────────────────────────────────────
@@ -162,48 +163,54 @@ def check_double_top_1h(
     return sh2 <= sh1  # 高値切り下がり = 2番天井成立
 
 
-# ── Step3: 15M ネックライン越え（5M 実体確定足）────────────────
+# ── Step3廃止: 指値価格算出 & 到達チェック ───────────────────────
 
-def check_15m_neckline_break(
-    close_5m: pd.Series,
-    open_5m: pd.Series,
+def calc_limit_price(
     neck_15m: float,
     direction: str,
-) -> bool:
-    """15Mネックラインを5M実体が越えたかどうかを確認する（確定足判定）。
+    offset_pips: float = LIMIT_OFFSET_PIPS,
+) -> float:
+    """15Mネックラインから指値価格を算出する。
 
-    確定足の定義:
-      LONG : 5M実体のlow（min(open,close)）がneck_15mを上回っている
-             → 実体全体がネック上 = 確定越え
-      SHORT: 5M実体のhigh（max(open,close)）がneck_15mを下回っている
-             → 実体全体がネック下 = 確定割れ
+    LONG : neck_15m + offset_pips * PIP_SIZE
+    SHORT: neck_15m - offset_pips * PIP_SIZE
 
     Args:
-        close_5m:  5M足のClose Series（直近数本）
-        open_5m:   5M足のOpen Series（直近数本）
-        neck_15m:  15Mネックライン価格
-        direction: 'LONG' / 'SHORT'
-
-    Returns:
-        True = 確定越え、False = 未越え
+        neck_15m    : 15Mネックライン価格（LONGはSwing High、SHORTはSwing Low）
+        direction   : 'LONG' or 'SHORT'
+        offset_pips : オフセット（デフォルト10pips）
     """
-    if len(close_5m) == 0 or len(open_5m) == 0:
-        return False
-
-    latest_close = float(close_5m.iloc[-1])
-    latest_open = float(open_5m.iloc[-1])
-
-    body_low = min(latest_open, latest_close)
-    body_high = max(latest_open, latest_close)
-
+    offset = offset_pips * PIP_SIZE
     if direction == "LONG":
-        return body_low > neck_15m   # 実体全体がネック上
+        return neck_15m + offset
     elif direction == "SHORT":
-        return body_high < neck_15m  # 実体全体がネック下
+        return neck_15m - offset
+    return neck_15m
+
+
+def check_limit_triggered(
+    bar_extreme: float,
+    limit_price: float,
+    direction: str,
+) -> bool:
+    """現在バーの高値/安値が指値価格に到達したか判定する。
+
+    LONG : bar_extreme（High）>= limit_price → True
+    SHORT: bar_extreme（Low） <= limit_price → True
+
+    Args:
+        bar_extreme : LONG=5M足High、SHORT=5M足Low
+        limit_price : calc_limit_price() で算出した指値価格
+        direction   : 'LONG' or 'SHORT'
+    """
+    if direction == "LONG":
+        return bar_extreme >= limit_price
+    elif direction == "SHORT":
+        return bar_extreme <= limit_price
     return False
 
 
-# ── 統合エントリー判定 ────────────────────────────────────────
+# ── 統合エントリー判定（Step1 + Step2 のみ） ─────────────────────
 
 def evaluate_entry(
     price: float,
@@ -214,11 +221,13 @@ def evaluate_entry(
     low_1h: pd.Series,
     high_1h: pd.Series,
     current_idx_1h: int,
-    close_5m: pd.Series,
-    open_5m: pd.Series,
     neck_15m: float,
 ) -> dict:
-    """3段階エントリー条件を一括評価する。
+    """Step1・Step2を一括評価しセットアップ成立を返す。
+
+    Step3（15M確定足判定）は廃止。
+    代わりにbacktest.py 側で calc_limit_price / check_limit_triggered を使い
+    指値注文で約定チェックを行う。
 
     Args:
         price:          現在の価格（5M_Close）
@@ -229,26 +238,25 @@ def evaluate_entry(
         low_1h:         1H足のLow Series
         high_1h:        1H足のHigh Series
         current_idx_1h: 現在の1H足の整数位置
-        close_5m:       5M足のClose Series（直近数本）
-        open_5m:        5M足のOpen Series（直近数本）
-        neck_15m:       15Mネックライン価格
+        neck_15m:       15Mネックライン価格（指値価格算出のため返却）
 
     Returns:
         {
-          'enter'    : bool   # エントリー可否
+          'enter'    : bool   # セットアップ条件成立（Step1+2）
           'fib_score': int    # Fib優位性スコア（0/1/2）
           'reason'   : str    # スキップ理由（デバッグ用）
+          'neck_15m' : float  # 指値価格算出用（enter=True時に有効）
         }
     """
     if direction not in ("LONG", "SHORT"):
-        return {"enter": False, "fib_score": 0, "reason": f"NONE方向スキップ({direction})"}
+        return {"enter": False, "fib_score": 0, "reason": f"NONE方向スキップ({direction})", "neck_15m": neck_15m}
 
     # ── Step1: 4H Fib条件 ──
     fib_score = check_fib_condition(
         price, swing_high_4h, swing_low_4h, neck_4h, direction
     )
     if fib_score == 0:
-        return {"enter": False, "fib_score": 0, "reason": "Fib条件外"}
+        return {"enter": False, "fib_score": 0, "reason": "Fib条件外", "neck_15m": neck_15m}
 
     # ── Step2: 1H 2番底 / 2番天井 ──
     if direction == "LONG":
@@ -257,14 +265,10 @@ def evaluate_entry(
         db_ok = check_double_top_1h(high_1h, current_idx_1h)
 
     if not db_ok:
-        return {"enter": False, "fib_score": fib_score, "reason": "1H2番底/天井未形成"}
+        return {"enter": False, "fib_score": fib_score, "reason": "1H2番底/天井未形成", "neck_15m": neck_15m}
 
-    # ── Step3: 15M ネック越え（5M実体確定） ──
-    neck_ok = check_15m_neckline_break(close_5m, open_5m, neck_15m, direction)
-    if not neck_ok:
-        return {"enter": False, "fib_score": fib_score, "reason": "15Mネック未越え"}
-
-    return {"enter": True, "fib_score": fib_score, "reason": "OK"}
+    # Step1+2 成立 → 指値注文の準備が整った
+    return {"enter": True, "fib_score": fib_score, "reason": "OK", "neck_15m": neck_15m}
 
 
 # ── スクリプト直接実行時のセルフテスト ─────────────────────────
@@ -273,8 +277,6 @@ if __name__ == "__main__":
     print("=== entry_logic.py セルフテスト ===")
 
     # check_fib_condition テスト
-    # LONG: 高値150.5, 安値148.5 → レンジ2.0
-    #   現在価格: Fib50%=149.5, Fib61.8%=149.26
     sh = 150.5
     sl = 148.5
     neck = 149.5
@@ -291,7 +293,6 @@ if __name__ == "__main__":
     np.random.seed(42)
     n_bars = 60
     idx_1h = pd.date_range("2024-01-01", periods=n_bars, freq="1h", tz="UTC")
-    # 2番底パターン: 下落 → 反発 → 再下落（前回安値より高め）→ 反発
     lows = np.array([150.0 - abs(np.sin(i / 5)) * 0.5 for i in range(n_bars)])
     lows[20] = 148.5  # SL1
     lows[40] = 148.7  # SL2 > SL1 → 2番底成立
@@ -300,15 +301,22 @@ if __name__ == "__main__":
     db = check_double_bottom_1h(low_1h, len(low_1h) - 1)
     print(f"\n  check_double_bottom_1h: {db}")
 
-    # check_15m_neckline_break テスト
-    close_5m = pd.Series([149.0, 149.2, 149.5])
-    open_5m = pd.Series([148.9, 149.1, 149.3])
-    neck_15m = 149.25
+    # calc_limit_price テスト
+    neck_15m_test = 149.50
+    lp_long  = calc_limit_price(neck_15m_test, "LONG")
+    lp_short = calc_limit_price(neck_15m_test, "SHORT")
+    print(f"\n  calc_limit_price LONG  (neck={neck_15m_test}): {lp_long:.3f}  (+10pips)")
+    print(f"  calc_limit_price SHORT (neck={neck_15m_test}): {lp_short:.3f} (-10pips)")
 
-    ok_long = check_15m_neckline_break(close_5m, open_5m, neck_15m, "LONG")
-    ok_short = check_15m_neckline_break(close_5m, open_5m, neck_15m, "SHORT")
-    print(f"\n  15Mネック越え LONG(neck={neck_15m}, body_low={min(149.3, 149.5):.3f}): {ok_long}")
-    print(f"  15Mネック越え SHORT(neck={neck_15m}, body_high={max(149.3, 149.5):.3f}): {ok_short}")
+    # check_limit_triggered テスト
+    ok_l = check_limit_triggered(149.61, lp_long, "LONG")    # High が到達
+    ng_l = check_limit_triggered(149.59, lp_long, "LONG")    # High が未達
+    ok_s = check_limit_triggered(149.39, lp_short, "SHORT")  # Low が到達
+    ng_s = check_limit_triggered(149.41, lp_short, "SHORT")  # Low が未達
+    print(f"\n  check_limit_triggered LONG  (High=149.61 >= {lp_long:.3f}): {ok_l}  ← True期待")
+    print(f"  check_limit_triggered LONG  (High=149.59 >= {lp_long:.3f}): {ng_l} ← False期待")
+    print(f"  check_limit_triggered SHORT (Low=149.39  <= {lp_short:.3f}): {ok_s}  ← True期待")
+    print(f"  check_limit_triggered SHORT (Low=149.41  <= {lp_short:.3f}): {ng_s} ← False期待")
 
-    print(f"\n  MAX_REENTRY 定数: {MAX_REENTRY}")
-    print("\n✅ entry_logic.py エラーなし")
+    print(f"\n  定数: MAX_REENTRY={MAX_REENTRY}, LIMIT_OFFSET_PIPS={LIMIT_OFFSET_PIPS}, PIP_SIZE={PIP_SIZE}")
+    print("\n[OK] entry_logic.py エラーなし")

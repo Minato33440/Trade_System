@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """swing_detector.py — Swing High/Low 検出エンジン。
 
 TFごとの推奨n値:
@@ -8,18 +7,6 @@ TFごとの推奨n値:
     5M足 : n=2
 
 python src/swing_detector.py で動作確認可能。
-=======
-"""swing_detector.py — ミナト流 Swing High / Low 検出モジュール。
-
-Phase A 最優先実装。
-4H / 1H / 15M / 5M 各タイムフレーム対応のスイング検出。
-
-TFごとの推奨 n 値:
-  4H 足 : n=5
-  1H 足 : n=3
-  15M 足: n=3
-  5M 足 : n=2
->>>>>>> claude/rex-ai-system-overview-uYU2X
 """
 from __future__ import annotations
 
@@ -27,57 +14,6 @@ import numpy as np
 import pandas as pd
 
 
-<<<<<<< HEAD
-def detect_swing_highs(high: pd.Series, n: int = 3) -> pd.Series:
-    """Swing High を検出する。
-
-    条件: high[i] が前後n本のhighより全て大きい（厳密な不等号）。
-
-    Args:
-        high: High価格のSeries
-        n:    前後何本で比較するか
-
-    Returns:
-        bool Series（TrueがSwing High）
-
-    TFごとの推奨n値:
-        4H足 : n=5
-        1H足 : n=3
-        15M足: n=3
-        5M足 : n=2
-    """
-    # 左側: high[i] > max(high[i-n .. i-1])
-    left_max = high.shift(1).rolling(n, min_periods=n).max()
-    # 右側: high[i] > max(high[i+1 .. i+n])
-    right_max = high.shift(-1).iloc[::-1].rolling(n, min_periods=n).max().iloc[::-1]
-    return (high > left_max) & (high > right_max)
-
-
-def detect_swing_lows(low: pd.Series, n: int = 3) -> pd.Series:
-    """Swing Low を検出する。
-
-    条件: low[i] が前後n本のlowより全て小さい（厳密な不等号）。
-
-    Args:
-        low: Low価格のSeries
-        n:   前後何本で比較するか
-
-    Returns:
-        bool Series（TrueがSwing Low）
-
-    TFごとの推奨n値:
-        4H足 : n=5
-        1H足 : n=3
-        15M足: n=3
-        5M足 : n=2
-    """
-    # 左側: low[i] < min(low[i-n .. i-1])
-    left_min = low.shift(1).rolling(n, min_periods=n).min()
-    # 右側: low[i] < min(low[i+1 .. i+n])
-    right_min = low.shift(-1).iloc[::-1].rolling(n, min_periods=n).min().iloc[::-1]
-    return (low < left_min) & (low < right_min)
-
-=======
 # ── 基本スイング検出 ───────────────────────────────────────────
 
 def detect_swing_highs(high: pd.Series, n: int = 3) -> pd.Series:
@@ -135,7 +71,6 @@ def detect_swing_lows(low: pd.Series, n: int = 3) -> pd.Series:
 
 
 # ── 直近スイング価格取得 ──────────────────────────────────────
->>>>>>> claude/rex-ai-system-overview-uYU2X
 
 def get_nearest_swing_high(
     high: pd.Series,
@@ -143,31 +78,7 @@ def get_nearest_swing_high(
     n: int = 3,
     lookback: int = 50,
 ) -> float:
-<<<<<<< HEAD
-    """current_idx より前のlookback本の範囲で直近SHの価格を返す。
-
-    Args:
-        high:        High価格のSeries
-        current_idx: 現在のバーの整数位置
-        n:           Swing検出の前後本数
-        lookback:    何本前まで遡るか
-
-    Returns:
-        直近Swing Highの価格。見つからない場合はwindow.max()で代用。
-    """
-    start = max(0, current_idx - lookback)
-    window = high.iloc[start:current_idx]
-    if window.empty:
-        return float("nan")
-    sh_mask = detect_swing_highs(window, n=n)
-    sh_prices = window[sh_mask]
-    if sh_prices.empty:
-        return float(window.max())
-    return float(sh_prices.iloc[-1])
-=======
     """current_idx より前の直近 Swing High の価格を返す。
-
-    ストップライン・ネックラインの基準価格として使用。
 
     Args:
         high:        各足のHighのSeries
@@ -190,7 +101,6 @@ def get_nearest_swing_high(
         return float(window.max())
 
     return float(swing_prices.iloc[-1])
->>>>>>> claude/rex-ai-system-overview-uYU2X
 
 
 def get_nearest_swing_low(
@@ -199,32 +109,7 @@ def get_nearest_swing_low(
     n: int = 3,
     lookback: int = 50,
 ) -> float:
-<<<<<<< HEAD
-    """current_idx より前のlookback本の範囲で直近SLの価格を返す。
-
-    Args:
-        low:         Low価格のSeries
-        current_idx: 現在のバーの整数位置
-        n:           Swing検出の前後本数
-        lookback:    何本前まで遡るか
-
-    Returns:
-        直近Swing Lowの価格。見つからない場合はwindow.min()で代用。
-    """
-    start = max(0, current_idx - lookback)
-    window = low.iloc[start:current_idx]
-    if window.empty:
-        return float("nan")
-    sl_mask = detect_swing_lows(window, n=n)
-    sl_prices = window[sl_mask]
-    if sl_prices.empty:
-        return float(window.min())
-    return float(sl_prices.iloc[-1])
-
-=======
     """current_idx より前の直近 Swing Low の価格を返す。
-
-    4H押し目の基準・ネックライン（半値利確ターゲット）として使用。
 
     Args:
         low:         各足のLowのSeries
@@ -250,7 +135,6 @@ def get_nearest_swing_low(
 
 
 # ── 4H方向判定 ────────────────────────────────────────────────
->>>>>>> claude/rex-ai-system-overview-uYU2X
 
 def get_direction_4h(
     high_4h: pd.Series,
@@ -259,125 +143,14 @@ def get_direction_4h(
     n: int = 5,
     lookback: int = 20,
 ) -> str:
-<<<<<<< HEAD
-    """4H足のダウ理論に基づきトレンド方向を判定する。
-
-    LONG条件 : 直近SH > 前回SH かつ 直近SL > 前回SL（上昇ダウ継続）
-    SHORT条件: 直近SH < 前回SH かつ 直近SL < 前回SL（下降ダウ継続）
-    それ以外 : 'NONE'
-
-    get_direction_4h() == 'LONG' が継続する限りエントリーを繰り返す
-    （4H上昇ダウ継続中に押し目条件が揃うたびにエントリーを繰り返す構造）。
-
-    Args:
-        high_4h:     4H足High価格のSeries
-        low_4h:      4H足Low価格のSeries
-        current_idx: 現在のバーの整数位置
-        n:           Swing検出の前後本数（4H推奨: n=5）
-        lookback:    何本前まで遡るか
-
-    Returns:
-        'LONG' / 'SHORT' / 'NONE'
-
-    TFごとの推奨n値:
-        4H足 : n=5
-        1H足 : n=3
-        15M足: n=3
-        5M足 : n=2
-    """
-    start = max(0, current_idx - lookback)
-    high_window = high_4h.iloc[start:current_idx]
-    low_window = low_4h.iloc[start:current_idx]
-
-    # SH/SL を2つ確保するのに最低限必要なバー数
-    if len(high_window) < n * 2 + 1:
-        return "NONE"
-
-    sh_mask = detect_swing_highs(high_window, n=n)
-    sl_mask = detect_swing_lows(low_window, n=n)
-
-    sh_prices = high_window[sh_mask]
-    sl_prices = low_window[sl_mask]
-
-    # 直近2つのSH/SLが必要（ダウ理論の比較に2点必要）
-    if len(sh_prices) < 2 or len(sl_prices) < 2:
-        return "NONE"
-
-    latest_sh = float(sh_prices.iloc[-1])
-    prev_sh = float(sh_prices.iloc[-2])
-    latest_sl = float(sl_prices.iloc[-1])
-    prev_sl = float(sl_prices.iloc[-2])
-
-    if latest_sh > prev_sh and latest_sl > prev_sl:
-        return "LONG"
-    if latest_sh < prev_sh and latest_sl < prev_sl:
-        return "SHORT"
-    return "NONE"
-
-
-# ── 動作確認 ─────────────────────────────────────────────────
-if __name__ == "__main__":
-    print("=" * 60)
-    print("  swing_detector.py 動作確認")
-    print("=" * 60)
-
-    np.random.seed(42)
-    n_bars = 200
-
-    # 上昇トレンドのサンプルデータ生成
-    trend = np.linspace(148.0, 155.0, n_bars)
-    noise = np.random.randn(n_bars) * 0.3
-    close = pd.Series(trend + noise)
-    high = close + np.abs(np.random.randn(n_bars)) * 0.2
-    low = close - np.abs(np.random.randn(n_bars)) * 0.2
-    high.name = "High"
-    low.name = "Low"
-
-    # Swing 検出
-    sh = detect_swing_highs(high, n=3)
-    sl = detect_swing_lows(low, n=3)
-
-    print(f"\nSwing Highs: {int(sh.sum())} 個")
-    print(f"Swing Lows:  {int(sl.sum())} 個")
-
-    # 最初の10件表示
-    sh_data = high[sh].reset_index(drop=True)
-    sl_data = low[sl].reset_index(drop=True)
-
-    print("\n--- Swing High サンプル（最初の10件） ---")
-    print(sh_data.head(10).to_string())
-
-    print("\n--- Swing Low サンプル（最初の10件） ---")
-    print(sl_data.head(10).to_string())
-
-    # 直近SH/SL取得
-    nearest_sh = get_nearest_swing_high(high, current_idx=150, n=3, lookback=50)
-    nearest_sl = get_nearest_swing_low(low, current_idx=150, n=3, lookback=50)
-    print(f"\n直近SH (current_idx=150, lookback=50): {nearest_sh:.4f}")
-    print(f"直近SL (current_idx=150, lookback=50): {nearest_sl:.4f}")
-
-    # 全バーの方向判定集計
-    print("\n--- 全バー方向判定（n=5, lookback=20）---")
-    counts: dict[str, int] = {"LONG": 0, "SHORT": 0, "NONE": 0}
-    for i in range(20, n_bars):
-        d = get_direction_4h(high, low, current_idx=i, n=5, lookback=20)
-        counts[d] += 1
-    print(f"LONG: {counts['LONG']}, SHORT: {counts['SHORT']}, NONE: {counts['NONE']}")
-
-    # idx=150 単体の方向判定
-    direction = get_direction_4h(high, low, current_idx=150, n=5, lookback=20)
-    print(f"\n4H方向判定 (current_idx=150): {direction}")
-
-    print("\n[OK] swing_detector.py 正常終了")
-=======
     """4H実足のSwing構造から方向（上昇ダウ/下降ダウ）を判定する。
 
     LONG条件:  直近SH > 前回SH かつ 直近SL > 前回SL（上昇ダウ継続）
     SHORT条件: 直近SH < 前回SH かつ 直近SL < 前回SL（下降ダウ継続）
 
     Args:
-        high_4h:     4H足のHigh Series（本物のOHLCデータ）
-        low_4h:      4H足のLow Series（本物のOHLCデータ）
+        high_4h:     4H足のHigh Series
+        low_4h:      4H足のLow Series
         current_idx: 現在の足の整数位置
         n:           Swing検出の前後確認本数（4H推奨: n=5）
         lookback:    何本前まで遡るか（4H推奨: lookback=20）
@@ -385,12 +158,6 @@ if __name__ == "__main__":
     Returns:
         'LONG' / 'SHORT' / 'NONE'
     """
-    # 直近のSH/SL
-    sh_recent = get_nearest_swing_high(high_4h, current_idx, n=n, lookback=lookback)
-    sl_recent = get_nearest_swing_low(low_4h, current_idx, n=n, lookback=lookback)
-
-    # 一つ前のSH/SLを探すためにcurrent_idxをずらして再取得
-    # 直近SHの位置を特定してその前を探す
     start = max(0, current_idx - lookback)
     window_h = high_4h.iloc[start:current_idx]
     window_l = low_4h.iloc[start:current_idx]
@@ -404,17 +171,17 @@ if __name__ == "__main__":
     if len(sh_list) < 2 or len(sl_list) < 2:
         return "NONE"
 
-    sh1 = float(sh_list[-2])  # 前回SH
-    sh2 = float(sh_list[-1])  # 直近SH
-    sl1 = float(sl_list[-2])  # 前回SL
-    sl2 = float(sl_list[-1])  # 直近SL
+    sh1 = float(sh_list[-2])
+    sh2 = float(sh_list[-1])
+    sl1 = float(sl_list[-2])
+    sl2 = float(sl_list[-1])
 
     if sh2 > sh1 and sl2 > sl1:
-        return "LONG"   # 高値・安値ともに切り上がり = 上昇ダウ
+        return "LONG"
     elif sh2 < sh1 and sl2 < sl1:
-        return "SHORT"  # 高値・安値ともに切り下がり = 下降ダウ
+        return "SHORT"
     else:
-        return "NONE"   # トレンドレス
+        return "NONE"
 
 
 def get_direction_from_raw_4h(
@@ -425,21 +192,18 @@ def get_direction_from_raw_4h(
 ) -> str:
     """5M足DataFrameを4H足にresampleしてから方向を判定する。
 
-    df_multi の forward-fill 問題を回避するための実装。
-    毎回呼び出す場合はパフォーマンスが悪いため、
     バックテストでは _build_direction_5m() の一括版を使うこと。
 
     Args:
         df_5m:        5M足のDataFrame（High/Low/Close列を含む）
-        current_time: 現在の時刻（この時点より前のデータで判定）
-        n:            Swing検出の前後確認本数（4H足でn=3推奨）
-        lookback:     何本の4H足を遡るか（20本 ≒ 80時間）
+        current_time: 現在の時刻
+        n:            Swing検出の前後確認本数
+        lookback:     何本の4H足を遡るか
 
     Returns:
         'LONG' / 'SHORT' / 'NONE'
     """
     df_past = df_5m[df_5m.index < current_time]
-
     df_4h = df_past.resample("4h").agg(
         {"High": "max", "Low": "min", "Close": "last"}
     ).dropna()
@@ -461,9 +225,6 @@ def _build_direction_5m(
 ) -> pd.Series:
     """全5Mバーの4H方向を一括プリコンピュートする（高速版）。
 
-    バックテストループ内で毎回resampleするのを避けるため、
-    事前に全期間の方向を計算しておく。
-
     Args:
         df_5m_raw: 5M足のDataFrame（High/Low/Close列を含む）
         n:         Swing検出の前後確認本数
@@ -472,15 +233,12 @@ def _build_direction_5m(
     Returns:
         各5M足タイムスタンプに対する方向（'LONG'/'SHORT'/'NONE'）のSeries
     """
-    # 全期間を一括resample
     df_4h_full = df_5m_raw.resample("4h").agg(
         {"High": "max", "Low": "min", "Close": "last"}
     ).dropna()
 
-    # 4H足の全インデックス
     ts_4h = df_4h_full.index
 
-    # 各4H足の方向を事前計算
     dir_4h = {}
     for i in range(len(ts_4h)):
         if i < lookback + n * 2:
@@ -492,10 +250,8 @@ def _build_direction_5m(
         )
         dir_4h[ts_4h[i]] = d
 
-    # 5M足インデックスに対して対応する4H足の方向をマッピング
     direction_5m = pd.Series("NONE", index=df_5m_raw.index, dtype=object)
 
-    # searchsorted で効率的にマッピング
     ts_4h_arr = ts_4h.values
     ts_5m_arr = df_5m_raw.index.values
 
@@ -520,7 +276,6 @@ if __name__ == "__main__":
 
     print("=== swing_detector.py セルフテスト ===")
 
-    # サンプルデータ生成
     np.random.seed(42)
     n_bars = 100
     price = 150.0 + np.cumsum(np.random.randn(n_bars) * 0.05)
@@ -543,31 +298,4 @@ if __name__ == "__main__":
     direction = get_direction_4h(high, low, len(high) - 1, n=3, lookback=20)
     print(f"  4H方向: {direction}")
 
-    # 実データでテスト
-    data_path = _repo_root / "data" / "raw" / "usdjpy_multi_tf_2years.parquet"
-    if data_path.exists():
-        print("\n--- 実データテスト ---")
-        df = pd.read_parquet(data_path)
-        if not isinstance(df.index, pd.DatetimeIndex):
-            df.index = pd.DatetimeIndex(df.index)
-        if df.index.tz is None:
-            df.index = df.index.tz_localize("UTC")
-
-        df_5m = df[["5M_High", "5M_Low", "5M_Close"]].ffill()
-        df_5m = df_5m.rename(columns={
-            "5M_High": "High", "5M_Low": "Low", "5M_Close": "Close"
-        })
-
-        print("  4H方向プリコンピュート中（最初の200本のみ）...")
-        dir_series = _build_direction_5m(df_5m.iloc[:200], n=3, lookback=10)
-        counts = dir_series.value_counts()
-        print(f"  方向分布: {counts.to_dict()}")
-
-        sample = dir_series[dir_series != "NONE"].head(5)
-        for ts, d in sample.items():
-            print(f"    {ts}  →  {d}")
-    else:
-        print("\n  [INFO] 実データファイルが見つからないためスキップ")
-
     print("\n✅ swing_detector.py エラーなし")
->>>>>>> claude/rex-ai-system-overview-uYU2X
