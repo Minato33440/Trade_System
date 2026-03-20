@@ -24,3 +24,6 @@ node_modules/
 # 会話ログ（テキスト履歴）
 logs/text_log/
 
+# バックテスト生成チャート（PNG）
+logs/plots/
+
