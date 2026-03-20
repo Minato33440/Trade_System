@@ -1,18 +1,16 @@
-"""entry_logic.py — ミナト流 3段階MTFエントリー条件モジュール。
-
-Phase B 実装。
+"""entry_logic.py — ミナト流エントリー条件モジュール（#009 新ロジック）。
 
 エントリー条件（3段階フィルター）:
   Step1: 4H Fib61.8% 以内の押し目（Fib50%+ネックライン一致で高優位性★★★）
-  Step2: 1H 2番底（LONG）/ 2番天井（SHORT）確認
-  Step3: 15M ネックラインを 5M 実体で越えた確定足判定
+  Step2: 15M ダブルボトム（LONG）/ ダブルトップ（SHORT）確認
+  Step3: 5M DB ネックライン実体確定（下ヒゲ許容 WICKTOL_PIPS）
 
 エントリー執行: 確定足の次の5M足の始値でエントリー
 
-設計思想:
-  「4H上昇ダウが継続している限り、押し目条件が揃うたびにエントリーを繰り返す」
-  エリオット波数カウントは一切不要。
-  get_direction_4h() == 'LONG' が継続する限りループし続けるのが正しい動作。
+変更履歴:
+  #009: 1H DB 廃止 → 15M DB + 5M DB に全面置き換え
+        指値エントリー廃止 → 確定足方式に戻す
+        WICKTOL_PIPS 追加（下ヒゲ許容幅）
 """
 from __future__ import annotations
 
@@ -22,7 +20,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# リポジトリルートをパスに追加（直接実行時 & モジュール import 時の両対応）
 _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
@@ -31,10 +28,13 @@ from src.swing_detector import detect_swing_highs, detect_swing_lows
 
 
 # ── 定数 ──────────────────────────────────────────────────────
-MAX_REENTRY = 1  # 同一押し目機会での最大再試行回数（将来の変更用）
+MAX_REENTRY = 1       # 同一押し目機会での最大再試行回数
+WICKTOL_PIPS = 0.0   # 15M 前回安値からの 5M 2番底許容幅（下ヒゲ対策）
+                     # 初期値: 0.0（許容なし）/ テスト順: 0.0 → 5.0 → 10.0
+PIP_SIZE = 0.01      # USDJPY の 1pip = 0.01 円
 
 
-# ── Step1: 4H Fib条件 ─────────────────────────────────────────
+# ── Step1: 4H Fib 条件 ────────────────────────────────────────
 
 def check_fib_condition(
     price: float,
@@ -43,17 +43,7 @@ def check_fib_condition(
     neck_4h: float,
     direction: str,
 ) -> int:
-    """Fibonacci押し目条件を確認する。
-
-    LONGの場合: 高値から安値への押し目深さがFib61.8%以内か
-    SHORTの場合: 安値から高値への戻り深さがFib61.8%以内か
-
-    Args:
-        price:      現在の価格
-        swing_high: 直近Swing High価格（4H）
-        swing_low:  直近Swing Low価格（4H）
-        neck_4h:    4Hネックライン価格
-        direction:  'LONG' / 'SHORT'
+    """Fibonacci 押し目条件を確認する。
 
     Returns:
         2 = 高優位性（Fib50%付近 かつ 4Hネックライン付近）★★★
@@ -65,142 +55,187 @@ def check_fib_condition(
         return 0
 
     if direction == "LONG":
-        # 押し目深さ: 高値からの戻り率
         retracement = (swing_high - price) / fib_range
         near_neck = abs(price - neck_4h) < fib_range * 0.03
     elif direction == "SHORT":
-        # 戻り深さ: 安値からの反発率
         retracement = (price - swing_low) / fib_range
         near_neck = abs(price - neck_4h) < fib_range * 0.03
     else:
         return 0
 
-    at_fib50 = 0.45 <= retracement <= 0.55    # Fib50%±5%
-    at_fib618 = retracement <= 0.65            # Fib61.8%以内
+    at_fib50 = 0.45 <= retracement <= 0.55
+    at_fib618 = retracement <= 0.65
 
     if at_fib50 and near_neck:
-        return 2   # ★★★ 最高優位性（Fib50% + ネックライン一致）
+        return 2
     elif at_fib618:
-        return 1   # ★★  基本条件（Fib61.8%以内）
+        return 1
     else:
-        return 0   # 条件外
+        return 0
 
 
-# ── Step2: 1H 2番底 / 2番天井 ────────────────────────────────
+# ── Step2: 15M ダブルボトム / ダブルトップ ─────────────────────
 
-def check_double_bottom_1h(
-    low_1h: pd.Series,
-    current_idx: int,
+def check_15m_double_bottom(
+    low_15m: pd.Series,
+    high_15m: pd.Series,
+    direction: str,
     n: int = 3,
-    lookback: int = 50,
-) -> bool:
-    """LONG用: 1H足での2番底確認。
+    lookback: int = 30,
+) -> dict:
+    """15M ダブルボトム（LONG）/ ダブルトップ（SHORT）を検出する。
 
-    直近SL① → 反発上昇 → SL② >= SL① なら成立（安値切り上がり）
+    LONG の成立条件:
+      ① 直近 15M Swing Low を SL1 として取得
+      ② SL1 より後に 15M Swing High（= DB ネックライン）が存在
+      ③ さらに後に SL2 が形成され SL2 >= SL1（安値切り上がり）
 
-    Args:
-        low_1h:      1H足のLow Series
-        current_idx: 現在の足の整数位置
-        n:           Swing検出の前後確認本数（1H推奨: n=3）
-        lookback:    何本前まで遡るか
+    SHORT は High 系列で対称に判定。
 
     Returns:
-        True = 2番底成立、False = 未成立
+      {
+        'found'    : True / False,
+        'sl1'      : float,  # 1番底価格（SHORT では 1番天井）
+        'sl2'      : float,  # 2番底価格（SHORT では 2番天井）
+        'neck_15m' : float,  # DB ネックライン価格
+      }
     """
-    start = max(0, current_idx - lookback)
-    window = low_1h.iloc[start:current_idx + 1]
+    window_low  = low_15m.iloc[-lookback:]
+    window_high = high_15m.iloc[-lookback:]
 
-    if len(window) < n * 2 + 2:
-        return False
+    _none = {'found': False, 'sl1': None, 'sl2': None, 'neck_15m': None}
 
-    swings = detect_swing_lows(window, n=n)
-    swing_prices = window[swings]
+    if direction == 'LONG':
+        sl_mask = detect_swing_lows(window_low, n=n)
+        sh_mask = detect_swing_highs(window_high, n=n)
+        sl_prices = window_low[sl_mask]
+        sh_prices = window_high[sh_mask]
 
-    if len(swing_prices) < 2:
-        return False
+        if len(sl_prices) < 2 or len(sh_prices) < 1:
+            return _none
 
-    sl1 = float(swing_prices.iloc[-2])  # 前回SL
-    sl2 = float(swing_prices.iloc[-1])  # 直近SL
+        sl1 = sl_prices.iloc[-2]
+        sl2 = sl_prices.iloc[-1]
 
-    return sl2 >= sl1  # 安値切り上がり = 2番底成立
+        if sl2 < sl1:
+            return _none
+
+        sl1_idx = sl_prices.index[-2]
+        sl2_idx = sl_prices.index[-1]
+        neck_candidates = sh_prices[
+            (sh_prices.index > sl1_idx) & (sh_prices.index < sl2_idx)
+        ]
+        if len(neck_candidates) == 0:
+            return _none
+
+        neck_15m = float(neck_candidates.max())
+        return {'found': True, 'sl1': float(sl1), 'sl2': float(sl2), 'neck_15m': neck_15m}
+
+    elif direction == 'SHORT':
+        sh_mask = detect_swing_highs(window_high, n=n)
+        sl_mask = detect_swing_lows(window_low, n=n)
+        sh_prices = window_high[sh_mask]
+        sl_prices = window_low[sl_mask]
+
+        if len(sh_prices) < 2 or len(sl_prices) < 1:
+            return _none
+
+        sh1 = sh_prices.iloc[-2]
+        sh2 = sh_prices.iloc[-1]
+
+        if sh2 > sh1:
+            return _none
+
+        sh1_idx = sh_prices.index[-2]
+        sh2_idx = sh_prices.index[-1]
+        neck_candidates = sl_prices[
+            (sl_prices.index > sh1_idx) & (sl_prices.index < sh2_idx)
+        ]
+        if len(neck_candidates) == 0:
+            return _none
+
+        neck_15m = float(neck_candidates.min())
+        return {'found': True, 'sl1': float(sh1), 'sl2': float(sh2), 'neck_15m': neck_15m}
+
+    return _none
 
 
-def check_double_top_1h(
-    high_1h: pd.Series,
-    current_idx: int,
-    n: int = 3,
-    lookback: int = 50,
-) -> bool:
-    """SHORT用: 1H足での2番天井確認。
+# ── Step3: 5M ダブルボトム確定 ────────────────────────────────
 
-    直近SH① → 反落 → SH② <= SH① なら成立（高値切り下がり）
-
-    Args:
-        high_1h:     1H足のHigh Series
-        current_idx: 現在の足の整数位置
-        n:           Swing検出の前後確認本数（1H推奨: n=3）
-        lookback:    何本前まで遡るか
-
-    Returns:
-        True = 2番天井成立、False = 未成立
-    """
-    start = max(0, current_idx - lookback)
-    window = high_1h.iloc[start:current_idx + 1]
-
-    if len(window) < n * 2 + 2:
-        return False
-
-    swings = detect_swing_highs(window, n=n)
-    swing_prices = window[swings]
-
-    if len(swing_prices) < 2:
-        return False
-
-    sh1 = float(swing_prices.iloc[-2])  # 前回SH
-    sh2 = float(swing_prices.iloc[-1])  # 直近SH
-
-    return sh2 <= sh1  # 高値切り下がり = 2番天井成立
-
-
-# ── Step3: 15M ネックライン越え（5M 実体確定足）────────────────
-
-def check_15m_neckline_break(
+def check_5m_double_bottom(
+    low_5m: pd.Series,
+    high_5m: pd.Series,
     close_5m: pd.Series,
     open_5m: pd.Series,
-    neck_15m: float,
     direction: str,
-) -> bool:
-    """15Mネックラインを5M実体が越えたかどうかを確認する（確定足判定）。
+    neck_15m: float,
+    swing_ref_15m: float,          # LONG: 15M SL2（2番底基準）/ SHORT: 15M SH2（2番天井基準）
+    wicktol_pips: float = WICKTOL_PIPS,
+    n: int = 2,
+    lookback: int = 20,
+) -> dict:
+    """5M ダブルボトムの成立 + ネックライン実体上抜け確定を判定する。
 
-    確定足の定義:
-      LONG : 5M実体のlow（min(open,close)）がneck_15mを上回っている
-             → 実体全体がネック上 = 確定越え
-      SHORT: 5M実体のhigh（max(open,close)）がneck_15mを下回っている
-             → 実体全体がネック下 = 確定割れ
+    LONG の成立条件:
+      ① 5M DB の 2番底安値が 15M 前回 Swing Low の -wicktol_pips 以内
+         （5M_SL2 >= swing_ref_15m - wicktol_pips * PIP_SIZE）
+      ② 5M DB ネック（neck_15m）を 5M 実体下端（min(open,close)）が上抜け確定
 
-    Args:
-        close_5m:  5M足のClose Series（直近数本）
-        open_5m:   5M足のOpen Series（直近数本）
-        neck_15m:  15Mネックライン価格
-        direction: 'LONG' / 'SHORT'
+    SHORT は対称に判定。
 
     Returns:
-        True = 確定越え、False = 未越え
+      {
+        'confirmed' : True / False,
+        'reason'    : str,  # 否定時の理由（デバッグ用）
+      }
     """
-    if len(close_5m) == 0 or len(open_5m) == 0:
-        return False
-
+    window_low  = low_5m.iloc[-lookback:]
+    window_high = high_5m.iloc[-lookback:]
+    latest_open  = float(open_5m.iloc[-1])
     latest_close = float(close_5m.iloc[-1])
-    latest_open = float(open_5m.iloc[-1])
+    tolerance = wicktol_pips * PIP_SIZE
 
-    body_low = min(latest_open, latest_close)
-    body_high = max(latest_open, latest_close)
+    if direction == 'LONG':
+        body_low = min(latest_open, latest_close)
 
-    if direction == "LONG":
-        return body_low > neck_15m   # 実体全体がネック上
-    elif direction == "SHORT":
-        return body_high < neck_15m  # 実体全体がネック下
-    return False
+        sl_mask = detect_swing_lows(window_low, n=n)
+        sl_prices = window_low[sl_mask]
+
+        if len(sl_prices) < 2:
+            return {'confirmed': False, 'reason': '5M SL 不足'}
+
+        sl2 = float(sl_prices.iloc[-1])
+
+        # 条件①: 下ヒゲ許容チェック
+        if sl2 < (swing_ref_15m - tolerance):
+            return {'confirmed': False, 'reason': f'5M SL2({sl2:.3f}) が 15M SL -{wicktol_pips}pips({swing_ref_15m - tolerance:.3f}) を下回った'}
+
+        # 条件②: 実体上抜け確定
+        if body_low > neck_15m:
+            return {'confirmed': True, 'reason': 'OK'}
+        else:
+            return {'confirmed': False, 'reason': f'実体下端({body_low:.3f}) がネック({neck_15m:.3f})未越え'}
+
+    elif direction == 'SHORT':
+        body_high = max(latest_open, latest_close)
+
+        sh_mask = detect_swing_highs(window_high, n=n)
+        sh_prices = window_high[sh_mask]
+
+        if len(sh_prices) < 2:
+            return {'confirmed': False, 'reason': '5M SH 不足'}
+
+        sh2 = float(sh_prices.iloc[-1])
+
+        if sh2 > (swing_ref_15m + tolerance):
+            return {'confirmed': False, 'reason': f'5M SH2({sh2:.3f}) が 15M SH +{wicktol_pips}pips({swing_ref_15m + tolerance:.3f}) を上回った'}
+
+        if body_high < neck_15m:
+            return {'confirmed': True, 'reason': 'OK'}
+        else:
+            return {'confirmed': False, 'reason': f'実体上端({body_high:.3f}) がネック({neck_15m:.3f})未割れ'}
+
+    return {'confirmed': False, 'reason': 'direction 不明'}
 
 
 # ── 統合エントリー判定 ────────────────────────────────────────
@@ -211,104 +246,137 @@ def evaluate_entry(
     swing_high_4h: float,
     swing_low_4h: float,
     neck_4h: float,
-    low_1h: pd.Series,
-    high_1h: pd.Series,
-    current_idx_1h: int,
+    low_15m: pd.Series,
+    high_15m: pd.Series,
     close_5m: pd.Series,
     open_5m: pd.Series,
-    neck_15m: float,
+    low_5m: pd.Series,
+    high_5m: pd.Series,
 ) -> dict:
-    """3段階エントリー条件を一括評価する。
+    """3段階エントリー条件を一括評価する（#009 新ロジック）。
 
-    Args:
-        price:          現在の価格（5M_Close）
-        direction:      'LONG' / 'SHORT'（4H方向）
-        swing_high_4h:  4H直近Swing High
-        swing_low_4h:   4H直近Swing Low
-        neck_4h:        4Hネックライン（LONGはSH、SHORTはSL）
-        low_1h:         1H足のLow Series
-        high_1h:        1H足のHigh Series
-        current_idx_1h: 現在の1H足の整数位置
-        close_5m:       5M足のClose Series（直近数本）
-        open_5m:        5M足のOpen Series（直近数本）
-        neck_15m:       15Mネックライン価格
+    Step1: 4H Fib61.8% 以内
+    Step2: 15M ダブルボトム / ダブルトップ検出
+    Step3: 5M DB ネックライン実体確定
 
     Returns:
-        {
-          'enter'    : bool   # エントリー可否
-          'fib_score': int    # Fib優位性スコア（0/1/2）
-          'reason'   : str    # スキップ理由（デバッグ用）
-        }
+      {
+        'enter'    : bool,
+        'fib_score': int,
+        'reason'   : str,
+        'neck_15m' : float,  # Step2 で取得した DB ネック（Step3・plotter 用）
+        'sl2_15m'  : float,  # Step2 の 2番底（swing_ref_15m として Step3 に渡す）
+        'db_15m_found': bool,  # Step2 通過フラグ（デバッグカウント用）
+        'wicktol_invalid': bool,  # Step3 で WICKTOL 超過で弾かれたフラグ
+      }
     """
+    base = {
+        'enter': False, 'fib_score': 0, 'reason': '',
+        'neck_15m': 0.0, 'sl2_15m': 0.0,
+        'db_15m_found': False, 'wicktol_invalid': False,
+    }
+
     if direction not in ("LONG", "SHORT"):
-        return {"enter": False, "fib_score": 0, "reason": f"NONE方向スキップ({direction})"}
+        base['reason'] = f"NONE方向スキップ({direction})"
+        return base
 
-    # ── Step1: 4H Fib条件 ──
-    fib_score = check_fib_condition(
-        price, swing_high_4h, swing_low_4h, neck_4h, direction
-    )
+    # ── Step1: 4H Fib 条件 ──
+    fib_score = check_fib_condition(price, swing_high_4h, swing_low_4h, neck_4h, direction)
+    base['fib_score'] = fib_score
     if fib_score == 0:
-        return {"enter": False, "fib_score": 0, "reason": "Fib条件外"}
+        base['reason'] = "Fib条件外"
+        return base
 
-    # ── Step2: 1H 2番底 / 2番天井 ──
-    if direction == "LONG":
-        db_ok = check_double_bottom_1h(low_1h, current_idx_1h)
-    else:
-        db_ok = check_double_top_1h(high_1h, current_idx_1h)
+    # ── Step2: 15M ダブルボトム / ダブルトップ ──
+    db_15m = check_15m_double_bottom(low_15m, high_15m, direction)
+    if not db_15m['found']:
+        base['reason'] = "15M DB未形成"
+        return base
 
-    if not db_ok:
-        return {"enter": False, "fib_score": fib_score, "reason": "1H2番底/天井未形成"}
+    base['db_15m_found'] = True
+    base['neck_15m'] = db_15m['neck_15m']
+    base['sl2_15m'] = db_15m['sl2']
 
-    # ── Step3: 15M ネック越え（5M実体確定） ──
-    neck_ok = check_15m_neckline_break(close_5m, open_5m, neck_15m, direction)
-    if not neck_ok:
-        return {"enter": False, "fib_score": fib_score, "reason": "15Mネック未越え"}
+    # ── Step3: 5M DB ネックライン実体確定 ──
+    db_5m = check_5m_double_bottom(
+        low_5m=low_5m,
+        high_5m=high_5m,
+        close_5m=close_5m,
+        open_5m=open_5m,
+        direction=direction,
+        neck_15m=db_15m['neck_15m'],
+        swing_ref_15m=db_15m['sl2'],
+    )
 
-    return {"enter": True, "fib_score": fib_score, "reason": "OK"}
+    if not db_5m['confirmed']:
+        reason = db_5m['reason']
+        if 'WICKTOL' in reason or '下回った' in reason or '上回った' in reason:
+            base['wicktol_invalid'] = True
+        base['reason'] = f"5M DB未確定: {reason}"
+        return base
+
+    base['enter'] = True
+    base['reason'] = "OK"
+    return base
 
 
 # ── スクリプト直接実行時のセルフテスト ─────────────────────────
 
 if __name__ == "__main__":
-    print("=== entry_logic.py セルフテスト ===")
+    print("=== entry_logic.py セルフテスト (#009) ===")
 
-    # check_fib_condition テスト
-    # LONG: 高値150.5, 安値148.5 → レンジ2.0
-    #   現在価格: Fib50%=149.5, Fib61.8%=149.26
-    sh = 150.5
-    sl = 148.5
-    neck = 149.5
-
+    # check_fib_condition
+    sh, sl, neck = 150.5, 148.5, 149.5
     for price, label in [(149.5, "Fib50%+ネック"), (149.2, "Fib61.8%"), (148.8, "Fib外")]:
         score = check_fib_condition(price, sh, sl, neck, "LONG")
-        print(f"  LONG Fib score [{label}] price={price}: {score}")
+        print(f"  LONG Fib [{label}] price={price}: {score}")
 
-    for price, label in [(149.5, "Fib50%+ネック"), (149.8, "Fib61.8%"), (150.2, "Fib外")]:
-        score = check_fib_condition(price, sh, sl, neck, "SHORT")
-        print(f"  SHORT Fib score [{label}] price={price}: {score}")
+    # check_15m_double_bottom — 合成データ
+    idx_15m = pd.date_range("2024-01-01", periods=60, freq="15min", tz="UTC")
+    lows_15m  = np.full(60, 150.0)
+    highs_15m = np.full(60, 151.0)
+    # SL1 at bar 15, SH (neck) at bar 30, SL2 at bar 45 (> SL1)
+    lows_15m[14] = 149.0
+    lows_15m[15] = 148.5   # SL1
+    lows_15m[16] = 149.0
+    highs_15m[29] = 151.5  # neck
+    highs_15m[30] = 151.8  # SH
+    highs_15m[31] = 151.5
+    lows_15m[44] = 149.2
+    lows_15m[45] = 148.7   # SL2 > SL1 → DB 成立
+    lows_15m[46] = 149.2
 
-    # check_double_bottom_1h テスト
-    np.random.seed(42)
-    n_bars = 60
-    idx_1h = pd.date_range("2024-01-01", periods=n_bars, freq="1h", tz="UTC")
-    # 2番底パターン: 下落 → 反発 → 再下落（前回安値より高め）→ 反発
-    lows = np.array([150.0 - abs(np.sin(i / 5)) * 0.5 for i in range(n_bars)])
-    lows[20] = 148.5  # SL1
-    lows[40] = 148.7  # SL2 > SL1 → 2番底成立
-    low_1h = pd.Series(lows, index=idx_1h)
+    low_15m_s  = pd.Series(lows_15m, index=idx_15m)
+    high_15m_s = pd.Series(highs_15m, index=idx_15m)
 
-    db = check_double_bottom_1h(low_1h, len(low_1h) - 1)
-    print(f"\n  check_double_bottom_1h: {db}")
+    db = check_15m_double_bottom(low_15m_s, high_15m_s, 'LONG', n=2, lookback=60)
+    print(f"\n  check_15m_double_bottom: {db}")
 
-    # check_15m_neckline_break テスト
-    close_5m = pd.Series([149.0, 149.2, 149.5])
-    open_5m = pd.Series([148.9, 149.1, 149.3])
-    neck_15m = 149.25
+    # check_5m_double_bottom
+    idx_5m = pd.date_range("2024-01-01", periods=30, freq="5min", tz="UTC")
+    lows_5m  = np.full(30, 149.5)
+    highs_5m = np.full(30, 150.5)
+    opens_5m  = np.full(30, 149.8)
+    closes_5m = np.full(30, 150.2)
+    lows_5m[10] = 148.8    # SL1
+    lows_5m[20] = 148.9    # SL2 > SL1
+    closes_5m[-1] = 151.9  # 実体がネック(151.8)を上回る
+    opens_5m[-1]  = 151.85
 
-    ok_long = check_15m_neckline_break(close_5m, open_5m, neck_15m, "LONG")
-    ok_short = check_15m_neckline_break(close_5m, open_5m, neck_15m, "SHORT")
-    print(f"\n  15Mネック越え LONG(neck={neck_15m}, body_low={min(149.3, 149.5):.3f}): {ok_long}")
-    print(f"  15Mネック越え SHORT(neck={neck_15m}, body_high={max(149.3, 149.5):.3f}): {ok_short}")
+    db5 = check_5m_double_bottom(
+        pd.Series(lows_5m, index=idx_5m),
+        pd.Series(highs_5m, index=idx_5m),
+        pd.Series(closes_5m, index=idx_5m),
+        pd.Series(opens_5m, index=idx_5m),
+        direction='LONG',
+        neck_15m=151.8,
+        swing_ref_15m=148.7,
+        wicktol_pips=0.0,
+        n=2,
+    )
+    print(f"  check_5m_double_bottom: {db5}")
 
-    print(f"\n  MAX_REENTRY 定数: {MAX_REENTRY}")
-    print("\n✅ entry_logic.py エラーなし")
+    print(f"\n  WICKTOL_PIPS: {WICKTOL_PIPS}")
+    print(f"  PIP_SIZE:     {PIP_SIZE}")
+    print(f"  MAX_REENTRY:  {MAX_REENTRY}")
+    print("\n[OK] entry_logic.py (#009) エラーなし")
