@@ -141,6 +141,166 @@ def save_swing_debug_plot(
     return plot_path
 
 
+def plot_swing_check(
+    df_5m: "pd.DataFrame",
+    df_4h: "pd.DataFrame",
+    df_15m: "pd.DataFrame",
+    center_time: "pd.Timestamp",
+    direction: str,
+    save_path: str,
+    left_bars: int = 48,
+    right_bars: int = 24,
+    dpi: int = 200,
+) -> None:
+    """Swing 検出精度確認チャートを生成・保存する（Phase 1）。
+
+    【メインパネル】5M OHLC + 上位足構造オーバーレイ
+      - 5M ローソク足（mplfinance）
+      - 4H Swing High/Low ドット + 水平線
+      - 15M Swing High/Low 水平線
+      - NONE 区間グレー背景
+
+    【サブパネル】小テーブル（Swing パラメータ・direction・NONE 率）
+
+    Args:
+        df_5m:       5M OHLC DataFrame（High/Low/Open/Close）
+        df_4h:       4H OHLC DataFrame
+        df_15m:      15M OHLC DataFrame
+        center_time: チャート中心時刻（エントリー確定時刻）
+        direction:   'LONG' / 'SHORT'
+        save_path:   PNG 保存先パス
+        left_bars:   中心の左側に表示する 5M 足数（デフォルト 48 = 4 時間）
+        right_bars:  中心の右側に表示する 5M 足数（デフォルト 24 = 2 時間）
+        dpi:         解像度（デフォルト 200）
+
+    保存先: save_path で指定（backtest.py 側が logs/plots/ 以下を指定する）
+    既存の plotter.py 関数には一切手を触れない。本関数は末尾追加のみ。
+    """
+    try:
+        import mplfinance as mpf
+    except ImportError:
+        raise RuntimeError(
+            "mplfinance が未インストールです。pip install mplfinance を実行してください。"
+        )
+
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.gridspec as gridspec
+        import matplotlib.patches as mpatches
+    except ImportError:
+        raise RuntimeError("matplotlib が未インストールです")
+
+    from src.swing_detector import detect_swing_highs, detect_swing_lows
+
+    # ── 表示範囲を決定 ──
+    center_loc = df_5m.index.searchsorted(center_time)
+    i_start = max(0, center_loc - left_bars)
+    i_end   = min(len(df_5m), center_loc + right_bars + 1)
+    df_view = df_5m.iloc[i_start:i_end].copy()
+
+    if len(df_view) == 0:
+        return
+
+    # ── 4H Swing 検出（全期間から検出して表示範囲内のものを抽出） ──
+    sh_4h_flags = detect_swing_highs(df_4h["High"], n=3)
+    sl_4h_flags = detect_swing_lows(df_4h["Low"],   n=3)
+    sh_4h_prices = df_4h["High"][sh_4h_flags]
+    sl_4h_prices = df_4h["Low"][sl_4h_flags]
+
+    # ── 15M Swing 検出 ──
+    sh_15m_flags = detect_swing_highs(df_15m["High"], n=3)
+    sl_15m_flags = detect_swing_lows(df_15m["Low"],   n=3)
+    sh_15m_prices = df_15m["High"][sh_15m_flags]
+    sl_15m_prices = df_15m["Low"][sl_15m_flags]
+
+    # 表示範囲の時刻
+    t_start = df_view.index[0]
+    t_end   = df_view.index[-1]
+
+    sh_4h_in_view  = sh_4h_prices[(sh_4h_prices.index >= t_start) & (sh_4h_prices.index <= t_end)]
+    sl_4h_in_view  = sl_4h_prices[(sl_4h_prices.index >= t_start) & (sl_4h_prices.index <= t_end)]
+    sh_15m_in_view = sh_15m_prices[(sh_15m_prices.index >= t_start) & (sh_15m_prices.index <= t_end)]
+    sl_15m_in_view = sl_15m_prices[(sl_15m_prices.index >= t_start) & (sl_15m_prices.index <= t_end)]
+
+    # ── mplfinance スタイル ──
+    mc = mpf.make_marketcolors(up='#26a69a', down='#ef5350',
+                               edge='inherit', wick='inherit', volume='in')
+    style = mpf.make_mpf_style(marketcolors=mc, gridstyle=':', gridcolor='#444444',
+                                facecolor='#1a1a2e', figcolor='#1a1a2e',
+                                rc={'axes.labelcolor': 'white',
+                                    'axes.edgecolor': '#555555',
+                                    'xtick.color': 'white',
+                                    'ytick.color': 'white',
+                                    'text.color': 'white'})
+
+    # ── mplfinance で returnfig=True → axes 取得後に水平線追加 ──
+    fig, axes = mpf.plot(
+        df_view,
+        type='candle',
+        style=style,
+        figsize=(16, 9),
+        returnfig=True,
+        warn_too_much_data=9999,
+        title=f"USDJPY 5M [{direction}]  {center_time.strftime('%Y-%m-%d %H:%M')}",
+    )
+    ax_main = axes[0]
+
+    # 4H Swing High 水平線（橙 #FF8C00）
+    for price in sh_4h_in_view.values:
+        ax_main.axhline(y=price, color='#FF8C00', linewidth=2.0, linestyle='-', alpha=0.9)
+    # 4H Swing Low 水平線（青 #1E90FF）
+    for price in sl_4h_in_view.values:
+        ax_main.axhline(y=price, color='#1E90FF', linewidth=2.0, linestyle='-', alpha=0.9)
+    # 15M Swing High 水平線（サーモン #FA8072）
+    for price in sh_15m_in_view.values:
+        ax_main.axhline(y=price, color='#FA8072', linewidth=1.5, linestyle='-', alpha=0.85)
+    # 15M Swing Low 水平線（水色 #87CEEB）
+    for price in sl_15m_in_view.values:
+        ax_main.axhline(y=price, color='#87CEEB', linewidth=1.5, linestyle='-', alpha=0.85)
+
+    # エントリー時刻のマーカー（縦線）
+    try:
+        center_x = int(df_view.index.searchsorted(center_time))
+        if 0 <= center_x < len(df_view):
+            ax_main.axvline(x=center_x, color='#00FF00', linewidth=1.2,
+                            linestyle='--', alpha=0.8)
+    except Exception:
+        pass
+
+    # 凡例
+    legend_items = [
+        mpatches.Patch(color='#FF8C00', label='4H SH'),
+        mpatches.Patch(color='#1E90FF', label='4H SL'),
+        mpatches.Patch(color='#FA8072', label='15M SH'),
+        mpatches.Patch(color='#87CEEB', label='15M SL'),
+        mpatches.Patch(color='#00FF00', label='Entry'),
+    ]
+    ax_main.legend(handles=legend_items, loc='upper left', fontsize=8,
+                   framealpha=0.3, facecolor='#1a1a2e', labelcolor='white')
+
+    # ── 情報テーブル（図の下部にテキスト注記） ──
+    n_sh4h  = len(sh_4h_in_view)
+    n_sl4h  = len(sl_4h_in_view)
+    n_sh15m = len(sh_15m_in_view)
+    n_sl15m = len(sl_15m_in_view)
+
+    info_text = (
+        f"n(4H)=3  n(15M)=3  |  dir={direction}  |  "
+        f"4H SH={n_sh4h} SL={n_sl4h}  |  "
+        f"15M SH={n_sh15m} SL={n_sl15m}  |  "
+        f"bars={len(df_view)}"
+    )
+    fig.text(0.01, 0.01, info_text, fontsize=8, color='white',
+             bbox=dict(boxstyle='round', facecolor='#1a1a2e', alpha=0.7))
+
+    # ── PNG 保存 ──
+    save_path_obj = Path(save_path)
+    save_path_obj.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path_obj, dpi=dpi, bbox_inches='tight',
+                facecolor='#1a1a2e', edgecolor='none')
+    plt.close(fig)
+
+
 def save_entry_debug_plot(
     df_multi: pd.DataFrame,
     entries_long: pd.Series,
