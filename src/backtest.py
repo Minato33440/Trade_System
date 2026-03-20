@@ -1,4 +1,4 @@
-"""backtest.py — USDJPY MTF v2 バックテスト（#009 新ロジック版）。
+"""backtest.py — USDJPY MTF v2 バックテスト（#011 統合レンジロジック版）。
 
 python src/backtest.py で実行。
 
@@ -9,6 +9,9 @@ python src/backtest.py で実行。
   #009: 15M DB + 5M DB エントリーに全面再設計
         exit_logic.py 統合（フェーズ別決済）
         デバッグ出力 a/b/c/d/e 追加
+  #011: check_15m_range_low() 統合（DB/IHS/ASCENDING）
+        4H Swing 幅ガード追加
+        デバッグ出力 f/g/h/i 追加（パターン別勝率）
 """
 from __future__ import annotations
 
@@ -33,7 +36,7 @@ from src.swing_detector import (
     get_nearest_swing_high,
     get_nearest_swing_low,
 )
-from src.entry_logic import MAX_REENTRY, WICKTOL_PIPS, evaluate_entry
+from src.entry_logic import MAX_REENTRY, MIN_4H_SWING_PIPS, WICKTOL_PIPS, evaluate_entry
 from src.exit_logic import manage_exit
 
 try:
@@ -115,7 +118,10 @@ def _scan_all_bars_for_entry(
     last_sh_short  = float("nan")
 
     entry_events: List[dict] = []
-    debug_a = {'db_15m_found': 0, 'db_5m_confirmed': 0, 'wicktol_invalid': 0}
+    debug_a = {
+        'db_15m_found': 0, 'db_5m_confirmed': 0, 'wicktol_invalid': 0,
+        'swing_guard_skip': 0, 'sl3_over_skip': 0,
+    }
 
     print(f"  [INFO] {n_bars} 本のバーをスキャン中...")
 
@@ -190,6 +196,10 @@ def _scan_all_bars_for_entry(
         )
 
         # デバッグ a カウント
+        if result.get('swing_guard_skip'):
+            debug_a['swing_guard_skip'] += 1
+        if result.get('sl3_over_skip'):
+            debug_a['sl3_over_skip'] += 1
         if result['db_15m_found']:
             debug_a['db_15m_found'] += 1
         if result['wicktol_invalid']:
@@ -218,6 +228,7 @@ def _scan_all_bars_for_entry(
             'neck_4h'    : neck_4h,
             'fib_score'  : result['fib_score'],
             'timestamp'  : entry_ts,
+            'pattern'    : result.get('pattern', ''),
         })
 
         # ── Swing 可視化 PNG 自動保存（Phase 1）──
@@ -323,6 +334,7 @@ def _simulate_trades_mtf(
                     'exit_phase' : exit_phase_at_close,
                     'hold_bars'  : i - position['entry_bar'],
                     'fib_score'  : position.get('fib_score', 0),
+                    'pattern'    : position.get('entry_pattern', ''),
                 })
                 debug_bcd[exit_phase_at_close] = debug_bcd.get(exit_phase_at_close, 0) + 1
 
@@ -345,6 +357,7 @@ def _simulate_trades_mtf(
                 'half_exited'        : False,
                 'swing_confirmed_5m' : False,
                 'fib_score'          : ev['fib_score'],
+                'entry_pattern'      : ev.get('pattern', ''),
             }
             in_pos = True
 
@@ -368,6 +381,7 @@ def _simulate_trades_mtf(
             'exit_phase' : position['exit_phase'],
             'hold_bars'  : n_bars - 1 - position['entry_bar'],
             'fib_score'  : position.get('fib_score', 0),
+            'pattern'    : position.get('entry_pattern', ''),
         })
 
     return trades, debug_bcd
@@ -423,10 +437,10 @@ def run_rex_mtf_backtest(
     t0 = time.time()
 
     print("=" * 70)
-    print("  REX MTF Backtest #009 (15M DB + 5M DB Entry)")
+    print("  REX MTF Backtest #011 (統合レンジロジック + 4H Swing ガード)")
     print("=" * 70)
     print(f"データ: {df_path}")
-    print(f"WICKTOL_PIPS: {WICKTOL_PIPS}  |  Lot: {lot_size}")
+    print(f"WICKTOL_PIPS: {WICKTOL_PIPS}  |  MIN_4H_SWING_PIPS: {MIN_4H_SWING_PIPS}  |  Lot: {lot_size}")
     print("=" * 70)
 
     # ── Step 1: データ読み込み ──
@@ -521,6 +535,42 @@ def run_rex_mtf_backtest(
 
     print(f"\n[e] WICKTOL_PIPS 現在設定値:  {WICKTOL_PIPS} pips")
 
+    # ── デバッグ出力 f/g/h/i ──
+    _all_patterns_long  = ['DB', 'IHS', 'ASCENDING']
+    _all_patterns_short = ['DT', 'HNS', 'DESCENDING']
+    _all_patterns = _all_patterns_long + _all_patterns_short
+
+    df_t = pd.DataFrame(trades) if trades else pd.DataFrame()
+
+    print(f"\n[f] パターン別エントリー件数")
+    if len(df_t) > 0 and 'pattern' in df_t.columns:
+        pat_counts = df_t['pattern'].value_counts()
+        for p in _all_patterns:
+            cnt = int(pat_counts.get(p, 0))
+            pct = cnt / len(df_t) * 100
+            if cnt > 0:
+                print(f"    {p:12s}: {cnt:3d} 件 ({pct:.1f}%)")
+    else:
+        print("    (データなし)")
+
+    print(f"\n[g] 4H Swing 幅ガードによるスキップ件数")
+    print(f"    {debug_a['swing_guard_skip']} 件スキップ（幅不足 < {MIN_4H_SWING_PIPS:.0f} pips）")
+
+    print(f"\n[h] SL3/SH3 上限超過によるスキップ件数")
+    print(f"    {debug_a['sl3_over_skip']} 件スキップ（等距離ルール違反）")
+
+    print(f"\n[i] パターン別 勝率・平均損益")
+    if len(df_t) > 0 and 'pattern' in df_t.columns:
+        for p in _all_patterns:
+            pt = df_t[df_t['pattern'] == p]
+            if len(pt) == 0:
+                continue
+            wr  = float((pt['pnl_pips'] > 0).sum() / len(pt) * 100)
+            avg = float(pt['pnl_pips'].mean())
+            print(f"    {p:12s}: 勝率 {wr:5.1f}%  平均 {avg:+6.1f} pips  ({len(pt)} 件)")
+    else:
+        print("    (データなし)")
+
     print(f"\n  実行時間: {elapsed:.1f}秒")
 
     # ── 総合評価 ──
@@ -549,8 +599,9 @@ def run_rex_mtf_backtest(
 
     print("\n" + "=" * 70)
     print("  [次のステップ]")
+    print("  ・デバッグ i のパターン別勝率を確認 → DB/IHS/ASCENDING の差を評価")
     print("  ・WICKTOL_PIPS: 0.0 → 5.0 → 10.0 の順でテスト")
-    print("  ・plot_swing_check() で Swing 検出精度を視覚確認")
+    print("  ・MIN_4H_SWING_PIPS の調整検討（デバッグ g 件数を参考に）")
     print("=" * 70)
     print("\nボス、結果を確認してください！")
 
