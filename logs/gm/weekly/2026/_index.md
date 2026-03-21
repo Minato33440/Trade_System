@@ -133,3 +133,15 @@ updated: 2026-01-19 (JST)
   - [meta](./2026-3-13_wk03/meta.yaml)
   - [review](./2026-3-13_wk03/review.md)
   - [charts](./2026-3-13_wk03/charts.md)
+
+### 2026-3-20_wk04（2026-03-16 → 2026-03-20）
+- Regime: Geopolitical Risk-Off + Energy Shock（FOMC_hold_hawkish + US_China_summit_postponed + IEA_oil_6months + WTI_extreme_volatile + USDJPY_v_recovery + JP225_below_fib236）
+- 1行：FOMC据え置き＋タカ派・米中延期・イスラエル湾岸爆撃でリスクオフ再加速。US100は月足Fibo23.6ネック割り込みFibo38.2（22,200$）視野。WTI極端乱高下（119.50→76→100）、XAU4,500$急落。完全凍結継続・弾薬最大温存。
+- Key gates:
+  - Add risk: 米中首脳会談再設定確認後、US100 22,200$維持かつ反発確認（追撃禁止）
+  - Reduce risk: US100 daily close <22,200 OR VIX>30定着 OR 紛争拡大（WTI再高騰/ホルムズ再封鎖）
+- Links:
+  - [note](./2026-3-20_wk04/note.md)
+  - [meta](./2026-3-20_wk04/meta.yaml)
+  - [review](./2026-3-20_wk04/review.md)
+  - [charts](./2026-3-20_wk04/charts.md)

@@ -1,0 +1,75 @@
+week: 2026-3-20_wk04
+date_range: 2026-03-16 -> 2026-03-20
+created: 2026-03-21
+updated: 2026-03-21
+
+snapshot:
+  US100:
+    close: ~22200  # Fibo38.2水準が視野に（週足ネック割れ）
+    weekly_change_pct: TBD
+    bias: risk_off_deepening
+    key_levels: [25409.3, 24643.02, 23913.4, 22222.9, 21263.9]
+  JP225:
+    close: TBD  # 週足ワントップ→急落、Fibo23.6を実体で割り込み終値
+    weekly_change_pct: TBD
+    bias: correcting_below_fib236
+    key_levels: [60059, 58582, 54814, 48108]
+  USDJPY:
+    close: 159.20
+    weekly_high: 159.90
+    weekly_low: 157.50
+    weekly_change_pct: TBD
+    bias: volatile_v_recovery
+    key_levels: [160.0, 159.90, 159.20, 157.50, 156.0, 154.747]
+  WTI:
+    close: ~100.0
+    weekly_high: 119.50
+    weekly_low: 76.0
+    weekly_change_pct: TBD
+    bias: extreme_volatile_recovery
+    key_levels: [119.50, 100.0, 90.90, 76.0, 67.065]
+  XAUUSD:
+    close: ~4500
+    weekly_change_pct: TBD
+    bias: correcting_at_fib236
+    key_levels: [5300.0, 5146.10, 4900, 4549.86, 4500]
+  US10Y:
+    close: TBD
+    weekly_change_pct: TBD
+    bias: elevated_hold  # FOMC据え置き・タカ派維持
+    key_levels: [4.50, 4.30, 4.13, 3.962]
+  VIX:
+    close: 26.7
+    bias: elevated_risk_off
+
+signals:
+  - FOMC_hold_hawkish: "3/19 FOMC政策金利据え置き＋タカ派発言、イラク侵攻インフレ懸念"
+  - US_China_summit_postponed: "米中首脳会談延期でリスクオフ加速"
+  - IEA_oil_recovery_6months: "湾岸諸国エネルギー輸出復旧に半年、原油高継続・180$予測も"
+  - private_credit_riskoff_product: "プライベートクレジット市場でリスクオフ型新商品発売"
+  - cargo_island_news: "米国カーグ島実行支配報道で一時株価持ち直し"
+  - JP_US_summit_defense: "日米首脳会談・防衛装備＋レアアース共同開発合意"
+  - WTI_extreme_volatility: "119.50→76（ホルムズ一部解除）→100（イスラエル爆撃復旧半年）"
+  - USDJPY_v_recovery: "159.90（有事ドル買い）→157.50（日銀牽制）→159.20（V字）"
+  - XAUUSD_correction: "株安連動で急落、週足上昇Fibo23.6→日足押し安値4500$"
+  - JP225_below_fib236: "週足ワントップから急落、Fibo23.6実体割り込み終値"
+  - US10_saucer_top: "月足Fibo23.6の週足ネックライン若干割り込み終値、Fibo38.2水準警戒"
+
+decision_bias:
+  risk: "完全凍結継続（FOMC・米中延期・紛争拡大でNO-GO）"
+  hedge: "Gold/エネルギー/防衛継続保有、TACO展開にも備え弾薬温存"
+  ammo: "深押し（US100 Fibo38.2 / 22200水準）待機継続"
+  usdjpy: "159.20維持、V字回復確認済み。介入急落は一過性対処方針変わらず"
+  oil: "100$回復確認。180$予測アナリストもあり、エネルギー保有継続"
+
+event_risk:
+  - "イスラエル湾岸諸国への空爆継続・エネルギー施設復旧状況（半年見通し）"
+  - "米中首脳会談再設定の有無（リスクオン転換の鍵）"
+  - "プライベートクレジット追加報道（リスクオフ型商品の影響波及）"
+  - "日銀4月以降タカ派発言内容（円高加速リスク）"
+  - "US100 Fibo38.2（22,200$）維持 or 割れ（21,264視野）"
+  - "WTI 100$定着 or 調整（ホルムズ封鎖解除状況）"
+  - "米国中間選挙（秋）に向けたTACOトレード展開の有無"
+
+links:
+  charts: "./charts.md"

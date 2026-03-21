@@ -192,6 +192,8 @@ updated: 2026-01-03 (JST)
 ## Distilled Logs (monthly)
 - 2026-01: Trade_Record/versions/distilled/2026/distilled-gm-2026-1.md
 - 2026-02: Trade_Record/versions/distilled/2026/distilled-gm-2026-2.md
+- 2026-03: Trade_Record/versions/distilled/2026/distilled-gm-2026-3.md
+- 2026-04 (3/16〜): Trade_Record/versions/distilled/2026/distilled-gm-2026-4.md
 
 ## 3-scenario response（週の骨格）
 A) Risk-on confirmation（上抜け“本物”）
@@ -221,3 +223,65 @@ C) Risk-off re-ignition（失速）
   - [meta](./logs/gm/weekly/2026/2026-3-7_wk01/meta.yaml)
   - [review](./logs/gm/weekly/2026/2026-3-7_wk01/review.md)
   - [charts](./logs/gm/weekly/2026/2026-3-7_wk01/charts/charts.md)
+
+### 2026-3-20_wk04（2026-03-16 → 2026-03-20）
+- Regime: Geopolitical Risk-Off + Energy Shock（FOMC_hold_hawkish + US_China_postponed + IEA_oil_6months + WTI_extreme_volatile + USDJPY_v_recovery + JP225_below_fib236）
+- 1行：FOMC据え置き＋タカ派・米中延期・イスラエル湾岸爆撃でリスクオフ再加速。US100月足Fibo23.6ネック割り込みFibo38.2（22,200$）視野。WTI極端乱高下（119.50→76→100）、XAU4,500$急落。USDJPY V字（159.90→157.50→157.92）。完全凍結・弾薬最大温存。
+- Key gates:
+  - Add risk: 米中首脳会談再設定確認後 US100 22,200$維持かつ反発確認（追撃禁止）
+  - Reduce risk: US100 daily close <22,200 OR VIX>30定着 OR WTI再高騰（ホルムズ再封鎖）
+- Links:
+  - [note](./logs/gm/weekly/2026/2026-3-20_wk04/note.md)
+  - [meta](./logs/gm/weekly/2026/2026-3-20_wk04/meta.yaml)
+  - [review](./logs/gm/weekly/2026/2026-3-20_wk04/review.md)
+  - [charts](./logs/gm/weekly/2026/2026-3-20_wk04/charts.md)
+
+
+## Weekly Brief | 2026-3-20_wk04（2026-03-16 → 2026-03-20）
+created: 2026-03-21 (JST)
+
+### Macro / Regime
+- Regime: Geopolitical Risk-Off + Energy Shock
+- FOMC（3/19）政策金利据え置き＋タカ派発言。イラク侵攻インフレ加速懸念継続。米中首脳会談延期でリスクオフ再加速。
+- IEA声明：湾岸諸国エネルギー輸出の復旧に半年見通し→原油高長期化シナリオ（180$予測アナリストも）。
+- イスラエルによる湾岸諸国空爆・エネルギー施設破壊継続。米軍中東に海兵隊数千人追加派遣。
+- WTI極端乱高下（119.50→76→100）。XAU週足Fibo23.6→日足押し安値4,500$まで急落。
+- US100 月足Fibo23.6の週足ネックライン割り込み終値→Fibo38.2（22,200$）視野。
+- JP225 週足ワントップから急落、Fibo23.6実体割り込み終値（日米首脳会談・防衛セクターで相対堅調）。
+- USDJPY：159.90（週高値）→157.50（日銀牽制急落）→157.924（金曜終値）V字。VIX 26.78高止まり。
+
+### Position / Orders
+- Core：Gold / エネルギー（WTI 100$回復確認）/ 防衛（日米共同開発・ゴールデンドーム関連）継続保有。
+- Mode：完全凍結継続。米中首脳会談再設定確認まではNO-GO。
+- 弾薬温存：US100 Fibo38.2（22,200$）/ JP225 深押し待機継続。
+- USDJPY：V字回復確認済み。介入急落（～3円）は一過性対処方針継続。
+
+### Key Levels (close-based)
+- US100: 23,898.154（週終値）/ S=22,200（Fibo38.2）/ 次=21,264
+- JP225: Fibo23.6実体割り込み終値 / S=54,814
+- USDJPY: 157.924（金曜NY終値）/ 週高159.90 / 週安157.50
+- WTI: 98.230 / S=95.0 / R=100.0（施設復旧半年で高止まり）
+- XAUUSD: 4,574.9（日足押し安値4,500$付近）
+- US2Y: 4.012 / US10Y: 4.391 / VIX: 26.780
+
+### Gates（最重要：終値で判定）
+- Add risk ONLY if: 米中再設定確認後 US100 22,200$維持かつ反発（追撃禁止）
+- Reduce / pause if: US100 D1 close <22,200 OR VIX>30定着 OR WTI再急騰
+- Hedge gate: Gold 4,500$押し目・エネルギー・防衛継続
+
+### This Week Focus（行動: 3/23-27）
+- 完全凍結継続。米中首脳会談再設定の有無を最重視。
+- WTI 100$定着 or 調整を確認（エネルギー保有判断）。
+- 日銀4月タカ派発言内容に注意（円高加速リスク）。
+- VIX 26.78の30超え定着 or 鎮静を日足終値で確認。
+
+### Signals (weekly, fixed keys)
+- us10y_accel: on（FOMC据え置き・タカ派でUS10Y 4.391%）
+- hy_oas_widening: alert（プライベートクレジット リスクオフ型新商品波及）
+- vix_spike: on（26.78 高止まり）
+- wti_shock: on（極端乱高下・100$回復・施設復旧半年）
+- eps_revision_chain: watch（米中延期の影響・日銀4月タカ派）
+
+## Previous (archived briefs)
+- Weekly Brief | 2026-3-13_wk03（2026-03-09 → 2026-03-13）
+  - see: logs/gm/weekly/2026/2026-3-13_wk03/

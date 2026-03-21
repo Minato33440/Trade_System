@@ -18,23 +18,33 @@
 
 ---
 
-## 2. rex_chat.py フラグから抽出するデータ
+## 2. データ取得コマンド（2026-03-21更新）
 
-週末前に `python configs/rex_chat.py --trade --news` を実行し、以下を利用する。
+### ⚠️ 重要: コマンドの変更
+
+旧コマンド（廃止）: `python configs/rex_chat.py --trade --news`
+**新コマンド（確定）: `python main.py --trade --news`**
+
+> 理由: システム構成変更により `configs/rex_chat.py` の直接実行では --trade/--news フラグが発動しなくなった。
+> `main.py` が `configs/rex_chat.py` の `main()` を呼び出すエントリポイントとなっており、こちらから実行する。
 
 ### 2.1 `--trade` から得るもの
 
 | 抽出物 | 保存場所（元） | 週次フォルダでの利用先 |
 |--------|----------------|------------------------|
-| **8ペア30日プロット** | `logs/png_data/multi_pairs_plot_8.png` | `charts/` にコピー or 参照。ファイル名は日付付き推奨（例: `Portforio-2026-03-09.png`） |
-| **8ペア変動率テキスト** | ターミナル出力（取得期間・各ペア最新値・30日変化%） | `charts/` 内の .txt（例: `Market conditions -YYYY-M-D.txt`）や `GM Strategy-YYYY-M-D~.txt` に貼り付け or 保存 |
-| **レジームスナップショット** | `logs/png_data/YYYY_MM_DD_snapshot.yaml` | 市況・レジーム判定の根拠。charts/ にコピー or review/note で参照 |
+| **8ペア30日プロット** | `logs/png_data/multi_pairs_plot_8.png` | `charts/Portforio-YYYY-MM-DD.png` にコピー保存 |
+| **8ペア変動率テキスト** | ターミナル出力（取得期間・各ペア最新値・30日変化%） | `charts/YYYY-MM-DD 〜 YYYY-MM-DD.txt` として保存（日付は取得期間）|
+| **レジームスナップショット** | `logs/png_data/YYYY_MM_DD_snapshot.yaml` | `charts/YYYY_MM_DD_snapshot.yaml` にコピー保存 |
+
+取得期間のファイル名例: `2026-02-19 〜 2026-03-21.txt`（取得期間をそのままファイル名に使う）
 
 ### 2.2 `--news` から得るもの
 
 | 抽出物 | 内容 | 週次での利用 |
 |--------|------|----------------|
-| GMキーワードニュース | RSS から取得した投資・地政系ヘッドライン＋サマリ | `charts/Market conditions -YYYY-M-D.txt` などに「ニュース1〜5」として追記 or 別 .txt に保存 |
+| GMキーワードニュース | RSS から取得した投資・地政系ヘッドライン＋サマリ | `charts/Market conditions -YYYY-M-D~.txt` に市況テキストと合わせて保存 |
+
+> **運用メモ**: `Market conditions -YYYY-M-D~.txt` には Minato の市況テキストも先頭に追記してから `--news` 出力を続けて貼ると一元管理しやすい。
 
 ### 2.3 `private_trades.csv` から抽出するもの
 
@@ -42,18 +52,20 @@
 |--------|------|----------------|
 | **当週のトレード一覧** | 該当週の opened_at でフィルタした全件 | `track_trades.py summary` で Markdown 生成 → `trade_results.md` と review.md の「Trades of the Week」 |
 
-**charts/ 内の利用ファイル（例）**
+**charts/ 内の利用ファイル（確定パターン）**
 
-- `multi_pairs_plot_8.png` → 週次用に日付リネームして `charts/Portforio-YYYY-MM-DD.png` などで保存
-- `YYYY_MM_DD_snapshot.yaml` → そのまま `charts/` にコピー（例: `2026_03_09_snapshot.yaml`）
+- `multi_pairs_plot_8.png` → `charts/Portforio-YYYY-MM-DD.png`（実行日付でリネーム）
+- `YYYY_MM_DD_snapshot.yaml` → `charts/YYYY_MM_DD_snapshot.yaml`（そのままコピー）
+- 8ペア30日データ → `charts/YYYY-MM-DD 〜 YYYY-MM-DD.txt`（取得期間を〜でつなぐ）
+- GM戦略 → `charts/GM Strategy-YYYY-M-DD.txt`
 
 ---
 
 ## 3. 先週フォーマットに基づく「Y-M-D_wk--」用ファイル新規作成
 
-対象フォルダ: `logs/gm/weekly/2026/YYYY-M-D_wkNN/`（例: `2026-3-14_wk03`）。
+対象フォルダ: `logs/gm/weekly/2026/YYYY-M-D_wkNN/`（例: `2026-3-20_wk04`）。
 
-「先週」の同フォルダ（例: `2026-3-7_wk02`）をテンプレートにし、以下を新規作成 or 更新する。
+「先週」の同フォルダをテンプレートにし、以下を新規作成 or 更新する。
 
 ### 3.1 作成するファイル一覧
 
@@ -69,10 +81,11 @@
 
 | 種別 | 元ファイル（例） | 週次での名前（例） |
 |------|------------------|---------------------|
-| 8ペアプロット | `logs/png_data/multi_pairs_plot_8.png` | `Portforio-2026-03-09.png` 等 |
-| レジームYAML | `logs/png_data/2026_03_09_snapshot.yaml` | `2026_03_09_snapshot.yaml`（そのままコピー可） |
-| 市況・ニューステキスト | rex_chat --trade/--news の出力 or 手動メモ | `Market conditions -2026-3-7.txt` 等 |
-| GM戦略テキスト | チャットで整理した戦略メモ | `GM Strategy-2026-3-9~.txt` 等 |
+| 8ペアプロット | `logs/png_data/multi_pairs_plot_8.png` | `Portforio-2026-03-21.png` |
+| レジームYAML | `logs/png_data/2026_03_21_snapshot.yaml` | `2026_03_21_snapshot.yaml` |
+| 30日データテキスト | `python main.py --trade` のターミナル出力 | `2026-02-19 〜 2026-03-21.txt` |
+| 市況・ニューステキスト | Minato市況 + `python main.py --news` の出力 | `Market conditions -2026-3-21~.txt` |
+| GM戦略テキスト | review/note/meta/30日データを統合して作成 | `GM Strategy-2026-3-21.txt` |
 | その他チャート | 個別スクショ（JP225, US100, WTI 等） | 従来通り `charts/` に配置 |
 
 ### 3.3 review.md の「Trades of the Week」セクション
@@ -88,40 +101,50 @@
 週末に、以下を上から順に実施する。
 
 - [ ] **1. 僕からの提供データを確認**
-  - 市況サマリ
+  - 市況サマリ（チャット上で貼ってもらう）
   - GMポートフォリオ口座（残高・評価損益・内訳）
   - チャット上のトレード結果（未記録分は private_trades.csv に反映）
 
-- [ ] **2. rex_chat.py でデータ取得**
-  - `python configs/rex_chat.py --trade --news` を実行
-  - ターミナル出力（8ペア変動率・レジーム）を保存 or コピー
-  - `logs/png_data/multi_pairs_plot_8.png` と `logs/png_data/YYYY_MM_DD_snapshot.yaml` を確認
+- [ ] **2. `python main.py --trade --news` でデータ取得**（⚠️ main.py から実行）
+  - ターミナル出力（8ペア変動率・レジーム）を `charts/YYYY-MM-DD 〜 YYYY-MM-DD.txt` に保存
+  - `logs/png_data/multi_pairs_plot_8.png` を `charts/Portforio-YYYY-MM-DD.png` にコピー
+  - `logs/png_data/YYYY_MM_DD_snapshot.yaml` を `charts/` にコピー
+  - `--news` の出力を Minato 市況テキストと合わせて `charts/Market conditions -YYYY-M-D~.txt` に保存
 
 - [ ] **3. 当週トレードの Markdown 生成**
-  - 当週の月曜〜日曜の日付を決める（例: 2026-03-09〜2026-03-14）
-  - `python src/track_trades.py summary --start 2026-03-09 --end 2026-03-14` を実行
+  - 当週の月曜〜日曜の日付を決める（例: 2026-03-16〜2026-03-21）
+  - `python src/track_trades.py summary --start 2026-03-16 --end 2026-03-21` を実行
   - 出力を `trade_results.md` として当週フォルダに保存
   - 同じ出力から「Trades of the Week」用の要約を抜き出し
 
-- [ ] **4. 来週フォルダの作成**
-  - `logs/gm/weekly/2026/YYYY-M-D_wkNN/` を新規作成（例: 2026-3-14_wk03）
-  - `charts/` サブフォルダを作成
+- [ ] **4. 週次フォルダの確認・作成**
+  - `logs/gm/weekly/2026/YYYY-M-D_wkNN/` を新規作成（Minato がフォルダ作成）
+  - `charts/` サブフォルダを確認
 
-- [ ] **5. charts/ へのコピー**
-  - `multi_pairs_plot_8.png` → `charts/Portforio-YYYY-MM-DD.png`
-  - `YYYY_MM_DD_snapshot.yaml` → `charts/YYYY_MM_DD_snapshot.yaml`
-  - 市況・ニュース・GM戦略の .txt を配置
+- [ ] **5. charts/ へのファイル配置**（手順2で既に実施済みなら確認のみ）
+  - `Portforio-YYYY-MM-DD.png` ✓
+  - `YYYY_MM_DD_snapshot.yaml` ✓
+  - `YYYY-MM-DD 〜 YYYY-MM-DD.txt` ✓
+  - `Market conditions -YYYY-M-D~.txt` ✓
+  - `GM Strategy-YYYY-M-D.txt` ← ClaudeCode が作成
 
-- [ ] **6. 各 .md / .yaml の作成・更新**
-  - 先週フォルダをコピーしてリネームし、今週の日付・内容に差し替え
+- [ ] **6. 各 .md / .yaml の作成・更新**（ClaudeCode が担当）
   - meta.yaml: week, date_range, created, updated, snapshot, signals, portfolio_snapshot
   - review.md: 結論・材料・Evidence・Implication・GM実務・監視項目・**Trades of the Week**
   - note.md: Macro・takeaways・gates・本日追記・Portfolio action・口座
   - charts.md: 今週の charts/ 内ファイルを列挙
   - trade_results.md: 手順 3 の Markdown をそのまま保存
 
-- [ ] **7. Git 更新**
-  - `git add logs/gm/weekly/2026/YYYY-M-D_wkNN/ data/private_trades.csv`（必要に応じて logs/png_data 等も追加）
+- [ ] **7. インデックス・ステータス・distilled の更新**（ClaudeCode が担当）
+  - `logs/gm/weekly/2026/_index.md`: 当週エントリを末尾に追加（Regime / 1行 / Key gates / Links）
+  - `docs/STATUS.md`: 最新 "Weekly Brief | YYYY-M-D_wkNN" セクションを末尾に追加
+  - `docs/Trade-Main.md`: ① "2026 Weekly Index" に当週エントリを追加 ② "Distilled Logs" リンクを更新 ③ 末尾に "Weekly Brief" セクションを追加
+  - `versions/distilled/2026/distilled-gm-2026-N.md`: 当月 or 新月ファイルに当週の distilled エントリを追加（ファイルが存在しない場合は新規作成）
+    - N はファイル番号（月ベース or 新シーズン開始時に繰り上げ）
+    - 書式: regime / decision（判断変更点のみ） / evidence (close) / implication / tags
+
+- [ ] **8. Git 更新**
+  - `git add logs/gm/weekly/2026/YYYY-M-D_wkNN/ data/private_trades.csv logs/gm/weekly/2026/_index.md docs/STATUS.md docs/Trade-Main.md versions/distilled/2026/`（必要に応じて logs/png_data 等も追加）
   - `git commit -m "weekly: YYYY-M-D_wkNN review + trade_results + charts"`
   - `git push`
 
@@ -132,7 +155,8 @@
 | 用途 | パス or コマンド |
 |------|------------------|
 | 週次ルート | `REX_Trade_System/logs/gm/weekly/2026/` |
-| 当週フォルダ例 | `2026-3-14_wk03/` |
+| 当週フォルダ例 | `2026-3-20_wk04/` |
+| **8ペアデータ取得（確定）** | **`python main.py --trade --news`** |
 | プロット（元） | `logs/png_data/multi_pairs_plot_8.png` |
 | スナップショット（元） | `logs/png_data/YYYY_MM_DD_snapshot.yaml` |
 | トレードCSV | `data/private_trades.csv` |
@@ -143,8 +167,10 @@
 
 ## 6. 足りない場合の追加メモ
 
-- **週番号（wkNN）**: その週の月曜日を含む ISO 週番号、または「3月第2週」などの通し番号で統一するとよい。先週が `wk02` なら今週は `wk03`。
-- **日付範囲**: review/meta の `date_range` は「その週の月曜〜日曜」で揃える（例: `2026-03-09 -> 2026-03-14`）。
+- **週番号（wkNN）**: その週の月曜日を含む ISO 週番号、または「3月第2週」などの通し番号で統一するとよい。先週が `wk03` なら今週は `wk04`。
+- **日付範囲**: review/meta の `date_range` は「その週の月曜〜金曜」で揃える（例: `2026-03-16 -> 2026-03-20`）。
 - **作成日**: `created` は週末にファイルを作った日、`updated` は最終更新日（月曜の追記などがあれば更新）。
+- **30日データテキストのファイル名**: `python main.py --trade` 出力冒頭の「取得期間: YYYY-MM-DD 〜 YYYY-MM-DD」をそのままファイル名に使う。
+- **GM Strategyファイル**: 8ペア30日データ・レジーム・Minato市況・news を統合してClaudeCodeが作成。セクション構成: ①8ペアサマリ ②週末市況 ③ファンダ ④テクニカル ⑤シナリオ ⑥押し目戦略 ⑦アクション ⑧参照データ ⑨総合解説(A-G)。
 
-このドキュメントは、Rex が週末更新時に参照し、上記チェックリストとパスに従って作業できるようにするためのもの。
+このドキュメントは、Rex / ClaudeCode が週末更新時に参照し、上記チェックリストとパスに従って作業できるようにするためのもの。
