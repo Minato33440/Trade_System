@@ -16,8 +16,8 @@ tests/output/
 png_data/
 logs/png_data/
 
-# 週次 charts/ は画像等で Git 容量増大するため無視
-logs/gm/weekly/*/*/charts/
+# 週次 charts/ の PNG のみ除外（バイナリ/容量）。テキスト・YAML は追跡する
+logs/gm/weekly/*/*/charts/*.png
 # Node パッケージ
 node_modules/
 

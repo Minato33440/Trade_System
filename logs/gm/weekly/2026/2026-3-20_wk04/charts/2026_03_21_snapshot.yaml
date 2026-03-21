@@ -1,0 +1,46 @@
+# 2026_03_21_snapshot.yaml
+
+date:
+  start: 2026-02-19
+  end: 2026-03-21
+
+panel:
+  Risk: [US100, BTC/USD]
+  Fear: [VIX]
+  Inflation: [WTI, XAU/USD]
+  Rates: [US2Y, US10Y]
+
+regime:
+  label: "Geopolitical Risk-Off + Energy Shock"
+  equities: down
+  volatility: spike
+  oil: surge
+  gold: off
+  crypto: range
+  yields: rising
+
+snapshot_30d:
+  "USD/JPY":
+    latest: 157.924
+    change_pct: 2.09
+  "US100":
+    latest: 23898.154
+    change_pct: -3.63
+  "XAU/USD":
+    latest: 4574.900
+    change_pct: -8.06
+  "WTI":
+    latest: 98.230
+    change_pct: 47.87
+  "US2Y":
+    latest: 4.012
+    change_pct: 10.01
+  "VIX":
+    latest: 26.780
+    change_pct: 32.38
+  "US10Y":
+    latest: 4.391
+    change_pct: 7.75
+  "BTC/USD":
+    latest: nan
+    change_pct: nan
