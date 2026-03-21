@@ -144,9 +144,24 @@
     - 書式: regime / decision（判断変更点のみ） / evidence (close) / implication / tags
 
 - [ ] **8. Git 更新**
-  - `git add logs/gm/weekly/2026/YYYY-M-D_wkNN/ data/private_trades.csv logs/gm/weekly/2026/_index.md docs/STATUS.md docs/Trade-Main.md versions/distilled/2026/`（必要に応じて logs/png_data 等も追加）
-  - `git commit -m "weekly: YYYY-M-D_wkNN review + trade_results + charts"`
-  - `git push`
+  - 以下を一括ステージ（`charts/` 内 PNG は .gitignore で自動除外、テキスト・YAML のみ追跡される）
+    ```
+    git add logs/gm/weekly/2026/YYYY-M-D_wkNN/ \
+            logs/gm/weekly/2026/_index.md \
+            docs/STATUS.md \
+            docs/Trade-Main.md \
+            versions/distilled/2026/ \
+            data/private_trades.csv
+    ```
+  - コミット＆プッシュ
+    ```
+    git commit -m "weekly: YYYY-M-D_wkNN review + trade_results + charts"
+    git push origin main
+    ```
+  - **charts/ の Git 追跡ルール（2026-03-21〜）**
+    - `*.txt` / `*.yaml` / `*.md` → **追跡対象**（上記 `git add` で自動包含）
+    - `*.png` → **ローカル専用**（`.gitignore` で除外済み）
+    - 新ファイルを charts/ に追加した場合も `git add YYYY-M-D_wkNN/` で一括追加できる
 
 ---
 
