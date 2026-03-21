@@ -11,7 +11,6 @@
 - 対象通貨ペア: USDJPY（将来的に他ペアへ拡張予定）
 - データ: data/raw/usdjpy_multi_tf_2years.parquet
   83,112本 / 5M足 / 期間: 2024-03-13〜2026-03-13
-
 ---
 
 ## 2. チーム役割分担
@@ -21,6 +20,7 @@
 | ディレクター・橋渡し | Minato |
 | エンジニアリング責任者・設計 | Rex（claude.ai） |
 | コード実装・Git管理 | ClaudeCode（VS Code） |
+
 
 ---
 
