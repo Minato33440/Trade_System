@@ -47,6 +47,9 @@ DIRECTION_MODE    = 'LONG' # 'LONG' | 'SHORT' | 'BOTH'
 ALLOWED_PATTERNS  = ['DB', 'ASCENDING', 'IHS']
                             # 有効パターンの制御（フラグ切り替えで IHS 除外可能）
                             # IHS 除外時: ALLOWED_PATTERNS = ['DB', 'ASCENDING']
+ALLOWED_GRADES    = ['★★★']
+                            # 有効グレードの制御（#018: ★★★ のみ）
+                            # ★★ を復活させる場合: ALLOWED_GRADES = ['★★★', '★★']
 LOOKBACK_15M_RANGE = 50    # 15M range_low lookback 本数（#013: 40 → #014: 50）
 NECK_TOLERANCE_PIPS = 20.0 # neck_4h（1H SH）の ±20pips 以内を ★★★ 判定の近接条件とする
                             # #017: PCT基準（±3%=±450pips超）→ pips固定（±20pips=±0.20円）に修正
@@ -487,6 +490,11 @@ def evaluate_entry(
             f'Support_1h 割れ: sl_last({range_result["sl_last"]:.3f}) '
             f'< support_1h({support_1h:.3f})'
         )
+        return base
+
+    # ── グレードフィルター（ALLOWED_GRADES 外は除外） ──
+    if grade not in ALLOWED_GRADES:
+        base['reason'] = f'グレード除外: {grade}'
         return base
 
     # ── Step3: 5M DB ネックライン実体確定 ──

@@ -36,7 +36,7 @@ from src.swing_detector import (
     get_nearest_swing_high,
     get_nearest_swing_low,
 )
-from src.entry_logic import MAX_REENTRY, MIN_4H_SWING_PIPS, WICKTOL_PIPS, DIRECTION_MODE, ALLOWED_PATTERNS, evaluate_entry
+from src.entry_logic import MAX_REENTRY, MIN_4H_SWING_PIPS, WICKTOL_PIPS, DIRECTION_MODE, ALLOWED_PATTERNS, ALLOWED_GRADES, evaluate_entry
 from src.exit_logic import manage_exit
 
 try:
@@ -128,6 +128,8 @@ def _scan_all_bars_for_entry(
         # #016 追加
         'neck_1h_none_skip': 0, 'support_1h_none_skip': 0,
         'zone_invalid_skip': 0, 'support_1h_break_skip': 0,
+        # #018 追加
+        'grade_filter_skip': 0,
     }
 
     print(f"  [INFO] {n_bars} 本のバーをスキャン中（warm-up {warmup} 本スキップ）...")
@@ -231,6 +233,9 @@ def _scan_all_bars_for_entry(
             debug_a['zone_invalid_skip'] += 1
         if result.get('support_1h_break_skip'):
             debug_a['support_1h_break_skip'] += 1
+        # #018 グレードフィルタースキップ
+        if 'グレード除外' in result.get('reason', ''):
+            debug_a['grade_filter_skip'] += 1
 
         if not result['enter']:
             skip_counts[result['reason']] = skip_counts.get(result['reason'], 0) + 1
@@ -599,6 +604,10 @@ def run_rex_mtf_backtest(
     _all_patterns = _all_patterns_long + _all_patterns_short
 
     df_t = pd.DataFrame(trades) if trades else pd.DataFrame()
+    # entry_events の grade を df_t に付与（debug m 用）
+    if len(df_t) > 0 and 'entry_bar' in df_t.columns:
+        _grade_map = {e['bar_idx']: e.get('grade', '') for e in entry_events}
+        df_t['grade'] = df_t['entry_bar'].map(_grade_map).fillna('')
 
     print(f"\n[f] パターン別エントリー件数")
     if len(df_t) > 0 and 'pattern' in df_t.columns:
@@ -646,6 +655,35 @@ def run_rex_mtf_backtest(
     print(f"    Support_1h 未検出（None）  : {debug_a['support_1h_none_skip']:4d} 件")
     print(f"    ゾーン無効（neck<=support）: {debug_a['zone_invalid_skip']:4d} 件")
     print(f"    Support_1h 割れ            : {debug_a['support_1h_break_skip']:4d} 件")
+
+    print(f"\n[m] Grade × Pattern クロス集計（#018）")
+    _grades_all   = ['★★★', '★★']
+    _patterns_col = ['DB', 'IHS', 'ASCENDING']
+    if len(df_t) > 0 and 'grade' in df_t.columns and 'pattern' in df_t.columns:
+        # ヘッダー
+        header = f"{'':6s}" + "".join(f"  {p:12s}" for p in _patterns_col)
+        print(f"    {header}")
+        for g in _grades_all:
+            excl = " ← 除外中" if g not in ALLOWED_GRADES else ""
+            row_cnt = ""
+            row_wr  = ""
+            for p in _patterns_col:
+                sub = df_t[(df_t['grade'] == g) & (df_t['pattern'] == p)]
+                n   = len(sub)
+                if n == 0:
+                    row_cnt += f"  {'—':12s}"
+                    row_wr  += f"  {'—':12s}"
+                else:
+                    wr  = float((sub['pnl_pips'] > 0).sum() / n * 100)
+                    avg = float(sub['pnl_pips'].mean())
+                    row_cnt += f"  {n}件 ({wr:.0f}%/{avg:+.1f}p)  "
+            print(f"    {g}{excl}")
+            print(f"      {row_cnt}")
+    else:
+        print("    (データなし)")
+
+    print(f"\n[n] グレードフィルタースキップ件数（#018）")
+    print(f"    ★★ 除外: {debug_a['grade_filter_skip']:4d} 件")
 
     print(f"\n[j] 実行モード")
     print(f"    DIRECTION_MODE : {DIRECTION_MODE}")
