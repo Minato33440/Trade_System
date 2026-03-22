@@ -39,9 +39,10 @@ MIN_4H_SWING_PIPS = 20.0   # 4H Swing 最小幅（pips）
                             # これ未満は Fib 計算が無意味になる（Fib フィルタ機能不全）
 DIRECTION_MODE    = 'LONG' # 'LONG' | 'SHORT' | 'BOTH'
                             # #012 では 'LONG' 固定
-ALLOWED_PATTERNS  = ['DB', 'ASCENDING']
-                            # 有効パターンの制御（フラグ切り替えで IHS 復活可能）
-                            # 将来 IHS 復活: ALLOWED_PATTERNS = ['DB', 'ASCENDING', 'IHS']
+ALLOWED_PATTERNS  = ['DB', 'ASCENDING', 'IHS']
+                            # 有効パターンの制御（フラグ切り替えで IHS 除外可能）
+                            # IHS 除外時: ALLOWED_PATTERNS = ['DB', 'ASCENDING']
+LOOKBACK_15M_RANGE = 50    # 15M range_low lookback 本数（#013: 40 → #014: 50）
 
 
 # ── Step1: 4H Fib 条件 ────────────────────────────────────────
@@ -91,7 +92,7 @@ def check_15m_range_low(
     high_15m: pd.Series,
     direction: str,
     n: int = 3,
-    lookback: int = 40,
+    lookback: int = 50,
 ) -> dict:
     """統合レンジロジック — ダブルボトム・逆三尊・安値切り上げを統合検出。
 
@@ -397,7 +398,7 @@ def evaluate_entry(
         return base
 
     # ── Step2: 15M 統合レンジロジック ──
-    range_result = check_15m_range_low(low_15m, high_15m, direction)
+    range_result = check_15m_range_low(low_15m, high_15m, direction, lookback=LOOKBACK_15M_RANGE)
     if not range_result['found']:
         if '超過' in range_result.get('reason', ''):
             base['sl3_over_skip'] = True
