@@ -36,7 +36,7 @@ from src.swing_detector import (
     get_nearest_swing_high,
     get_nearest_swing_low,
 )
-from src.entry_logic import MAX_REENTRY, MIN_4H_SWING_PIPS, WICKTOL_PIPS, evaluate_entry
+from src.entry_logic import MAX_REENTRY, MIN_4H_SWING_PIPS, WICKTOL_PIPS, DIRECTION_MODE, evaluate_entry
 from src.exit_logic import manage_exit
 
 try:
@@ -49,6 +49,9 @@ except ImportError:
 # ── 定数 ──────────────────────────────────────────────────────
 LONG_LOT_MULTIPLIER  = 1.0
 SHORT_LOT_MULTIPLIER = 1.0
+WARMUP_BARS = 1728
+# 計算根拠: 4H足 lookback=30 → 30本 × 4時間 × 12本/時間(5M) = 1,440本
+# 安全マージンとして 4H足 n=3 分を加算 → 30 * 48 + 3 * 48 = 1,584 → 切り上げ 1,728（120日相当）
 
 
 # ── データ読み込みヘルパー ─────────────────────────────────────
@@ -110,7 +113,7 @@ def _scan_all_bars_for_entry(
     ts_5m  = df_multi.index.values
 
     n_bars = len(df_multi)
-    warmup = 100
+    warmup = WARMUP_BARS
 
     reentry_count_long  = 0
     reentry_count_short = 0
@@ -120,10 +123,10 @@ def _scan_all_bars_for_entry(
     entry_events: List[dict] = []
     debug_a = {
         'db_15m_found': 0, 'db_5m_confirmed': 0, 'wicktol_invalid': 0,
-        'swing_guard_skip': 0, 'sl3_over_skip': 0,
+        'swing_guard_skip': 0, 'sl3_over_skip': 0, 'swing_none_skip': 0,
     }
 
-    print(f"  [INFO] {n_bars} 本のバーをスキャン中...")
+    print(f"  [INFO] {n_bars} 本のバーをスキャン中（warm-up {warmup} 本スキップ）...")
 
     skip_counts: Dict[str, int] = {}
 
@@ -145,6 +148,13 @@ def _scan_all_bars_for_entry(
 
         sh_4h = get_nearest_swing_high(df_4h_full["High"], idx_4h, n=3, lookback=20)
         sl_4h = get_nearest_swing_low(df_4h_full["Low"],   idx_4h, n=3, lookback=20)
+
+        # ── 4H Swing None チェック（フォールバック修正後の対応）──
+        # None のまま再エントリー管理の演算に渡すと TypeError になるため早期スキップ
+        if sh_4h is None or sl_4h is None:
+            debug_a['swing_none_skip'] += 1
+            skip_counts['4H Swing 未検出(None)'] = skip_counts.get('4H Swing 未検出(None)', 0) + 1
+            continue
 
         # 再エントリー管理
         if direction == "LONG":
@@ -216,6 +226,11 @@ def _scan_all_bars_for_entry(
         else:
             neck_1h = get_nearest_swing_low(df_1h_full["Low"], idx_1h, n=3, lookback=50)
 
+        # 1H Swing 未検出の場合はエントリースキップ（exit_logic が None で演算クラッシュするため）
+        if neck_1h is None:
+            skip_counts['1H neck 未検出(None)'] = skip_counts.get('1H neck 未検出(None)', 0) + 1
+            continue
+
         # エントリーイベント登録（次の 5M 始値）
         entry_price = float(df_5m_raw["Open"].iloc[i + 1])
         entry_ts    = df_multi.index[i + 1]
@@ -245,6 +260,8 @@ def _scan_all_bars_for_entry(
                 center_time = entry_ts,
                 direction   = direction,
                 save_path   = str(_plots_dir / _fname),
+                sh_4h   = sh_4h,
+                sl_4h   = sl_4h,
             )
         except Exception as _e:
             print(f"    [WARN] plot_swing_check failed: {_e}")
@@ -440,12 +457,14 @@ def run_rex_mtf_backtest(
     print("  REX MTF Backtest #011 (統合レンジロジック + 4H Swing ガード)")
     print("=" * 70)
     print(f"データ: {df_path}")
+    print(f"DIRECTION_MODE: {DIRECTION_MODE}  |  WARMUP_BARS: {WARMUP_BARS}")
     print(f"WICKTOL_PIPS: {WICKTOL_PIPS}  |  MIN_4H_SWING_PIPS: {MIN_4H_SWING_PIPS}  |  Lot: {lot_size}")
     print("=" * 70)
 
     # ── Step 1: データ読み込み ──
     print("\n[STEP 1] データ読み込み + 前処理...")
     df_multi = _load_and_preprocess(df_path)
+    n_bars = len(df_multi)
     print(f"  完了: {df_multi.shape}, 期間={df_multi.index.min()} ~ {df_multi.index.max()}")
 
     df_5m_raw = df_multi[["5M_High", "5M_Low", "5M_Open", "5M_Close"]].rename(
@@ -553,8 +572,9 @@ def run_rex_mtf_backtest(
     else:
         print("    (データなし)")
 
-    print(f"\n[g] 4H Swing 幅ガードによるスキップ件数")
-    print(f"    {debug_a['swing_guard_skip']} 件スキップ（幅不足 < {MIN_4H_SWING_PIPS:.0f} pips）")
+    print(f"\n[g] 4H Swing 関連スキップ件数")
+    print(f"    4H Swing 未検出（None）スキップ : {debug_a['swing_none_skip']} 件")
+    print(f"    4H Swing 幅不足スキップ         : {debug_a['swing_guard_skip']} 件（< {MIN_4H_SWING_PIPS:.0f} pips）")
 
     print(f"\n[h] SL3/SH3 上限超過によるスキップ件数")
     print(f"    {debug_a['sl3_over_skip']} 件スキップ（等距離ルール違反）")
@@ -570,6 +590,12 @@ def run_rex_mtf_backtest(
             print(f"    {p:12s}: 勝率 {wr:5.1f}%  平均 {avg:+6.1f} pips  ({len(pt)} 件)")
     else:
         print("    (データなし)")
+
+    print(f"\n[j] 実行モード")
+    print(f"    DIRECTION_MODE : {DIRECTION_MODE}")
+    print(f"    WARMUP_BARS    : {WARMUP_BARS} 本スキップ（データ冒頭 120 日相当）")
+    effective_bars = n_bars - WARMUP_BARS
+    print(f"    有効バー数      : {effective_bars:,} 本 / {n_bars:,} 本中")
 
     print(f"\n  実行時間: {elapsed:.1f}秒")
 

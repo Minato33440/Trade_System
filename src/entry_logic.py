@@ -37,6 +37,8 @@ WICKTOL_PIPS      = 0.0    # 15M 前回安値からの 5M 2番底許容幅（下
 PIP_SIZE          = 0.01   # USDJPY の 1pip = 0.01 円
 MIN_4H_SWING_PIPS = 20.0   # 4H Swing 最小幅（pips）
                             # これ未満は Fib 計算が無意味になる（Fib フィルタ機能不全）
+DIRECTION_MODE    = 'LONG' # 'LONG' | 'SHORT' | 'BOTH'
+                            # #012 では 'LONG' 固定
 
 
 # ── Step1: 4H Fib 条件 ────────────────────────────────────────
@@ -320,8 +322,8 @@ def check_5m_double_bottom(
 def evaluate_entry(
     price: float,
     direction: str,
-    swing_high_4h: float,
-    swing_low_4h: float,
+    swing_high_4h: "float | None",
+    swing_low_4h: "float | None",
     neck_4h: float,
     low_15m: pd.Series,
     high_15m: pd.Series,
@@ -330,9 +332,11 @@ def evaluate_entry(
     low_5m: pd.Series,
     high_5m: pd.Series,
 ) -> dict:
-    """3段階エントリー条件を一括評価する（#011 統合レンジロジック版）。
+    """3段階エントリー条件を一括評価する（#012 DIRECTION_MODE + None チェック版）。
 
-    Step0: 4H Swing 幅ガード（MIN_4H_SWING_PIPS 未満はスキップ）
+    Step-1: 方向フィルター（DIRECTION_MODE）
+    Step0a: 4H Swing None チェック（フォールバック修正後の安全網）
+    Step0b: 4H Swing 幅ガード（MIN_4H_SWING_PIPS 未満はスキップ）
     Step1: 4H Fib61.8% 以内
     Step2: 15M 統合レンジロジック（DB / IHS / ASCENDING）
     Step3: 5M DB ネックライン実体確定
@@ -349,6 +353,7 @@ def evaluate_entry(
         'pattern'         : str,    'DB'/'IHS'/'ASCENDING'/'DT'/'HNS'/'DESCENDING'
         'swing_guard_skip': bool,   4H Swing 幅不足スキップフラグ（デバッグ g 用）
         'sl3_over_skip'   : bool,   SL3/SH3 等距離ルール超過スキップフラグ（デバッグ h 用）
+        'swing_none_skip' : bool,   4H Swing 未検出（None）スキップフラグ（デバッグ g 用）
       }
     """
     base = {
@@ -356,13 +361,25 @@ def evaluate_entry(
         'neck_15m': 0.0, 'sl2_15m': 0.0,
         'db_15m_found': False, 'wicktol_invalid': False,
         'pattern': '', 'swing_guard_skip': False, 'sl3_over_skip': False,
+        'swing_none_skip': False,
     }
 
     if direction not in ("LONG", "SHORT"):
         base['reason'] = f"NONE方向スキップ({direction})"
         return base
 
-    # ── Step0: 4H Swing 幅ガード ──
+    # ── Step-1: 方向フィルター（DIRECTION_MODE） ──
+    if DIRECTION_MODE != 'BOTH' and direction != DIRECTION_MODE:
+        base['reason'] = f'DIRECTION_MODE={DIRECTION_MODE} によりスキップ'
+        return base
+
+    # ── Step0a: 4H Swing None チェック（安全網） ──
+    if swing_high_4h is None or swing_low_4h is None:
+        base['swing_none_skip'] = True
+        base['reason'] = '4H Swing 未検出（None）'
+        return base
+
+    # ── Step0b: 4H Swing 幅ガード ──
     fib_range = swing_high_4h - swing_low_4h
     if fib_range < MIN_4H_SWING_PIPS * PIP_SIZE:
         base['swing_guard_skip'] = True

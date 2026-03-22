@@ -119,14 +119,18 @@ def save_swing_debug_plot(
     sl_y = [float(low.values[i]) for i in sl_x]
     ax.scatter(sl_x, sl_y, marker="^", color="green", s=80, zorder=5, label="Swing Low ▲")
 
-    # 直近SH: 赤の水平破線
-    ax.axhline(y=sh_price, color="red", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SH: {sh_price:.3f}")
+    # 直近SH: 赤の水平破線（None チェック）
+    if sh_price is not None:
+        ax.axhline(y=sh_price, color="red", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SH: {sh_price:.3f}")
 
-    # 直近SL: 緑の水平破線
-    ax.axhline(y=sl_price, color="green", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SL: {sl_price:.3f}")
+    # 直近SL: 緑の水平破線（None チェック）
+    if sl_price is not None:
+        ax.axhline(y=sl_price, color="green", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SL: {sl_price:.3f}")
 
-    # タイトルに方向を表示
-    ax.set_title(f"USDJPY {tf_label} [{direction}]  SH={sh_price:.3f}  SL={sl_price:.3f}", fontsize=13)
+    # タイトルに方向を表示（None 対応）
+    sh_str = f"{sh_price:.3f}" if sh_price is not None else "N/A"
+    sl_str = f"{sl_price:.3f}" if sl_price is not None else "N/A"
+    ax.set_title(f"USDJPY {tf_label} [{direction}]  SH={sh_str}  SL={sl_str}", fontsize=13)
     ax.set_xlabel("Bar index")
     ax.set_ylabel("Price")
     ax.legend(loc="upper left", fontsize=8)
@@ -148,16 +152,19 @@ def plot_swing_check(
     center_time: "pd.Timestamp",
     direction: str,
     save_path: str,
+    sh_4h: "float | None" = None,
+    sl_4h: "float | None" = None,
     left_bars: int = 48,
     right_bars: int = 24,
     dpi: int = 200,
 ) -> None:
-    """Swing 検出精度確認チャートを生成・保存する（Phase 1）。
+    """Swing 検出精度確認チャートを生成・保存する（Phase 1 + Fib ライン追加版）。
 
     【メインパネル】5M OHLC + 上位足構造オーバーレイ
       - 5M ローソク足（mplfinance）
       - 4H Swing High/Low ドット + 水平線
       - 15M Swing High/Low 水平線
+      - Fib 61.8% / 50% ライン（sh_4h/sl_4h が非 None の場合のみ）
       - NONE 区間グレー背景
 
     【サブパネル】小テーブル（Swing パラメータ・direction・NONE 率）
@@ -169,6 +176,8 @@ def plot_swing_check(
         center_time: チャート中心時刻（エントリー確定時刻）
         direction:   'LONG' / 'SHORT'
         save_path:   PNG 保存先パス
+        sh_4h:       4H Swing High 価格（None の場合 Fib ライン非表示）
+        sl_4h:       4H Swing Low 価格（None の場合 Fib ライン非表示）
         left_bars:   中心の左側に表示する 5M 足数（デフォルト 48 = 4 時間）
         right_bars:  中心の右側に表示する 5M 足数（デフォルト 24 = 2 時間）
         dpi:         解像度（デフォルト 200）
@@ -258,6 +267,19 @@ def plot_swing_check(
     for price in sl_15m_in_view.values:
         ax_main.axhline(y=price, color='#87CEEB', linewidth=1.5, linestyle='-', alpha=0.85)
 
+    # Fib 61.8% / 50% ライン（sh_4h / sl_4h が非 None の場合のみ描画）
+    if sh_4h is not None and sl_4h is not None:
+        fib_range = sh_4h - sl_4h
+        if fib_range > 0:
+            fib_618 = sh_4h - fib_range * 0.618
+            fib_50  = sh_4h - fib_range * 0.50
+            ax_main.axhline(y=fib_618, color='#9B59B6', linewidth=1.0,
+                            linestyle='--', alpha=0.8,
+                            label=f'Fib 61.8%  {fib_618:.3f}')
+            ax_main.axhline(y=fib_50,  color='#9B59B6', linewidth=1.0,
+                            linestyle=':',  alpha=0.8,
+                            label=f'Fib 50%    {fib_50:.3f}')
+
     # エントリー時刻のマーカー（縦線）
     try:
         center_x = int(df_view.index.searchsorted(center_time))
@@ -267,7 +289,7 @@ def plot_swing_check(
     except Exception:
         pass
 
-    # 凡例
+    # 凡例（Fib ライン有無に応じて動的追加）
     legend_items = [
         mpatches.Patch(color='#FF8C00', label='4H SH'),
         mpatches.Patch(color='#1E90FF', label='4H SL'),
@@ -275,6 +297,13 @@ def plot_swing_check(
         mpatches.Patch(color='#87CEEB', label='15M SL'),
         mpatches.Patch(color='#00FF00', label='Entry'),
     ]
+    if sh_4h is not None and sl_4h is not None:
+        fib_range = sh_4h - sl_4h
+        if fib_range > 0:
+            legend_items += [
+                mpatches.Patch(color='#9B59B6', label=f'Fib 61.8%  {sh_4h - fib_range * 0.618:.3f}'),
+                mpatches.Patch(color='#9B59B6', label=f'Fib 50%    {sh_4h - fib_range * 0.50:.3f}'),
+            ]
     ax_main.legend(handles=legend_items, loc='upper left', fontsize=8,
                    framealpha=0.3, facecolor='#1a1a2e', labelcolor='white')
 
