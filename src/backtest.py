@@ -36,7 +36,7 @@ from src.swing_detector import (
     get_nearest_swing_high,
     get_nearest_swing_low,
 )
-from src.entry_logic import MAX_REENTRY, MIN_4H_SWING_PIPS, WICKTOL_PIPS, DIRECTION_MODE, evaluate_entry
+from src.entry_logic import MAX_REENTRY, MIN_4H_SWING_PIPS, WICKTOL_PIPS, DIRECTION_MODE, ALLOWED_PATTERNS, evaluate_entry
 from src.exit_logic import manage_exit
 
 try:
@@ -124,6 +124,7 @@ def _scan_all_bars_for_entry(
     debug_a = {
         'db_15m_found': 0, 'db_5m_confirmed': 0, 'wicktol_invalid': 0,
         'swing_guard_skip': 0, 'sl3_over_skip': 0, 'swing_none_skip': 0,
+        'pattern_exclude_skip': 0,
     }
 
     print(f"  [INFO] {n_bars} 本のバーをスキャン中（warm-up {warmup} 本スキップ）...")
@@ -210,6 +211,8 @@ def _scan_all_bars_for_entry(
             debug_a['swing_guard_skip'] += 1
         if result.get('sl3_over_skip'):
             debug_a['sl3_over_skip'] += 1
+        if result.get('pattern_exclude_skip'):
+            debug_a['pattern_exclude_skip'] += 1
         if result['db_15m_found']:
             debug_a['db_15m_found'] += 1
         if result['wicktol_invalid']:
@@ -565,10 +568,15 @@ def run_rex_mtf_backtest(
     if len(df_t) > 0 and 'pattern' in df_t.columns:
         pat_counts = df_t['pattern'].value_counts()
         for p in _all_patterns:
-            cnt = int(pat_counts.get(p, 0))
-            pct = cnt / len(df_t) * 100
-            if cnt > 0:
-                print(f"    {p:12s}: {cnt:3d} 件 ({pct:.1f}%)")
+            if p not in ALLOWED_PATTERNS:
+                # 除外パターン: 実エントリーなし → pattern_exclude_skip から件数を表示
+                excl_cnt = debug_a['pattern_exclude_skip'] if p == 'IHS' else 0
+                print(f"    {p:12s}: {excl_cnt:3d} 件  ← 除外中（ALLOWED_PATTERNS 外）")
+            else:
+                cnt = int(pat_counts.get(p, 0))
+                pct = cnt / len(df_t) * 100
+                if cnt > 0:
+                    print(f"    {p:12s}: {cnt:3d} 件 ({pct:.1f}%)")
     else:
         print("    (データなし)")
 
@@ -590,6 +598,12 @@ def run_rex_mtf_backtest(
             print(f"    {p:12s}: 勝率 {wr:5.1f}%  平均 {avg:+6.1f} pips  ({len(pt)} 件)")
     else:
         print("    (データなし)")
+
+    print(f"\n[k] パターン除外スキップ件数")
+    excl_patterns = [p for p in (_all_patterns_long + _all_patterns_short) if p not in ALLOWED_PATTERNS]
+    for p in excl_patterns:
+        cnt = debug_a['pattern_exclude_skip'] if p == 'IHS' else 0
+        print(f"    {p} 除外（ALLOWED_PATTERNS 外）: {cnt} 件")
 
     print(f"\n[j] 実行モード")
     print(f"    DIRECTION_MODE : {DIRECTION_MODE}")

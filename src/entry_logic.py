@@ -32,13 +32,16 @@ from src.swing_detector import detect_swing_highs, detect_swing_lows
 
 # ── 定数 ──────────────────────────────────────────────────────
 MAX_REENTRY       = 1       # 同一押し目機会での最大再試行回数
-WICKTOL_PIPS      = 0.0    # 15M 前回安値からの 5M 2番底許容幅（下ヒゲ対策）
-                            # 初期値: 0.0（許容なし）/ テスト順: 0.0 → 5.0 → 10.0
+WICKTOL_PIPS      = 5.0    # 15M 前回安値からの 5M 2番底許容幅（下ヒゲ対策）
+                            # #012: 0.0 → #013: 5.0（サンプル増加・下ヒゲ誤除外低減）
 PIP_SIZE          = 0.01   # USDJPY の 1pip = 0.01 円
 MIN_4H_SWING_PIPS = 20.0   # 4H Swing 最小幅（pips）
                             # これ未満は Fib 計算が無意味になる（Fib フィルタ機能不全）
 DIRECTION_MODE    = 'LONG' # 'LONG' | 'SHORT' | 'BOTH'
                             # #012 では 'LONG' 固定
+ALLOWED_PATTERNS  = ['DB', 'ASCENDING']
+                            # 有効パターンの制御（フラグ切り替えで IHS 復活可能）
+                            # 将来 IHS 復活: ALLOWED_PATTERNS = ['DB', 'ASCENDING', 'IHS']
 
 
 # ── Step1: 4H Fib 条件 ────────────────────────────────────────
@@ -361,7 +364,7 @@ def evaluate_entry(
         'neck_15m': 0.0, 'sl2_15m': 0.0,
         'db_15m_found': False, 'wicktol_invalid': False,
         'pattern': '', 'swing_guard_skip': False, 'sl3_over_skip': False,
-        'swing_none_skip': False,
+        'swing_none_skip': False, 'pattern_exclude_skip': False,
     }
 
     if direction not in ("LONG", "SHORT"):
@@ -405,6 +408,12 @@ def evaluate_entry(
     base['neck_15m']     = range_result['neck_15m']
     base['sl2_15m']      = range_result['sl_last']
     base['pattern']      = range_result['pattern']
+
+    # ── パターンフィルター（ALLOWED_PATTERNS 外は除外・件数は記録継続）──
+    if range_result['pattern'] not in ALLOWED_PATTERNS:
+        base['pattern_exclude_skip'] = True
+        base['reason'] = f"パターン除外: {range_result['pattern']}"
+        return base
 
     # ── Step3: 5M DB ネックライン実体確定 ──
     db_5m = check_5m_double_bottom(
