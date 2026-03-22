@@ -45,7 +45,7 @@ from src.swing_detector import (
 from src.entry_logic import (
     check_15m_range_low,
     MIN_4H_SWING_PIPS,
-    NECK_TOLERANCE_PCT,
+    NECK_TOLERANCE_PIPS,
     PIP_SIZE,
 )
 
@@ -281,8 +281,8 @@ def scan_4h_15m_base(
             fib_618 = sl_4h + fib_range * 0.618
             fib_50  = sl_4h + fib_range * 0.50
 
-        neck_lower   = neck_1h * (1.0 - NECK_TOLERANCE_PCT)
-        neck_upper   = neck_1h * (1.0 + NECK_TOLERANCE_PCT)
+        neck_lower   = neck_1h - NECK_TOLERANCE_PIPS * PIP_SIZE
+        neck_upper   = neck_1h + NECK_TOLERANCE_PIPS * PIP_SIZE
         is_near_neck = neck_lower <= current_price <= neck_upper
 
         if fib_pct <= 0.55 and is_near_neck and above_support:

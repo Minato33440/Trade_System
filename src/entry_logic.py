@@ -48,8 +48,8 @@ ALLOWED_PATTERNS  = ['DB', 'ASCENDING', 'IHS']
                             # 有効パターンの制御（フラグ切り替えで IHS 除外可能）
                             # IHS 除外時: ALLOWED_PATTERNS = ['DB', 'ASCENDING']
 LOOKBACK_15M_RANGE = 50    # 15M range_low lookback 本数（#013: 40 → #014: 50）
-NECK_TOLERANCE_PCT = 0.03  # neck_4h（1H SH）の ±3% 以内を ★★★ 判定の近接条件とする
-                            # #016: neck_4h = 1H SH に変更したことで ★★★ が現実的に発生
+NECK_TOLERANCE_PIPS = 20.0 # neck_4h（1H SH）の ±20pips 以内を ★★★ 判定の近接条件とする
+                            # #017: PCT基準（±3%=±450pips超）→ pips固定（±20pips=±0.20円）に修正
 
 
 # ── Step1: 4H Fib 条件 ────────────────────────────────────────
@@ -462,8 +462,8 @@ def evaluate_entry(
         return base
 
     # ── Grade 判定（★★★ / ★★） ──
-    neck_lower      = neck_4h * (1.0 - NECK_TOLERANCE_PCT)
-    neck_upper      = neck_4h * (1.0 + NECK_TOLERANCE_PCT)
+    neck_lower      = neck_4h - NECK_TOLERANCE_PIPS * PIP_SIZE
+    neck_upper      = neck_4h + NECK_TOLERANCE_PIPS * PIP_SIZE
     is_near_neck    = neck_lower <= price <= neck_upper
     is_above_support = float(range_result['sl_last']) >= support_1h
 
