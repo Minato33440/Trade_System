@@ -145,6 +145,45 @@ def save_swing_debug_plot(
     return plot_path
 
 
+def plot_base_scan(
+    df_5m: "pd.DataFrame",
+    df_4h: "pd.DataFrame",
+    df_15m: "pd.DataFrame",
+    event: dict,
+    save_path: str,
+    left_bars: int = 48,
+    right_bars: int = 24,
+    dpi: int = 200,
+) -> None:
+    """base_scanner イベントのチャートを生成・保存する。
+
+    plot_swing_check() のラッパー。イベント dict から引数を展開して呼び出す。
+
+    Args:
+        df_5m:     5M OHLC DataFrame
+        df_4h:     4H OHLC DataFrame
+        df_15m:    15M OHLC DataFrame
+        event:     scan_4h_15m_base() が返す 1 件分の dict
+        save_path: PNG 保存先パス
+        left_bars: チャート中心左側の 5M 足数（デフォルト 48 = 4 時間）
+        right_bars: チャート中心右側の 5M 足数（デフォルト 24 = 2 時間）
+        dpi:       解像度
+    """
+    plot_swing_check(
+        df_5m=df_5m,
+        df_4h=df_4h,
+        df_15m=df_15m,
+        center_time=event['timestamp'],
+        direction=event['direction'],
+        save_path=save_path,
+        sh_4h=event.get('sh_4h'),
+        sl_4h=event.get('sl_4h'),
+        left_bars=left_bars,
+        right_bars=right_bars,
+        dpi=dpi,
+    )
+
+
 def plot_swing_check(
     df_5m: "pd.DataFrame",
     df_4h: "pd.DataFrame",
