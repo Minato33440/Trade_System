@@ -125,6 +125,9 @@ def _scan_all_bars_for_entry(
         'db_15m_found': 0, 'db_5m_confirmed': 0, 'wicktol_invalid': 0,
         'swing_guard_skip': 0, 'sl3_over_skip': 0, 'swing_none_skip': 0,
         'pattern_exclude_skip': 0,
+        # #016 追加
+        'neck_1h_none_skip': 0, 'support_1h_none_skip': 0,
+        'zone_invalid_skip': 0, 'support_1h_break_skip': 0,
     }
 
     print(f"  [INFO] {n_bars} 本のバーをスキャン中（warm-up {warmup} 本スキップ）...")
@@ -177,9 +180,10 @@ def _scan_all_bars_for_entry(
                 skip_counts['再エントリー上限'] = skip_counts.get('再エントリー上限', 0) + 1
                 continue
 
-        neck_4h = sh_4h if direction == "LONG" else sl_4h
+        # 1H window（neck_4h 取得用 — evaluate_entry 内で使用）
+        high_1h_w = df_1h_full["High"].iloc[:idx_1h + 1]
 
-        # 15M window
+        # 15M window（range 検出用 + support 取得用で同一スライスを使用）
         low_15m_w  = df_15m_full["Low"].iloc[:idx_15m + 1]
         high_15m_w = df_15m_full["High"].iloc[:idx_15m + 1]
 
@@ -197,9 +201,10 @@ def _scan_all_bars_for_entry(
             direction=direction,
             swing_high_4h=sh_4h,
             swing_low_4h=sl_4h,
-            neck_4h=neck_4h,
+            high_1h=high_1h_w,
             low_15m=low_15m_w,
             high_15m=high_15m_w,
+            low_15m_support=low_15m_w,
             close_5m=close_5m_w,
             open_5m=open_5m_w,
             low_5m=low_5m_w,
@@ -217,21 +222,31 @@ def _scan_all_bars_for_entry(
             debug_a['db_15m_found'] += 1
         if result['wicktol_invalid']:
             debug_a['wicktol_invalid'] += 1
+        # #016 追加スキップカウント
+        if result.get('neck_1h_none_skip'):
+            debug_a['neck_1h_none_skip'] += 1
+        if result.get('support_1h_none_skip'):
+            debug_a['support_1h_none_skip'] += 1
+        if result.get('zone_invalid_skip'):
+            debug_a['zone_invalid_skip'] += 1
+        if result.get('support_1h_break_skip'):
+            debug_a['support_1h_break_skip'] += 1
+
         if not result['enter']:
             skip_counts[result['reason']] = skip_counts.get(result['reason'], 0) + 1
             continue
 
         debug_a['db_5m_confirmed'] += 1
 
-        # 1H ネックライン取得（エントリー時点）
+        # 1H ネックライン取得（exit_logic 用 — n=3 lookback=50 で取得）
         if direction == "LONG":
             neck_1h = get_nearest_swing_high(df_1h_full["High"], idx_1h, n=3, lookback=50)
         else:
             neck_1h = get_nearest_swing_low(df_1h_full["Low"], idx_1h, n=3, lookback=50)
 
-        # 1H Swing 未検出の場合はエントリースキップ（exit_logic が None で演算クラッシュするため）
+        # exit_logic が None で演算クラッシュするためスキップ
         if neck_1h is None:
-            skip_counts['1H neck 未検出(None)'] = skip_counts.get('1H neck 未検出(None)', 0) + 1
+            skip_counts['exit 1H neck 未検出(None)'] = skip_counts.get('exit 1H neck 未検出(None)', 0) + 1
             continue
 
         # エントリーイベント登録（次の 5M 始値）
@@ -243,8 +258,9 @@ def _scan_all_bars_for_entry(
             'direction'  : direction,
             'entry_price': entry_price,
             'neck_1h'    : neck_1h,
-            'neck_4h'    : neck_4h,
+            'neck_4h'    : result['neck_4h'],   # #016: 1H SH（evaluate_entry 内で取得）
             'fib_score'  : result['fib_score'],
+            'grade'      : result.get('grade', ''),
             'timestamp'  : entry_ts,
             'pattern'    : result.get('pattern', ''),
         })
@@ -475,18 +491,21 @@ def run_rex_mtf_backtest(
                  "5M_Open": "Open", "5M_Close": "Close"}
     )
 
-    # ── Step 2: resample（一括プリコンピュート） ──
-    print("\n[STEP 2] 4H/1H/15M resample中...")
+    # ── Step 2: TF データ構築 ──
+    print("\n[STEP 2] 4H/1H/15M データ構築中...")
     df_4h_full = df_5m_raw.resample("4h").agg(
         {"High": "max", "Low": "min", "Open": "first", "Close": "last"}
     ).dropna()
-    df_1h_full = df_5m_raw.resample("1h").agg(
-        {"High": "max", "Low": "min", "Open": "first", "Close": "last"}
-    ).dropna()
+    # 1H: parquet ネイティブデータ使用（resample 不使用 — 精度優先）
+    _df_1h_raw = df_multi[["1H_Open", "1H_High", "1H_Low", "1H_Close"]].rename(
+        columns={"1H_Open": "Open", "1H_High": "High", "1H_Low": "Low", "1H_Close": "Close"}
+    )
+    _df_1h_raw.index = _df_1h_raw.index.floor("1h")
+    df_1h_full = _df_1h_raw[~_df_1h_raw.index.duplicated(keep="first")].dropna()
     df_15m_full = df_5m_raw.resample("15min").agg(
         {"High": "max", "Low": "min", "Open": "first", "Close": "last"}
     ).dropna()
-    print(f"  4H: {len(df_4h_full)}本, 1H: {len(df_1h_full)}本, 15M: {len(df_15m_full)}本")
+    print(f"  4H: {len(df_4h_full)}本, 1H: {len(df_1h_full)}本(native), 15M: {len(df_15m_full)}本")
 
     # ── Step 3: 4H 方向プリコンピュート ──
     print("\n[STEP 3] 4H 方向プリコンピュート...")
@@ -532,6 +551,23 @@ def run_rex_mtf_backtest(
     print(f"  最大 DD (pips):       {res['max_drawdown_pips']:.2f}")
     print(f"  総損益 (pips):        {res['total_pnl_pips']:.2f}")
     print(f"  平均保有バー数:       {res['avg_hold_bars']}")
+
+    # ── ★★★ / ★★ 別トレード件数・勝率 ──
+    if trades and any('grade' in e for e in entry_events):
+        df_t_all = pd.DataFrame(trades) if trades else pd.DataFrame()
+        # entry_events の grade を trades に結合（bar_idx でマッチ）
+        grade_map = {e['bar_idx']: e.get('grade', '') for e in entry_events}
+        if len(df_t_all) > 0 and 'entry_bar' in df_t_all.columns:
+            df_t_all['grade'] = df_t_all['entry_bar'].map(grade_map).fillna('')
+            print(f"\n  ── ★ Grade 別トレード ──")
+            for g in ['★★★', '★★', '']:
+                gdf = df_t_all[df_t_all['grade'] == g]
+                if len(gdf) == 0:
+                    continue
+                wr  = float((gdf['pnl_pips'] > 0).sum() / len(gdf) * 100)
+                avg = float(gdf['pnl_pips'].mean())
+                label = g if g else '（grade なし）'
+                print(f"    {label}: {len(gdf):3d} 件  勝率 {wr:.1f}%  平均 {avg:+.1f} pips")
 
     # ── デバッグ出力 a/b/c/d/e ──
     total_entries = len(entry_events)
@@ -604,6 +640,12 @@ def run_rex_mtf_backtest(
     for p in excl_patterns:
         cnt = debug_a['pattern_exclude_skip'] if p == 'IHS' else 0
         print(f"    {p} 除外（ALLOWED_PATTERNS 外）: {cnt} 件")
+
+    print(f"\n[l] 1H ロジック関連スキップ件数（#016）")
+    print(f"    1H neck 未検出（None）     : {debug_a['neck_1h_none_skip']:4d} 件")
+    print(f"    Support_1h 未検出（None）  : {debug_a['support_1h_none_skip']:4d} 件")
+    print(f"    ゾーン無効（neck<=support）: {debug_a['zone_invalid_skip']:4d} 件")
+    print(f"    Support_1h 割れ            : {debug_a['support_1h_break_skip']:4d} 件")
 
     print(f"\n[j] 実行モード")
     print(f"    DIRECTION_MODE : {DIRECTION_MODE}")

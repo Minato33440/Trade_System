@@ -134,6 +134,71 @@ def get_nearest_swing_low(
     return float(swing_prices.iloc[-1])
 
 
+# ── 1H/15M 直近スイング取得 ────────────────────────────────────
+
+def get_nearest_swing_high_1h(
+    high_1h: pd.Series,
+    n: int = 2,
+    lookback: int = 20,
+) -> "float | None":
+    """1H足データから直近の Swing High を返す。
+
+    neck_4h（押し目ゾーンの上限）として使用。
+
+    Args:
+        high_1h  : 1H足の High 系列
+        n        : 前後確認本数（デフォルト2）
+        lookback : 検索範囲（デフォルト20本 = 約20時間）
+
+    Returns:
+        直近 Swing High の価格。見つからない場合は None。
+    """
+    window = high_1h.iloc[-lookback:]
+    if len(window) < n * 2 + 1:
+        return None
+
+    mask = detect_swing_highs(window, n=n)
+    sh   = window[mask]
+
+    if len(sh) == 0:
+        return None
+
+    return float(sh.iloc[-1])
+
+
+def get_nearest_swing_low_15m(
+    low_15m: pd.Series,
+    n: int = 3,
+    lookback: int = 20,
+) -> "float | None":
+    """15M足データから直近の Swing Low を返す。
+
+    Support_1h（押し目ゾーンの下限）として使用。
+    check_15m_range_low() の sl_min とは独立して取得する。
+    sl_min は構造検出用（頭の最深値）。
+    この関数は「現在のサポートライン」取得用。
+
+    Args:
+        low_15m  : 15M足の Low 系列
+        n        : 前後確認本数（デフォルト3、#014確定値）
+        lookback : 検索範囲（デフォルト20本 = 約5時間）
+
+    Returns:
+        直近 Swing Low の価格。見つからない場合は None。
+    """
+    window = low_15m.iloc[-lookback:]
+    if len(window) < n * 2 + 1:
+        return None
+
+    mask = detect_swing_lows(window, n=n)
+    sl   = window[mask]
+
+    if len(sl) == 0:
+        return None
+
+    return float(sl.iloc[-1])
+
+
 # ── 4H方向判定 ────────────────────────────────────────────────
 
 def get_direction_4h(

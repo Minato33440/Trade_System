@@ -27,7 +27,12 @@ _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-from src.swing_detector import detect_swing_highs, detect_swing_lows
+from src.swing_detector import (
+    detect_swing_highs,
+    detect_swing_lows,
+    get_nearest_swing_high_1h,
+    get_nearest_swing_low_15m,
+)
 
 
 # ── 定数 ──────────────────────────────────────────────────────
@@ -43,6 +48,8 @@ ALLOWED_PATTERNS  = ['DB', 'ASCENDING', 'IHS']
                             # 有効パターンの制御（フラグ切り替えで IHS 除外可能）
                             # IHS 除外時: ALLOWED_PATTERNS = ['DB', 'ASCENDING']
 LOOKBACK_15M_RANGE = 50    # 15M range_low lookback 本数（#013: 40 → #014: 50）
+NECK_TOLERANCE_PCT = 0.03  # neck_4h（1H SH）の ±3% 以内を ★★★ 判定の近接条件とする
+                            # #016: neck_4h = 1H SH に変更したことで ★★★ が現実的に発生
 
 
 # ── Step1: 4H Fib 条件 ────────────────────────────────────────
@@ -328,44 +335,57 @@ def evaluate_entry(
     direction: str,
     swing_high_4h: "float | None",
     swing_low_4h: "float | None",
-    neck_4h: float,
+    high_1h: pd.Series,
     low_15m: pd.Series,
     high_15m: pd.Series,
+    low_15m_support: pd.Series,
     close_5m: pd.Series,
     open_5m: pd.Series,
     low_5m: pd.Series,
     high_5m: pd.Series,
 ) -> dict:
-    """3段階エントリー条件を一括評価する（#012 DIRECTION_MODE + None チェック版）。
+    """3段階エントリー条件を一括評価する（#016: 1H neck + Support_1h 追加版）。
 
     Step-1: 方向フィルター（DIRECTION_MODE）
-    Step0a: 4H Swing None チェック（フォールバック修正後の安全網）
+    Step0a: 4H Swing None チェック
     Step0b: 4H Swing 幅ガード（MIN_4H_SWING_PIPS 未満はスキップ）
-    Step1: 4H Fib61.8% 以内
+    Step-1H: 1H neck 取得 + Fib ゾーン事前チェック（早期スキップ）
     Step2: 15M 統合レンジロジック（DB / IHS / ASCENDING）
+    Step-S: Support_1h 取得 + ゾーン整合性チェック + Grade 判定
     Step3: 5M DB ネックライン実体確定
 
     Returns:
       {
-        'enter'           : bool,
-        'fib_score'       : int,
-        'reason'          : str,
-        'neck_15m'        : float,  Step2 で取得したネック（Step3・plotter 用）
-        'sl2_15m'         : float,  Step2 の sl_last（swing_ref_15m として Step3 に渡す）
-        'db_15m_found'    : bool,   Step2 通過フラグ（デバッグカウント用）
-        'wicktol_invalid' : bool,   Step3 で WICKTOL 超過で弾かれたフラグ
-        'pattern'         : str,    'DB'/'IHS'/'ASCENDING'/'DT'/'HNS'/'DESCENDING'
-        'swing_guard_skip': bool,   4H Swing 幅不足スキップフラグ（デバッグ g 用）
-        'sl3_over_skip'   : bool,   SL3/SH3 等距離ルール超過スキップフラグ（デバッグ h 用）
-        'swing_none_skip' : bool,   4H Swing 未検出（None）スキップフラグ（デバッグ g 用）
+        'enter'                : bool,
+        'fib_score'            : int,   2=★★★ / 1=★★ / 0=条件外
+        'grade'                : str,   '★★★' / '★★' / ''
+        'reason'               : str,
+        'neck_4h'              : float | None,  1H SH（neck_4h として使用）
+        'support_1h'           : float | None,  15M SL（Support_1h）
+        'neck_15m'             : float,
+        'sl2_15m'              : float,
+        'db_15m_found'         : bool,
+        'wicktol_invalid'      : bool,
+        'pattern'              : str,
+        'swing_guard_skip'     : bool,
+        'sl3_over_skip'        : bool,
+        'swing_none_skip'      : bool,
+        'pattern_exclude_skip' : bool,
+        'neck_1h_none_skip'    : bool,
+        'support_1h_none_skip' : bool,
+        'zone_invalid_skip'    : bool,
+        'support_1h_break_skip': bool,
       }
     """
     base = {
-        'enter': False, 'fib_score': 0, 'reason': '',
+        'enter': False, 'fib_score': 0, 'grade': '', 'reason': '',
+        'neck_4h': None, 'support_1h': None,
         'neck_15m': 0.0, 'sl2_15m': 0.0,
         'db_15m_found': False, 'wicktol_invalid': False,
         'pattern': '', 'swing_guard_skip': False, 'sl3_over_skip': False,
         'swing_none_skip': False, 'pattern_exclude_skip': False,
+        'neck_1h_none_skip': False, 'support_1h_none_skip': False,
+        'zone_invalid_skip': False, 'support_1h_break_skip': False,
     }
 
     if direction not in ("LONG", "SHORT"):
@@ -390,11 +410,22 @@ def evaluate_entry(
         base['reason'] = f'4H Swing 幅不足 ({fib_range / PIP_SIZE:.1f} pips < {MIN_4H_SWING_PIPS})'
         return base
 
-    # ── Step1: 4H Fib 条件 ──
-    fib_score = check_fib_condition(price, swing_high_4h, swing_low_4h, neck_4h, direction)
-    base['fib_score'] = fib_score
-    if fib_score == 0:
-        base['reason'] = "Fib条件外"
+    # ── Step-1H: 1H neck 取得（neck_4h を 1H SH に変更） ──
+    neck_4h = get_nearest_swing_high_1h(high_1h, n=2, lookback=20)
+    if neck_4h is None:
+        base['neck_1h_none_skip'] = True
+        base['reason'] = '1H neck 未検出（None）'
+        return base
+    base['neck_4h'] = neck_4h
+
+    # ── Fib ゾーン事前チェック（Step2 前の早期スキップ） ──
+    if direction == 'LONG':
+        fib_pct = (swing_high_4h - price) / fib_range
+    else:
+        fib_pct = (price - swing_low_4h) / fib_range
+
+    if fib_pct > 0.65:
+        base['reason'] = 'Fib条件外'
         return base
 
     # ── Step2: 15M 統合レンジロジック ──
@@ -414,6 +445,48 @@ def evaluate_entry(
     if range_result['pattern'] not in ALLOWED_PATTERNS:
         base['pattern_exclude_skip'] = True
         base['reason'] = f"パターン除外: {range_result['pattern']}"
+        return base
+
+    # ── Step-S: Support_1h 取得（15M SL の独立取得） ──
+    support_1h = get_nearest_swing_low_15m(low_15m_support, n=3, lookback=20)
+    if support_1h is None:
+        base['support_1h_none_skip'] = True
+        base['reason'] = 'Support_1h 未検出（None）'
+        return base
+    base['support_1h'] = support_1h
+
+    # ── ゾーン整合性チェック ──
+    if neck_4h <= support_1h:
+        base['zone_invalid_skip'] = True
+        base['reason'] = f'ゾーン無効: neck_4h({neck_4h:.3f}) <= support_1h({support_1h:.3f})'
+        return base
+
+    # ── Grade 判定（★★★ / ★★） ──
+    neck_lower      = neck_4h * (1.0 - NECK_TOLERANCE_PCT)
+    neck_upper      = neck_4h * (1.0 + NECK_TOLERANCE_PCT)
+    is_near_neck    = neck_lower <= price <= neck_upper
+    is_above_support = float(range_result['sl_last']) >= support_1h
+
+    if fib_pct <= 0.55 and is_near_neck and is_above_support:
+        grade      = '★★★'
+        fib_score  = 2
+    elif fib_pct <= 0.65:
+        grade      = '★★'
+        fib_score  = 1
+    else:
+        base['reason'] = 'Fib条件外'
+        return base
+
+    base['grade']     = grade
+    base['fib_score'] = fib_score
+
+    # ── Support_1h 割れチェック（grade 確定後の追加フィルター） ──
+    if not is_above_support:
+        base['support_1h_break_skip'] = True
+        base['reason'] = (
+            f'Support_1h 割れ: sl_last({range_result["sl_last"]:.3f}) '
+            f'< support_1h({support_1h:.3f})'
+        )
         return base
 
     # ── Step3: 5M DB ネックライン実体確定 ──
