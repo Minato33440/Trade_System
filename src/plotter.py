@@ -119,14 +119,18 @@ def save_swing_debug_plot(
     sl_y = [float(low.values[i]) for i in sl_x]
     ax.scatter(sl_x, sl_y, marker="^", color="green", s=80, zorder=5, label="Swing Low ▲")
 
-    # 直近SH: 赤の水平破線
-    ax.axhline(y=sh_price, color="red", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SH: {sh_price:.3f}")
+    # 直近SH: 赤の水平破線（None チェック）
+    if sh_price is not None:
+        ax.axhline(y=sh_price, color="red", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SH: {sh_price:.3f}")
 
-    # 直近SL: 緑の水平破線
-    ax.axhline(y=sl_price, color="green", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SL: {sl_price:.3f}")
+    # 直近SL: 緑の水平破線（None チェック）
+    if sl_price is not None:
+        ax.axhline(y=sl_price, color="green", linestyle="--", linewidth=1.2, alpha=0.8, label=f"SL: {sl_price:.3f}")
 
-    # タイトルに方向を表示
-    ax.set_title(f"USDJPY {tf_label} [{direction}]  SH={sh_price:.3f}  SL={sl_price:.3f}", fontsize=13)
+    # タイトルに方向を表示（None 対応）
+    sh_str = f"{sh_price:.3f}" if sh_price is not None else "N/A"
+    sl_str = f"{sl_price:.3f}" if sl_price is not None else "N/A"
+    ax.set_title(f"USDJPY {tf_label} [{direction}]  SH={sh_str}  SL={sl_str}", fontsize=13)
     ax.set_xlabel("Bar index")
     ax.set_ylabel("Price")
     ax.legend(loc="upper left", fontsize=8)
@@ -141,6 +145,45 @@ def save_swing_debug_plot(
     return plot_path
 
 
+def plot_base_scan(
+    df_5m: "pd.DataFrame",
+    df_4h: "pd.DataFrame",
+    df_15m: "pd.DataFrame",
+    event: dict,
+    save_path: str,
+    left_bars: int = 48,
+    right_bars: int = 24,
+    dpi: int = 200,
+) -> None:
+    """base_scanner イベントのチャートを生成・保存する。
+
+    plot_swing_check() のラッパー。イベント dict から引数を展開して呼び出す。
+
+    Args:
+        df_5m:     5M OHLC DataFrame
+        df_4h:     4H OHLC DataFrame
+        df_15m:    15M OHLC DataFrame
+        event:     scan_4h_15m_base() が返す 1 件分の dict
+        save_path: PNG 保存先パス
+        left_bars: チャート中心左側の 5M 足数（デフォルト 48 = 4 時間）
+        right_bars: チャート中心右側の 5M 足数（デフォルト 24 = 2 時間）
+        dpi:       解像度
+    """
+    plot_swing_check(
+        df_5m=df_5m,
+        df_4h=df_4h,
+        df_15m=df_15m,
+        center_time=event['timestamp'],
+        direction=event['direction'],
+        save_path=save_path,
+        sh_4h=event.get('sh_4h'),
+        sl_4h=event.get('sl_4h'),
+        left_bars=left_bars,
+        right_bars=right_bars,
+        dpi=dpi,
+    )
+
+
 def plot_swing_check(
     df_5m: "pd.DataFrame",
     df_4h: "pd.DataFrame",
@@ -148,16 +191,19 @@ def plot_swing_check(
     center_time: "pd.Timestamp",
     direction: str,
     save_path: str,
+    sh_4h: "float | None" = None,
+    sl_4h: "float | None" = None,
     left_bars: int = 48,
     right_bars: int = 24,
     dpi: int = 200,
 ) -> None:
-    """Swing 検出精度確認チャートを生成・保存する（Phase 1）。
+    """Swing 検出精度確認チャートを生成・保存する（Phase 1 + Fib ライン追加版）。
 
     【メインパネル】5M OHLC + 上位足構造オーバーレイ
       - 5M ローソク足（mplfinance）
       - 4H Swing High/Low ドット + 水平線
       - 15M Swing High/Low 水平線
+      - Fib 61.8% / 50% ライン（sh_4h/sl_4h が非 None の場合のみ）
       - NONE 区間グレー背景
 
     【サブパネル】小テーブル（Swing パラメータ・direction・NONE 率）
@@ -169,6 +215,8 @@ def plot_swing_check(
         center_time: チャート中心時刻（エントリー確定時刻）
         direction:   'LONG' / 'SHORT'
         save_path:   PNG 保存先パス
+        sh_4h:       4H Swing High 価格（None の場合 Fib ライン非表示）
+        sl_4h:       4H Swing Low 価格（None の場合 Fib ライン非表示）
         left_bars:   中心の左側に表示する 5M 足数（デフォルト 48 = 4 時間）
         right_bars:  中心の右側に表示する 5M 足数（デフォルト 24 = 2 時間）
         dpi:         解像度（デフォルト 200）
@@ -258,6 +306,19 @@ def plot_swing_check(
     for price in sl_15m_in_view.values:
         ax_main.axhline(y=price, color='#87CEEB', linewidth=1.5, linestyle='-', alpha=0.85)
 
+    # Fib 61.8% / 50% ライン（sh_4h / sl_4h が非 None の場合のみ描画）
+    if sh_4h is not None and sl_4h is not None:
+        fib_range = sh_4h - sl_4h
+        if fib_range > 0:
+            fib_618 = sh_4h - fib_range * 0.618
+            fib_50  = sh_4h - fib_range * 0.50
+            ax_main.axhline(y=fib_618, color='#9B59B6', linewidth=1.0,
+                            linestyle='--', alpha=0.8,
+                            label=f'Fib 61.8%  {fib_618:.3f}')
+            ax_main.axhline(y=fib_50,  color='#9B59B6', linewidth=1.0,
+                            linestyle=':',  alpha=0.8,
+                            label=f'Fib 50%    {fib_50:.3f}')
+
     # エントリー時刻のマーカー（縦線）
     try:
         center_x = int(df_view.index.searchsorted(center_time))
@@ -267,7 +328,7 @@ def plot_swing_check(
     except Exception:
         pass
 
-    # 凡例
+    # 凡例（Fib ライン有無に応じて動的追加）
     legend_items = [
         mpatches.Patch(color='#FF8C00', label='4H SH'),
         mpatches.Patch(color='#1E90FF', label='4H SL'),
@@ -275,6 +336,13 @@ def plot_swing_check(
         mpatches.Patch(color='#87CEEB', label='15M SL'),
         mpatches.Patch(color='#00FF00', label='Entry'),
     ]
+    if sh_4h is not None and sl_4h is not None:
+        fib_range = sh_4h - sl_4h
+        if fib_range > 0:
+            legend_items += [
+                mpatches.Patch(color='#9B59B6', label=f'Fib 61.8%  {sh_4h - fib_range * 0.618:.3f}'),
+                mpatches.Patch(color='#9B59B6', label=f'Fib 50%    {sh_4h - fib_range * 0.50:.3f}'),
+            ]
     ax_main.legend(handles=legend_items, loc='upper left', fontsize=8,
                    framealpha=0.3, facecolor='#1a1a2e', labelcolor='white')
 
@@ -298,6 +366,216 @@ def plot_swing_check(
     save_path_obj.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(save_path_obj, dpi=dpi, bbox_inches='tight',
                 facecolor='#1a1a2e', edgecolor='none')
+    plt.close(fig)
+
+
+def plot_4h_1h_structure(
+    df_5m        : "pd.DataFrame",
+    df_1h        : "pd.DataFrame",
+    df_4h        : "pd.DataFrame",
+    center_time  : "pd.Timestamp",
+    direction    : str,
+    sh_4h_list   : "list[tuple]",
+    sl_4h_list   : "list[tuple]",
+    sh_1h_list   : "list[tuple]",
+    sl_1h_list   : "list[tuple]",
+    neck_4h      : "float | None",
+    neck_break_time: "pd.Timestamp | None",
+    save_path    : str,
+) -> None:
+    """4H + 1H 構造確認プロット。
+
+    「4H Swing High ネック越え」と「1H Swing HighLow トレンド」の重ね合わせを視覚化する。
+
+    表示期間:
+      center_time を中心に 左: 10日（5M 2,880本）右: 2日（5M 576本）
+
+    描画要素:
+      1. 5M ローソク足（背景）
+      2. 4H SH ドット + 水平線（橙 #FF8C00 / 2.5px）
+      3. 4H SL ドット + 水平線（青 #1E90FF / 2.5px）
+      4. 4H ネックライン（橙 #FF8C00 / 3.0px 太実線）
+      5. 4H ネック越え確定足マーカー（橙 ▲ or ▼）
+      6. 1H SH ドット + 折れ線（サーモン #FA8072 / 1.5px）
+      7. 1H SL ドット + 折れ線（水色 #87CEEB / 1.5px）
+      8. 1H トレンド方向テキスト（右上）
+
+    タイトル:
+      "YYYY-MM-DD HH:MM LONG | 4H: SH↑SL↑ | 1H: SH↑SL↑ | neck=149.825"
+
+    Args:
+        df_5m:           5M OHLC DataFrame（ローソク足表示用）
+        df_1h:           1H OHLC DataFrame（将来拡張用）
+        df_4h:           4H OHLC DataFrame（将来拡張用）
+        center_time:     プロット中心時刻
+        direction:       'LONG' or 'SHORT'
+        sh_4h_list:      [(timestamp, price), ...] 4H SH 系列
+        sl_4h_list:      [(timestamp, price), ...] 4H SL 系列
+        sh_1h_list:      [(timestamp, price), ...] 1H SH 系列
+        sl_1h_list:      [(timestamp, price), ...] 1H SL 系列
+        neck_4h:         4H ネックライン価格
+        neck_break_time: ネック越え確定時刻
+        save_path:       PNG 保存先パス
+    """
+    try:
+        import mplfinance as mpf
+    except ImportError:
+        raise RuntimeError(
+            "mplfinance が未インストールです。pip install mplfinance を実行してください。"
+        )
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as mpatches
+    except ImportError:
+        raise RuntimeError("matplotlib が未インストールです")
+
+    # ── 表示範囲 ──
+    LEFT_BARS  = 2880   # 10日分（5M 足）
+    RIGHT_BARS = 576    # 2日分（5M 足）
+
+    center_loc = df_5m.index.searchsorted(center_time)
+    i_start = max(0, center_loc - LEFT_BARS)
+    i_end   = min(len(df_5m), center_loc + RIGHT_BARS + 1)
+    df_view = df_5m.iloc[i_start:i_end].copy()
+
+    if len(df_view) == 0:
+        return
+
+    t_start = df_view.index[0]
+    t_end   = df_view.index[-1]
+
+    # ── タイトル用トレンドラベル ──
+    def _trend_label(sh_list: list, sl_list: list, d: str) -> str:
+        if len(sh_list) < 2 or len(sl_list) < 2:
+            return "?"
+        if d == "LONG":
+            sh_sym = "↑" if sh_list[-1][1] > sh_list[-2][1] else "↓"
+            sl_sym = "↑" if sl_list[-1][1] > sl_list[-2][1] else "↓"
+        else:
+            sh_sym = "↓" if sh_list[-1][1] < sh_list[-2][1] else "↑"
+            sl_sym = "↓" if sl_list[-1][1] < sl_list[-2][1] else "↑"
+        return f"SH{sh_sym}SL{sl_sym}"
+
+    trend_4h_label = _trend_label(sh_4h_list, sl_4h_list, direction)
+    trend_1h_label = _trend_label(sh_1h_list, sl_1h_list, direction)
+    neck_str = f"{neck_4h:.3f}" if neck_4h is not None else "N/A"
+    title = (
+        f"{center_time.strftime('%Y-%m-%d %H:%M')} {direction} | "
+        f"4H: {trend_4h_label} | 1H: {trend_1h_label} | neck={neck_str}"
+    )
+
+    # ── 1H トレンド整合テキスト（右上）──
+    is_1h_ok = False
+    if len(sh_1h_list) >= 2 and len(sl_1h_list) >= 2:
+        if direction == "LONG":
+            is_1h_ok = (sh_1h_list[-1][1] > sh_1h_list[-2][1] and
+                        sl_1h_list[-1][1] > sl_1h_list[-2][1])
+        else:
+            is_1h_ok = (sh_1h_list[-1][1] < sh_1h_list[-2][1] and
+                        sl_1h_list[-1][1] < sl_1h_list[-2][1])
+    if direction == "LONG":
+        trend_text = "1H: HH + HL ✓" if is_1h_ok else "1H: HH + HL ?"
+    else:
+        trend_text = "1H: LH + LL ✓" if is_1h_ok else "1H: LH + LL ?"
+
+    # ── mplfinance スタイル（既存と統一）──
+    mc = mpf.make_marketcolors(up="#26a69a", down="#ef5350",
+                               edge="inherit", wick="inherit", volume="in")
+    style = mpf.make_mpf_style(
+        marketcolors=mc, gridstyle=":", gridcolor="#444444",
+        facecolor="#1a1a2e", figcolor="#1a1a2e",
+        rc={"axes.labelcolor": "white", "axes.edgecolor": "#555555",
+            "xtick.color": "white", "ytick.color": "white", "text.color": "white"},
+    )
+
+    fig, axes = mpf.plot(
+        df_view,
+        type="candle",
+        style=style,
+        figsize=(16, 9),
+        returnfig=True,
+        warn_too_much_data=9999,
+        title=title,
+    )
+    ax = axes[0]
+
+    # ── 4H SH: 水平線 + ビュー内ドット ──
+    for ts, price in sh_4h_list:
+        ax.axhline(y=price, color="#FF8C00", linewidth=2.5, linestyle="-", alpha=0.55)
+        if t_start <= ts <= t_end:
+            x = max(0, min(int(df_view.index.searchsorted(ts)), len(df_view) - 1))
+            ax.scatter([x], [price], marker="v", color="#FF8C00", s=100, zorder=5)
+
+    # ── 4H SL: 水平線 + ビュー内ドット ──
+    for ts, price in sl_4h_list:
+        ax.axhline(y=price, color="#1E90FF", linewidth=2.5, linestyle="-", alpha=0.55)
+        if t_start <= ts <= t_end:
+            x = max(0, min(int(df_view.index.searchsorted(ts)), len(df_view) - 1))
+            ax.scatter([x], [price], marker="^", color="#1E90FF", s=100, zorder=5)
+
+    # ── 4H ネックライン（太実線）──
+    if neck_4h is not None:
+        ax.axhline(y=neck_4h, color="#FF8C00", linewidth=3.0,
+                   linestyle="-", alpha=0.95, zorder=4)
+
+    # ── 4H ネック越えマーカー ──
+    if neck_break_time is not None:
+        nbx = int(df_view.index.searchsorted(neck_break_time))
+        if 0 <= nbx < len(df_view):
+            nb_price = float(df_view["Close"].iloc[nbx])
+            marker = "^" if direction == "LONG" else "v"
+            ax.scatter([nbx], [nb_price], marker=marker, color="#FF8C00",
+                       s=300, zorder=7, edgecolors="white", linewidths=1.5)
+
+    # ── 1H SH: ビュー内を折れ線で接続 ──
+    sh_1h_in_view = [(ts, p) for ts, p in sh_1h_list if t_start <= ts <= t_end]
+    if sh_1h_in_view:
+        sh_x = [max(0, min(int(df_view.index.searchsorted(ts)), len(df_view) - 1))
+                for ts, _ in sh_1h_in_view]
+        sh_y = [p for _, p in sh_1h_in_view]
+        ax.plot(sh_x, sh_y, color="#FA8072", linewidth=1.5,
+                marker="o", markersize=5, zorder=4)
+
+    # ── 1H SL: ビュー内を折れ線で接続 ──
+    sl_1h_in_view = [(ts, p) for ts, p in sl_1h_list if t_start <= ts <= t_end]
+    if sl_1h_in_view:
+        sl_x = [max(0, min(int(df_view.index.searchsorted(ts)), len(df_view) - 1))
+                for ts, _ in sl_1h_in_view]
+        sl_y = [p for _, p in sl_1h_in_view]
+        ax.plot(sl_x, sl_y, color="#87CEEB", linewidth=1.5,
+                marker="o", markersize=5, zorder=4)
+
+    # ── 1H トレンドテキスト（右上）──
+    ax.text(0.99, 0.97, trend_text, transform=ax.transAxes,
+            ha="right", va="top", color="white", fontsize=11, fontweight="bold",
+            bbox=dict(boxstyle="round", facecolor="#1a1a2e", alpha=0.8))
+
+    # ── 凡例 ──
+    legend_items = [
+        mpatches.Patch(color="#FF8C00", label="4H SH / Neck"),
+        mpatches.Patch(color="#1E90FF", label="4H SL"),
+        mpatches.Patch(color="#FA8072", label="1H SH"),
+        mpatches.Patch(color="#87CEEB", label="1H SL"),
+    ]
+    ax.legend(handles=legend_items, loc="upper left", fontsize=8,
+              framealpha=0.3, facecolor="#1a1a2e", labelcolor="white")
+
+    # ── 情報テキスト（下部）──
+    n_sh1h_v = len(sh_1h_in_view)
+    n_sl1h_v = len(sl_1h_in_view)
+    info = (
+        f"n(4H)=5  n(1H)=3  |  dir={direction}  |  "
+        f"4H SH={len(sh_4h_list)} SL={len(sl_4h_list)}  |  "
+        f"1H SH(view)={n_sh1h_v} SL(view)={n_sl1h_v}  |  bars={len(df_view)}"
+    )
+    fig.text(0.01, 0.01, info, fontsize=8, color="white",
+             bbox=dict(boxstyle="round", facecolor="#1a1a2e", alpha=0.7))
+
+    # ── PNG 保存 ──
+    save_path_obj = Path(save_path)
+    save_path_obj.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path_obj, dpi=150, bbox_inches="tight",
+                facecolor="#1a1a2e", edgecolor="none")
     plt.close(fig)
 
 

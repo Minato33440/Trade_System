@@ -77,7 +77,7 @@ def get_nearest_swing_high(
     current_idx: int,
     n: int = 3,
     lookback: int = 50,
-) -> float:
+) -> float | None:
     """current_idx より前の直近 Swing High の価格を返す。
 
     Args:
@@ -87,18 +87,18 @@ def get_nearest_swing_high(
         lookback:    何本前まで遡るか（4H=20, 1H=50）
 
     Returns:
-        直近 Swing High の価格。見つからない場合は window の max。
+        直近 Swing High の価格。見つからない場合は None（フォールバックなし）。
     """
     start = max(0, current_idx - lookback)
     window = high.iloc[start:current_idx]
     if len(window) < n * 2 + 1:
-        return float(window.max()) if len(window) > 0 else float("nan")
+        return None
 
     swings = detect_swing_highs(window, n=n)
     swing_prices = window[swings]
 
     if len(swing_prices) == 0:
-        return float(window.max())
+        return None
 
     return float(swing_prices.iloc[-1])
 
@@ -108,7 +108,7 @@ def get_nearest_swing_low(
     current_idx: int,
     n: int = 3,
     lookback: int = 50,
-) -> float:
+) -> float | None:
     """current_idx より前の直近 Swing Low の価格を返す。
 
     Args:
@@ -118,20 +118,85 @@ def get_nearest_swing_low(
         lookback:    何本前まで遡るか
 
     Returns:
-        直近 Swing Low の価格。見つからない場合は window の min。
+        直近 Swing Low の価格。見つからない場合は None（フォールバックなし）。
     """
     start = max(0, current_idx - lookback)
     window = low.iloc[start:current_idx]
     if len(window) < n * 2 + 1:
-        return float(window.min()) if len(window) > 0 else float("nan")
+        return None
 
     swings = detect_swing_lows(window, n=n)
     swing_prices = window[swings]
 
     if len(swing_prices) == 0:
-        return float(window.min())
+        return None
 
     return float(swing_prices.iloc[-1])
+
+
+# ── 1H/15M 直近スイング取得 ────────────────────────────────────
+
+def get_nearest_swing_high_1h(
+    high_1h: pd.Series,
+    n: int = 2,
+    lookback: int = 20,
+) -> "float | None":
+    """1H足データから直近の Swing High を返す。
+
+    neck_4h（押し目ゾーンの上限）として使用。
+
+    Args:
+        high_1h  : 1H足の High 系列
+        n        : 前後確認本数（デフォルト2）
+        lookback : 検索範囲（デフォルト20本 = 約20時間）
+
+    Returns:
+        直近 Swing High の価格。見つからない場合は None。
+    """
+    window = high_1h.iloc[-lookback:]
+    if len(window) < n * 2 + 1:
+        return None
+
+    mask = detect_swing_highs(window, n=n)
+    sh   = window[mask]
+
+    if len(sh) == 0:
+        return None
+
+    return float(sh.iloc[-1])
+
+
+def get_nearest_swing_low_15m(
+    low_15m: pd.Series,
+    n: int = 3,
+    lookback: int = 20,
+) -> "float | None":
+    """15M足データから直近の Swing Low を返す。
+
+    Support_1h（押し目ゾーンの下限）として使用。
+    check_15m_range_low() の sl_min とは独立して取得する。
+    sl_min は構造検出用（頭の最深値）。
+    この関数は「現在のサポートライン」取得用。
+
+    Args:
+        low_15m  : 15M足の Low 系列
+        n        : 前後確認本数（デフォルト3、#014確定値）
+        lookback : 検索範囲（デフォルト20本 = 約5時間）
+
+    Returns:
+        直近 Swing Low の価格。見つからない場合は None。
+    """
+    window = low_15m.iloc[-lookback:]
+    if len(window) < n * 2 + 1:
+        return None
+
+    mask = detect_swing_lows(window, n=n)
+    sl   = window[mask]
+
+    if len(sl) == 0:
+        return None
+
+    return float(sl.iloc[-1])
 
 
 # ── 4H方向判定 ────────────────────────────────────────────────
@@ -292,8 +357,8 @@ if __name__ == "__main__":
 
     sh_price = get_nearest_swing_high(high, len(high) - 1, n=3, lookback=50)
     sl_price = get_nearest_swing_low(low, len(low) - 1, n=3, lookback=50)
-    print(f"  直近SH: {sh_price:.3f}")
-    print(f"  直近SL: {sl_price:.3f}")
+    print(f"  直近SH: {sh_price:.3f}" if sh_price is not None else "  直近SH: None（未検出）")
+    print(f"  直近SL: {sl_price:.3f}" if sl_price is not None else "  直近SL: None（未検出）")
 
     direction = get_direction_4h(high, low, len(high) - 1, n=3, lookback=20)
     print(f"  4H方向: {direction}")
