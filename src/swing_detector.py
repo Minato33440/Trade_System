@@ -199,6 +199,57 @@ def get_nearest_swing_low_15m(
     return float(sl.iloc[-1])
 
 
+def get_nearest_swing_low_1h(
+    low_1h: pd.Series,
+    n: int = 2,
+    lookback: int = 240,
+) -> "float | None":
+    """1H足 lookback=240（約10日分）で直近 Swing Low を返す。
+
+    support_1h の正式版（#021 で backtest.py への置き換えを実施）。
+    #020 では検証用追加のみ。backtest.py の get_nearest_swing_low_15m()
+    呼び出しは変更しない。
+
+    Args:
+        low_1h   : 1H足の Low 系列
+        n        : 前後確認本数（デフォルト2）
+        lookback : 検索範囲（デフォルト240本 ≈ 10日分）
+
+    Returns:
+        直近 Swing Low の価格。見つからない場合は None。
+    """
+    window = low_1h.iloc[-lookback:]
+    mask   = detect_swing_lows(window, n=n)
+    sl     = window[mask]
+
+    if len(sl) == 0:
+        return None
+
+    return float(sl.iloc[-1])
+
+
+def get_all_swing_lows_1h(
+    low_1h: pd.Series,
+    n: int = 2,
+    lookback: int = 240,
+) -> pd.Series:
+    """1H足 lookback=240 内の全 Swing Low を返す（複数）。
+
+    test_1h_coincidence.py で 4H SL との最安値一致確認に使用。
+
+    Args:
+        low_1h   : 1H足の Low 系列
+        n        : 前後確認本数（デフォルト2）
+        lookback : 検索範囲（デフォルト240本 ≈ 10日分）
+
+    Returns:
+        Swing Low の価格 Series（空の場合は空 Series）。
+    """
+    window = low_1h.iloc[-lookback:]
+    mask   = detect_swing_lows(window, n=n)
+    return window[mask]
+
+
 # ── 4H方向判定 ────────────────────────────────────────────────
 
 def get_direction_4h(
