@@ -629,3 +629,191 @@ def save_entry_debug_plot(
     plt.savefig(plot_path, dpi=120)
     plt.close()
     return plot_path
+
+
+# ── #020: 1H 押し目ウィンドウ 5M プロット ────────────────────────────────────
+
+
+def plot_1h_window_5m(
+    df_5m: pd.DataFrame,
+    df_1h: pd.DataFrame,
+    ts_sl_1h: pd.Timestamp,
+    sl_4h: float,
+    direction: str = 'LONG',
+    pre_bars: int = 20,
+    post_bars: int = 5,
+    save_dir: str = 'logs/1h_windows',
+) -> None:
+    """
+    1H 押し目ウィンドウ（前20本 + SL足 + 後5本 = 26本 ≈ 26時間）の
+    5M OHLC + 5M SH/SL + 4H SL水平線 + 1H SL垂直線 を PNG 保存する。
+    """
+    import mplfinance as mpf
+    import matplotlib.pyplot as plt
+    from swing_detector import detect_swing_highs, detect_swing_lows
+
+    # ---- 1H ウィンドウ範囲を確定 ----
+    idx_sl       = df_1h.index.get_loc(ts_sl_1h)
+    win_start_1h = df_1h.index[max(0, idx_sl - pre_bars)]
+    win_end_1h   = df_1h.index[min(len(df_1h) - 1, idx_sl + post_bars)]
+
+    # ---- 5M 範囲を抽出 ----
+    df_5m_win = df_5m.loc[win_start_1h:win_end_1h].copy()
+    if len(df_5m_win) < 10:
+        return
+
+    # ---- 5M SH / SL 検出（窓内限定）----
+    sh_mask = detect_swing_highs(df_5m_win['high'], n=2)
+    sl_mask = detect_swing_lows(df_5m_win['low'],   n=2)
+    sh_vals = df_5m_win['high'].where(sh_mask)
+    sl_vals = df_5m_win['low'].where(sl_mask)
+
+    # ---- mplfinance スタイル ----
+    mc = mpf.make_marketcolors(
+        up='#26a69a', down='#ef5350',
+        edge='inherit', wick='inherit', volume='in'
+    )
+    s = mpf.make_mpf_style(
+        marketcolors=mc, facecolor='#131722',
+        edgecolor='#444', gridcolor='#2a2e39'
+    )
+
+    # ---- addplot（※ ax= 引数は渡さない。mplfinance の仕様。） ----
+    apds = [
+        mpf.make_addplot(sh_vals, type='scatter', marker='v',
+                         markersize=60, color='#FA8072'),
+        mpf.make_addplot(sl_vals, type='scatter', marker='^',
+                         markersize=60, color='#87CEEB'),
+    ]
+
+    # ---- returnfig=True で fig/axes を取得（正しいパターン） ----
+    fig, axes = mpf.plot(
+        df_5m_win,
+        type='candle',
+        style=s,
+        addplot=apds,
+        returnfig=True,
+        figsize=(16, 7),
+    )
+    ax = axes[0]
+    fig.patch.set_facecolor('#131722')
+    ax.set_facecolor('#131722')
+
+    # ---- 4H SL 水平線 ----
+    ax.axhline(y=sl_4h, color='#1E90FF', linewidth=1.5,
+               linestyle='--', label=f'4H SL {sl_4h:.3f}')
+
+    # ---- 1H SL 足の垂直線 ----
+    # mplfinance の returnfig=True モードでは x軸が整数インデックスになる。
+    idx_in_win = df_5m_win.index.searchsorted(ts_sl_1h, side='left')
+    if idx_in_win < len(df_5m_win):
+        try:
+            ts_for_vline = df_5m_win.index[idx_in_win]
+            ax.axvline(x=ts_for_vline, color='#ADFF2F',
+                       linewidth=1.0, linestyle=':', label='1H SL')
+        except Exception:
+            ax.axvline(x=idx_in_win, color='#ADFF2F',
+                       linewidth=1.0, linestyle=':', label='1H SL')
+
+    # ---- タイトル・凡例 ----
+    ts_str = ts_sl_1h.strftime('%Y%m%d_%H%M')
+    ax.set_title(
+        f'USDJPY 5M [{direction}]  1H SL: {ts_sl_1h}  '
+        f'(前{pre_bars}本 + SL足 + 後{post_bars}本)',
+        color='white', fontsize=11
+    )
+    ax.legend(facecolor='#1e222d', labelcolor='white', fontsize=9)
+    ax.tick_params(colors='#aaa')
+
+    # ---- 保存 ----
+    save_path = Path(save_dir)
+    save_path.mkdir(parents=True, exist_ok=True)
+    fname = save_path / f'{ts_str}_{direction}_1h_window.png'
+    plt.savefig(fname, dpi=150, bbox_inches='tight',
+                facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  saved: {fname}")
+
+
+if __name__ == '__main__':
+    from swing_detector import (
+        detect_swing_lows,
+        get_nearest_swing_low,
+        get_all_swing_lows_1h,
+        get_direction_4h,
+    )
+
+    _DATA_PATH = Path(__file__).parent.parent / 'data/raw/usdjpy_multi_tf_2years.parquet'
+    _df_raw = pd.read_parquet(_DATA_PATH)
+
+    df_5m = _df_raw[["5M_Open", "5M_High", "5M_Low", "5M_Close"]].rename(
+        columns={"5M_Open": "open", "5M_High": "high",
+                 "5M_Low": "low", "5M_Close": "close"}
+    )
+
+    # ===== #020: 1H-4H 一致イベントの窓プロット =====
+
+    # リサンプル（※ label='right', closed='right' — backtest.py と同一。変更禁止）
+    def resample_tf(df, rule):
+        return df.resample(rule, label='right', closed='right').agg(
+            {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last'}
+        ).dropna()
+
+    df_4h = resample_tf(df_5m, '4h')
+    df_1h = resample_tf(df_5m, '1h')
+
+    MATCH_THRESH = 10.0  # pips（10pips以内を一致とみなす）
+    MAX_PLOTS    = 20    # 最大プロット件数
+    WARMUP       = 50
+    WINDOW_1H    = 8     # 4H SL タイムスタンプ前後 ±8本
+
+    plotted = 0
+    for i in range(WARMUP, len(df_4h)):
+        if plotted >= MAX_PLOTS:
+            break
+        ts_4h = df_4h.index[i]
+        direction = get_direction_4h(
+            df_4h['high'], df_4h['low'],
+            current_idx=i, n=3, lookback=20
+        )
+        if direction != 'LONG':
+            continue
+
+        # 4H SL タイムスタンプ + 価格を取得
+        start_4h = max(0, i - 20 + 1)
+        window_4h = df_4h['low'].iloc[start_4h:i + 1]
+        mask_4h = detect_swing_lows(window_4h, n=3)
+        sl_4h_series = window_4h[mask_4h]
+        if len(sl_4h_series) == 0:
+            continue
+        sl_4h = float(sl_4h_series.iloc[-1])
+        sl_4h_ts = sl_4h_series.index[-1]
+
+        # ±WINDOW_1H 本窓内で最近傍 1H SL を探す
+        idx_1h_center = df_1h.index.searchsorted(sl_4h_ts, side='right') - 1
+        if idx_1h_center < WINDOW_1H:
+            continue
+        win_s = max(0, idx_1h_center - WINDOW_1H)
+        win_e = min(len(df_1h) - 1, idx_1h_center + WINDOW_1H)
+        window_1h = df_1h['low'].iloc[win_s:win_e + 1]
+        mask_1h = detect_swing_lows(window_1h, n=2)
+        sl_1h_near = window_1h[mask_1h]
+        if len(sl_1h_near) == 0:
+            continue
+
+        dists = abs(sl_1h_near - sl_4h)
+        sl_1h_ts  = dists.idxmin()
+        sl_1h_val = float(sl_1h_near[sl_1h_ts])
+        dist = abs(sl_4h - sl_1h_val) / 0.01
+
+        if dist <= MATCH_THRESH:
+            plot_1h_window_5m(
+                df_5m=df_5m,
+                df_1h=df_1h,
+                ts_sl_1h=sl_1h_ts,
+                sl_4h=sl_4h,
+                direction=direction,
+            )
+            plotted += 1
+
+    print(f"\n合計 {plotted} 枚 → logs/1h_windows/")
