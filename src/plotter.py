@@ -665,8 +665,6 @@ def plot_1h_window_5m(
     # ---- 5M SH / SL 検出（窓内限定）----
     sh_mask = detect_swing_highs(df_5m_win['high'], n=2)
     sl_mask = detect_swing_lows(df_5m_win['low'],   n=2)
-    sh_vals = df_5m_win['high'].where(sh_mask)
-    sl_vals = df_5m_win['low'].where(sl_mask)
 
     # ---- mplfinance スタイル ----
     mc = mpf.make_marketcolors(
@@ -678,48 +676,46 @@ def plot_1h_window_5m(
         edgecolor='#444', gridcolor='#2a2e39'
     )
 
-    # ---- addplot（※ ax= 引数は渡さない。mplfinance の仕様。） ----
-    apds = [
-        mpf.make_addplot(sh_vals, type='scatter', marker='v',
-                         markersize=60, color='#FA8072'),
-        mpf.make_addplot(sl_vals, type='scatter', marker='^',
-                         markersize=60, color='#87CEEB'),
-    ]
-
-    # ---- returnfig=True で fig/axes を取得（正しいパターン） ----
+    # ---- addplot を使わず candle のみ描画（addplot は空 axes[1] を生成し白帯が出るバグ回避）----
     fig, axes = mpf.plot(
         df_5m_win,
         type='candle',
         style=s,
-        addplot=apds,
         returnfig=True,
         figsize=(16, 7),
     )
     ax = axes[0]
+    # 余分な axes を非表示（addplot 由来の空パネルが残る場合の保険）
+    for _ax in axes[1:]:
+        _ax.set_visible(False)
     fig.patch.set_facecolor('#131722')
     ax.set_facecolor('#131722')
+
+    # ---- 5M SH/SL マーカーを ax.scatter で手動描画（整数x軸に直接プロット）----
+    sh_x = [j for j, v in enumerate(sh_mask) if v]
+    sh_y = [float(df_5m_win['high'].iloc[j]) for j in sh_x]
+    sl_x = [j for j, v in enumerate(sl_mask) if v]
+    sl_y = [float(df_5m_win['low'].iloc[j]) for j in sl_x]
+    if sh_x:
+        ax.scatter(sh_x, sh_y, marker='v', s=60, color='#FA8072', zorder=5)
+    if sl_x:
+        ax.scatter(sl_x, sl_y, marker='^', s=60, color='#87CEEB', zorder=5)
 
     # ---- 4H SL 水平線 ----
     ax.axhline(y=sl_4h, color='#1E90FF', linewidth=1.5,
                linestyle='--', label=f'4H SL {sl_4h:.3f}')
 
-    # ---- 1H SL 足の垂直線 ----
-    # mplfinance の returnfig=True モードでは x軸が整数インデックスになる。
+    # ---- 1H SL 足の垂直線（整数インデックスで描画）----
     idx_in_win = df_5m_win.index.searchsorted(ts_sl_1h, side='left')
     if idx_in_win < len(df_5m_win):
-        try:
-            ts_for_vline = df_5m_win.index[idx_in_win]
-            ax.axvline(x=ts_for_vline, color='#ADFF2F',
-                       linewidth=1.0, linestyle=':', label='1H SL')
-        except Exception:
-            ax.axvline(x=idx_in_win, color='#ADFF2F',
-                       linewidth=1.0, linestyle=':', label='1H SL')
+        ax.axvline(x=idx_in_win, color='#ADFF2F',
+                   linewidth=1.0, linestyle=':', label='1H SL')
 
-    # ---- タイトル・凡例 ----
+    # ---- タイトル・凡例（英語タイトルに変更: CJK豆腐対策）----
     ts_str = ts_sl_1h.strftime('%Y%m%d_%H%M')
     ax.set_title(
         f'USDJPY 5M [{direction}]  1H SL: {ts_sl_1h}  '
-        f'(前{pre_bars}本 + SL足 + 後{post_bars}本)',
+        f'(pre{pre_bars} + SL + post{post_bars})',
         color='white', fontsize=11
     )
     ax.legend(facecolor='#1e222d', labelcolor='white', fontsize=9)
