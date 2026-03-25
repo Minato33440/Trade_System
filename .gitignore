@@ -27,3 +27,8 @@ logs/text_log/
 # バックテスト生成チャート（PNG）
 logs/plots/
 
+# logs/gm/ 以外の全サブディレクトリの .png を除外（将来の新ディレクトリも追加すること）
+logs/1h_windows/
+logs/base_scan/**/*.png
+logs/debug/
+logs/structure_plots/
