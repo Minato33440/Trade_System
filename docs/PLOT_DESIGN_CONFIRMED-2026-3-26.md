@@ -27,7 +27,7 @@
 | plot_swing_check() | #009 | ✅ 完了 | logs/plots/ |
 | plot_4h_1h_structure() | #019 | ✅ 完了 | logs/structure_plots/ |
 | plot_1h_window_5m() | #020 | ✅ 完了（#020-fix適用済み） | logs/1h_windows/ |
-| save_entry_debug_plot() | 初期 | ✅ 完了 | logs/plots/ |
+| save_entry_debug_plot() | 初期 | ✅ぎぎ 完了 | logs/plots/ |
 | window_scanner プロット | #021 | ✅ 完了 | logs/window_scan_plots/ |
 
 ---
