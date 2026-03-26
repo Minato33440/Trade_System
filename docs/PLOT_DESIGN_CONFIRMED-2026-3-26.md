@@ -1,6 +1,6 @@
 # REX Plot Generation Logic — 設計確定一覧
-# 作成: Rex / 承認: Minato / 作成日: 2026-03-20 / 最終更新: 2026-03-25
-# 保存先: REX_Trade_System/docs/PLOT_DESIGN_CONFIRMED-2026-3-25.md
+# 作成: Rex / 承認: Minato / 作成日: 2026-03-20 / 最終更新: 2026-03-26
+# 保存先: REX_Trade_System/docs/PLOT_DESIGN_CONFIRMED-2026-3-26.md
 
 ---
 
@@ -12,11 +12,12 @@
 | 第二目的 | エントリー・決済の値位置の整合性検証 |
 | 第三目的 | ロジック設計の細かな値位置調整 |
 | 第四目的 | 1Hウィンドウ内 15M DB/IHS 構造の目視確認（#020追加） |
+| 第五目的 | 窓ベーススキャンのエントリータイミング検証（#021〜#023追加） |
 | 将来用途 | Vision AI によるロジック自動チェック（Phase 3） |
 
 ---
 
-## 2. 実装済みプロット関数一覧（2026-03-25時点）
+## 2. 実装済みプロット関数一覧（2026-03-26時点）
 
 | 関数 | 追加指示書 | 状態 | 出力先 |
 |---|---|---|---|
@@ -27,14 +28,17 @@
 | plot_4h_1h_structure() | #019 | ✅ 完了 | logs/structure_plots/ |
 | plot_1h_window_5m() | #020 | ✅ 完了（#020-fix適用済み） | logs/1h_windows/ |
 | save_entry_debug_plot() | 初期 | ✅ 完了 | logs/plots/ |
+| window_scanner プロット | #021 | ✅ 完了 | logs/window_scan_plots/ |
 
 ---
 
-## 3. plot_1h_window_5m() 仕様（#020・修正版確定）
+## 3. plot_1h_window_5m() 仕様（#020・修正版確定・#023窓延長反映）
 
 ### 目的
-1H 押し目ウィンドウ（前20本+SL足+後5本=26本≈26時間）内の
+1H 押し目ウィンドウ（前20本+SL足+後10本=31本≈31時間）内の
 5M OHLC + 5M SH/SL マーカー + 参照線を可視化する。
+
+**#023更新:** 後5本 → 後10本に延長（26時間 → 31時間）
 
 ### 表示要素
 
@@ -81,7 +85,45 @@ ax = axes[0]
 
 ---
 
-## 4. plot_4h_1h_structure() 仕様（#019確定）
+## 4. window_scanner プロット仕様（#021〜#023追加）
+
+### 目的
+窓ベース階層スキャンで検出されたエントリーポイントを、
+5M OHLC + 15M ネックライン + 参照線と共に可視化する。
+
+### 表示要素
+
+| 要素 | 色 | 太さ | スタイル | 描画方法 |
+|---|---|---|---|---|
+| 5M ローソク足（陽線） | 緑 (#26a69a) | - | mplfinance candle | mpf.plot() |
+| 5M ローソク足（陰線） | 赤 (#ef5350) | - | mplfinance candle | mpf.plot() |
+| 5M Swing High マーカー | サーモン (#FA8072) | size=60 | ▼ scatter | ax.scatter() |
+| 5M Swing Low マーカー | 水色 (#87CEEB) | size=60 | ▲ scatter | ax.scatter() |
+| 15M ネックライン | 黄緑 (#ADFF2F) | 1.5px | 破線 | ax.axhline() |
+| 4H SL 水平線 | 青 (#1E90FF) | 1.5px | 破線 | ax.axhline() |
+| 1H SL 垂直線 | シアン (#00FFFF) | 1.0px | 点線 | ax.axvline() |
+| エントリー時刻 | 赤 (#FF0000) | 2.0px | 実線 | ax.axvline() |
+
+### 保存仕様
+
+```
+保存先: logs/window_scan_plots/NN_YYYYMMDD_HHMM_{pattern}_scan.png
+命名例: 01_20240408_1500_IHS_scan.png
+解像度: 150 dpi
+タイトル: [NN/total] YYYYMMDD HHMM LONG pat={pattern} entry={price} neck={neck} sl4h={sl4h}
+```
+
+### #021〜#023 プロット生成実績
+
+```
+#021: 13枚（全件誤検出・底より前のエントリー）
+#022:  2枚（IHS×2のみ・底の後のエントリー）
+#023:  5枚（DB:2 / IHS:1 / ASCENDING:2）
+```
+
+---
+
+## 5. plot_4h_1h_structure() 仕様（#019確定）
 
 ### 目的
 4H+1H のマルチTF構造を5Mローソク上にオーバーレイし、
@@ -124,7 +166,7 @@ ax = axes[0]
 
 ---
 
-## 5. plot_swing_check() 仕様（#009 Phase 1 確定）
+## 6. plot_swing_check() 仕様（#009 Phase 1 確定）
 
 ### 目的
 5M OHLC + 4H/15M Swing High/Low + NONE区間の視覚化。
@@ -143,7 +185,7 @@ Swing 検出精度の基礎確認に使用。
 
 ---
 
-## 6. エントリー詳細プロット仕様（Phase 2 — 将来実装）
+## 7. エントリー詳細プロット仕様（Phase 2 — 将来実装）
 
 ### トリガー条件
 
@@ -178,7 +220,7 @@ Swing 検出パラメータ（n / lookback）
 
 ---
 
-## 7. 共通仕様
+## 8. 共通仕様
 
 ### 依存ライブラリ
 
@@ -214,7 +256,7 @@ numpy               # Fib 計算
 
 ---
 
-## 8. Phase 3（将来）— Vision AI 自動チェック
+## 9. Phase 3（将来）— Vision AI 自動チェック
 
 ```
 目的: 生成 PNG を Vision AI に送信して Swing 構造の整合性を自動確認
