@@ -32,7 +32,7 @@ from src.entry_logic import check_15m_range_low, ALLOWED_PATTERNS
 DATA_PATH      = _repo_root / 'data/raw/usdjpy_multi_tf_2years.parquet'
 WARMUP_4H      = 50   # 4H足ウォームアップ本数
 WINDOW_1H_PRE  = 20   # 1H窓: SL足の前 20本
-WINDOW_1H_POST = 5    # 1H窓: SL足の後 5本
+WINDOW_1H_POST = 10   # 1H窓: SL足の後 10本（5 → 10に延長）
 WINDOW_SEARCH  = 8    # 4H SL ts 前後 ±8本(8時間)で 1H SL を探す範囲
 DIRECTION_MODE = 'LONG'  # SHORT は将来対応
 
