@@ -129,12 +129,13 @@ def get_1h_window_range(
 
 # ========== Layer 3: 窓内スキャン ==========
 
-def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float):
+def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Timestamp):
     """窓内の 5M データから 15M DB/IHS 検出 → 5M ネック越えエントリーを返す。
 
     Args:
         df_5m_win : 窓内の 5M 足 DataFrame（open/high/low/close）
         sl_4h_val : 4H SL の価格（エントリー情報として記録）
+        sl_1h_ts  : 1H SL のタイムスタンプ（ネック越えループの開始位置限定）
 
     Returns:
         エントリー情報 dict、またはエントリー未発生の場合 None
@@ -169,8 +170,9 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float):
     if pattern not in ALLOWED_PATTERNS:
         return None
 
-    # 5M ネック越え実体確定を検出
-    for j in range(len(df_5m_win) - 1):
+    # 5M ネック越え実体確定を検出（1H SL 以降から開始）
+    sl_1h_idx = df_5m_win.index.searchsorted(sl_1h_ts)
+    for j in range(sl_1h_idx, len(df_5m_win) - 1):
         row      = df_5m_win.iloc[j]
         body_low = min(float(row['open']), float(row['close']))
 
@@ -237,7 +239,7 @@ def run_window_scan() -> pd.DataFrame:
             continue
 
         # Layer 3: 窓内エントリースキャン
-        entry = scan_window_entry(df_5m_win, sl_4h_val)
+        entry = scan_window_entry(df_5m_win, sl_4h_val, sl_1h_ts)
         if entry is None:
             continue
 
