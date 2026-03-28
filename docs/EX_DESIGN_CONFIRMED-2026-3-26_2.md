@@ -18,9 +18,10 @@
 
 | 役割 | 担当 |
 |---|---|
-| ディレクター・意思決定 | Minato |
-| エンジニアリング責任者・設計 | Rex（claude.ai） |
-| コード実装・Git管理 | ClaudeCode（VS Code） |
+| ディレクター・意思決定 | User：Minato |
+| エンジニアリング責任者・設計 | Rex- Planner：Sonnet4.6  |
+| エバリエーター・監査・修正案 | Rex- Evaluator：Opus4.6 |
+| コード実装・Git管理 | ClaudeCode-Sonnet4.6（VS Code） |
 
 ---
 
