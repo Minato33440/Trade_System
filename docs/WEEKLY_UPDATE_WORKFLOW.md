@@ -139,8 +139,11 @@
   - `logs/gm/weekly/2026/_index.md`: 当週エントリを末尾に追加（Regime / 1行 / Key gates / Links）
   - `docs/STATUS.md`: 最新 "Weekly Brief | YYYY-M-D_wkNN" セクションを末尾に追加
   - `docs/Trade-Main.md`: ① "2026 Weekly Index" に当週エントリを追加 ② "Distilled Logs" リンクを更新 ③ 末尾に "Weekly Brief" セクションを追加
-  - `versions/distilled/2026/distilled-gm-2026-N.md`: 当月 or 新月ファイルに当週の distilled エントリを追加（ファイルが存在しない場合は新規作成）
-    - N はファイル番号（月ベース or 新シーズン開始時に繰り上げ）
+  - `versions/distilled/2026/distilled-gm-2026-N.md`: 当週の distilled エントリを追記 or 新規作成
+    - **命名ルール（重要）**: N は月番号。**同月内は必ず同じファイルに追記する。新月になった時点で新規ファイルを作成する。**
+      - 例: 3月第1〜5週はすべて `distilled-gm-2026-3.md` に追記
+      - 例: 4月第1週から `distilled-gm-2026-4.md` を新規作成
+    - **週をまたいで新ファイルを作ってはいけない**（月内で -4, -5 のように分割しない）
     - 書式: regime / decision（判断変更点のみ） / evidence (close) / implication / tags
 
 - [ ] **8. Git 更新**
