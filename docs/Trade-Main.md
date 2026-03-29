@@ -193,7 +193,8 @@ updated: 2026-01-03 (JST)
 - 2026-01: Trade_Record/versions/distilled/2026/distilled-gm-2026-1.md
 - 2026-02: Trade_Record/versions/distilled/2026/distilled-gm-2026-2.md
 - 2026-03: Trade_Record/versions/distilled/2026/distilled-gm-2026-3.md
-- 2026-04 (3/16〜): Trade_Record/versions/distilled/2026/distilled-gm-2026-4.md
+- 2026-04 (3/16〜wk04): Trade_Record/versions/distilled/2026/distilled-gm-2026-4.md
+- 2026-05 (3/23〜wk05): Trade_Record/versions/distilled/2026/distilled-gm-2026-5.md
 
 ## 3-scenario response（週の骨格）
 A) Risk-on confirmation（上抜け“本物”）
@@ -235,6 +236,66 @@ C) Risk-off re-ignition（失速）
   - [meta](./logs/gm/weekly/2026/2026-3-20_wk04/meta.yaml)
   - [review](./logs/gm/weekly/2026/2026-3-20_wk04/review.md)
   - [charts](./logs/gm/weekly/2026/2026-3-20_wk04/charts.md)
+
+### 2026-3-27_wk05（2026-03-23 → 2026-03-27）
+- Regime: Geopolitical Risk-Off + Energy Shock（VIX_30_breach + US100_fib382_approaching + USDJPY_toward_161 + WTI_near_100 + stagflation_week_ahead + iran_4_6_deadline）
+- 1行：VIX 31.05でwk04 Reduce gate発動水準到達。US100 23,132でFib38.2（22,222）まで約900pt。USDJPY 159.7で161円射程。4/6イラン期限・4/3雇用統計が最大の節目。2シナリオ（一段安→急反発 / 金融危機連鎖）踏まえ完全凍結継続。
+- Key gates:
+  - Add risk: US100 22,000〜22,222底打ち確認＋VIX鎮静（<27）＋イラン緊張緩和（追撃禁止）
+  - Reduce risk: US100 daily close <22,000 OR VIX>35定着 OR WTI急騰（120$）OR イラン本格軍事衝突
+- Links:
+  - [note](./logs/gm/weekly/2026/2026-3-27_wk05/note.md)
+  - [meta](./logs/gm/weekly/2026/2026-3-27_wk05/meta.yaml)
+  - [review](./logs/gm/weekly/2026/2026-3-27_wk05/review.md)
+  - [charts](./logs/gm/weekly/2026/2026-3-27_wk05/charts.md)
+
+
+## Weekly Brief | 2026-3-27_wk05（2026-03-23 → 2026-03-27）
+created: 2026-03-29 (JST)
+
+### Macro / Regime
+- Regime: Geopolitical Risk-Off + Energy Shock（第5週継続）
+- VIX 31.05でwk04設定のReduce risk gate（VIX>30定着）が発動水準に到達。
+- US100 23,132.77 → Fib38.2（22,222）まで約900pt。NOBUターゲット22,000が視野。
+- USDJPY 159.704で円安継続。NOBUターゲット161円が射程。
+- WTI 99.64で100$近辺高止まり。エネルギーショック構造継続。
+- XAUUSD 4,524.3で短期調整継続。4,500サポート注視。
+- イラン/ガザ: 戦闘停止に向けた動き。4/6前後に米・イラン攻撃延期期限（最大節目）。
+
+### Position / Orders
+- Core：Gold / エネルギー（WTI 100$近辺）/ 防衛（ゴールデンドーム関連）継続保有。
+- Mode：完全凍結継続。VIX>30到達・4/6イラン期限まではNO-GO。
+- 弾薬温存：US100 22,000〜22,222底打ち確認待ち。
+- 長期ポートフォリオ：売り不要。安値での積立加速を検討。
+
+### Key Levels (close-based)
+- US100: 23,132.77 / S=22,222（Fib38.2）/ 次=21,264 / テールリスク=20,000
+- JP225: S=36,000〜35,000 / 3/30権利落ち注意
+- USDJPY: 159.704 / R=161.0（NOBUターゲット）/ S=149〜150（急落シナリオ）
+- WTI: 99.640 / R=106（NOBUターゲット）/ S=68〜70
+- XAUUSD: 4,524.3 / S=4,500 / VIX: 31.050 / US10Y: 4.440
+
+### Gates（最重要：終値で判定）
+- Add risk ONLY if: US100 22,000〜22,222底打ち確認＋VIX<27＋イラン緊張緩和（追撃禁止）
+- Reduce / pause if: US100 D1 close <22,000 OR VIX>35定着 OR WTI急騰（120$）OR イラン本格衝突
+- Hedge gate: Gold 4,500サポート / エネルギー / 防衛継続
+
+### This Week Focus（行動: 3/30-4/4）
+- 完全凍結継続。4/6イラン期限通過まではNO-GO徹底。
+- 4/3（金）雇用統計 + ISMサービス業PMI：スタグフレーション確認の最重要指標。
+- 3/30（月）権利落ち：ギャップダウン想定。成行で動かない。
+- US100 22,000〜22,222接近時の底打ちサイン（TACO仮説）を日足終値で確認。
+
+### Signals (weekly, fixed keys)
+- us10y_accel: on（4.440%）
+- hy_oas_widening: alert（プライベートクレジット デフォルト懸念）
+- vix_spike: on（31.05 / 30超え確定）
+- wti_shock: on（99.64 / 100$高止まり）
+- eps_revision_chain: watch（4/3雇用統計待ち）
+
+## Previous (archived briefs)
+- Weekly Brief | 2026-3-20_wk04（2026-03-16 → 2026-03-20）
+  - see: logs/gm/weekly/2026/2026-3-20_wk04/
 
 
 ## Weekly Brief | 2026-3-20_wk04（2026-03-16 → 2026-03-20）

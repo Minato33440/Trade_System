@@ -145,3 +145,15 @@ updated: 2026-01-19 (JST)
   - [meta](./2026-3-20_wk04/meta.yaml)
   - [review](./2026-3-20_wk04/review.md)
   - [charts](./2026-3-20_wk04/charts.md)
+
+### 2026-3-27_wk05（2026-03-23 → 2026-03-27）
+- Regime: Geopolitical Risk-Off + Energy Shock（VIX_30_breach + US100_fib382_approaching + USDJPY_toward_161 + WTI_near_100 + stagflation_week_ahead + iran_4_6_deadline）
+- 1行：VIX 31.05でwk04 Reduce gate発動水準到達。US100 23,132でFib38.2（22,222）まで約900pt。USDJPY 159.7で161円射程。4/6イラン期限・4/3雇用統計が最大の地政学・経済節目。2シナリオ（一段安→急反発 / 金融危機連鎖）を踏まえ完全凍結継続。
+- Key gates:
+  - Add risk: US100 22,000〜22,222底打ち確認（週足終値）＋VIX鎮静（<27）＋イラン緊張緩和報道（追撃禁止）
+  - Reduce risk: US100 daily close <22,000 OR VIX>35定着 OR WTI急騰（120$方向）OR イラン本格軍事衝突
+- Links:
+  - [note](./2026-3-27_wk05/note.md)
+  - [meta](./2026-3-27_wk05/meta.yaml)
+  - [review](./2026-3-27_wk05/review.md)
+  - [charts](./2026-3-27_wk05/charts.md)

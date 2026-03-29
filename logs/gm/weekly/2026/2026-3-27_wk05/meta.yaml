@@ -1,0 +1,91 @@
+week: 2026-3-27_wk05
+date_range: 2026-03-23 -> 2026-03-27
+created: 2026-03-29
+updated: 2026-03-29
+
+snapshot:
+  US100:
+    close: 23132.770
+    change_30d_pct: -7.32
+    bias: risk_off_deepening
+    key_levels: [25000, 24643, 23913, 23400, 22222, 21264, 20000]
+    note: "VIX 30超えでwk04 Reduceゲート発動。22,000（NOBU目標）が次の主要節目"
+  JP225:
+    close: TBD
+    weekly_change_pct: TBD
+    bias: correcting_accelerating
+    key_levels: [45000, 40000, 36000, 35000]
+    note: "3/30権利落ち日。35,000〜36,000サポート帯。NOBUさん40,000台前半が長期底値"
+  USDJPY:
+    close: 159.704
+    change_30d_pct: 2.47
+    bias: yen_weakness_continues
+    key_levels: [161.0, 159.704, 155.0, 151.0, 149.0, 150.0]
+    note: "円安基調継続。リスクオフ時は149〜150サポート。NOBUターゲット161円"
+  WTI:
+    close: 99.640
+    change_30d_pct: 48.67
+    bias: elevated_near_100
+    key_levels: [120.0, 106.0, 99.640, 90.0, 68.0, 70.0]
+    note: "100$近辺で推移。NOBUターゲット106$。120$で日本政府介入検討水準"
+  XAUUSD:
+    close: 4524.300
+    change_30d_pct: -13.50
+    bias: correcting_from_peak
+    key_levels: [5000, 4900, 4574, 4524, 4500]
+    note: "株安連動の調整継続。中長期の安全資産機能は健全。短期は売り圧力残存"
+  US10Y:
+    close: 4.440
+    change_30d_pct: 12.06
+    bias: rising_stagflation
+    key_levels: [4.55, 4.50, 4.44, 4.30]
+    note: "4.5%超えが株式市場への強い下押し圧力。スタグフレーション織り込み"
+  US2Y:
+    close: 4.070
+    change_30d_pct: 15.89
+    bias: rising
+    key_levels: [4.90, 4.70, 4.07]
+    note: "FRB利上げ再観測で上昇圧力。4.7〜4.9%レンジ想定"
+  VIX:
+    close: 31.050
+    change_30d_pct: 56.34
+    bias: extreme_risk_off
+    note: "30超え確定。wk04のReduce risk gate（VIX>30定着）が発動水準"
+  BTC_USD:
+    close: 66319.695
+    change_30d_pct: 0.66
+    bias: range
+    note: "レンジ。株やゴールドとの相関が弱まり独自の推移"
+
+signals:
+  - VIX_30_breach: "VIX 31.05 → wk04のReduce risk gate（VIX>30定着）が発動水準に到達"
+  - US100_approaching_fib382: "23,132.77 → 22,222水準（Fib38.2）まで1,000pt未満に接近"
+  - USDJPY_yen_weakness_cont: "157.924（wk04終値）→ 159.704へ円安続伸。NOBUターゲット161円視野"
+  - WTI_near_100: "99.64 → 100$定着or調整分岐点。NOBUターゲット106$"
+  - stagflation_data_week: "4/1 ISM製造業 / 4/3 雇用統計 → スタグフレーション確認の最重要イベント週"
+  - iran_deadline_4_6: "4/6前後の米・イラン攻撃延期期限。地政学リスク再燃の最大節目"
+  - japan_exdiv_3_30: "3/30 日本権利落ち日。配当再投資の買い vs 売り圧力"
+  - boj_tankan_3_31: "3/31 日銀短観（3月）。景況感悪化なら円安・株安加速"
+  - private_credit_cascade_risk: "プライベートクレジットのデフォルト率20%超拡大→米銀破綻シナリオ（テールリスク）"
+  - TACO_hypothesis_alive: "US100 22,000〜22,200接近で底打ちサイン探り。急反発シナリオ（NOBUさん）"
+
+decision_bias:
+  risk: "完全凍結継続。VIX>30到達でReduce gate発動水準。4/6期限まではNO-GO"
+  hedge: "Gold（短期調整も中長期保有）/ エネルギー（WTI 100$近辺）/ 防衛継続"
+  ammo: "US100 22,000〜22,200（Fib38.2）での底打ち確認待ち。急反発時のポジション調整を意識"
+  usdjpy: "円安基調継続。159円台〜161目標。急落（149〜150水準）は一過性対処・押し目候補"
+  oil: "100$近辺維持。NOBUターゲット106$へ。エネルギー保有継続"
+  long_port: "売り不要。安値での積立加速を検討"
+
+event_risk:
+  - "4/3（金）米国雇用統計 + ISMサービス業PMI（スタグフレーション確認の最重要）"
+  - "4/6前後 米・イラン攻撃延期期限（地政学リスク最大節目）"
+  - "3/31 日銀短観（景況感悪化なら円安・株安加速）"
+  - "4/1 ISM製造業PMI（スタグフレーション指標）"
+  - "4/2 JOLTS求人件数（雇用先行指標）"
+  - "3/30 日本権利落ち日（配当再投資フロー）"
+  - "プライベートクレジット デフォルト率拡大（テールリスク）"
+  - "US100 22,000水準への到達 / 底打ちサイン確認"
+
+links:
+  charts: "./charts.md"
