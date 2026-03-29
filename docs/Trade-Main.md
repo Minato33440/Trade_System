@@ -193,8 +193,7 @@ updated: 2026-01-03 (JST)
 - 2026-01: Trade_Record/versions/distilled/2026/distilled-gm-2026-1.md
 - 2026-02: Trade_Record/versions/distilled/2026/distilled-gm-2026-2.md
 - 2026-03: Trade_Record/versions/distilled/2026/distilled-gm-2026-3.md
-- 2026-04 (3/16〜wk04): Trade_Record/versions/distilled/2026/distilled-gm-2026-4.md
-- 2026-05 (3/23〜wk05): Trade_Record/versions/distilled/2026/distilled-gm-2026-5.md
+- 2026-03 (3/16〜wk05まで含む): Trade_Record/versions/distilled/2026/distilled-gm-2026-3.md
 
 ## 3-scenario response（週の骨格）
 A) Risk-on confirmation（上抜け“本物”）
