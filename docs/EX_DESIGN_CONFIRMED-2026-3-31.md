@@ -1,6 +1,6 @@
 # REX AI Trade System — 設計確定文書
-# 作成: Rex / 最終更新: 2026-03-26
-# 保存先: REX_Trade_System/docs/EX_DESIGN_CONFIRMED-2026-3-26.md
+# 作成: Rex / 最終更新: 2026-03-31
+# 保存先: REX_Trade_System/docs/EX_DESIGN_CONFIRMED-2026-3-31.md
 
 ---
 
@@ -50,20 +50,36 @@ LAYER 2 — 1H 押し目ウィンドウ（#020検証完了・#023窓延長完了
   → 1H SL 足: 前20本 + SL足 + 後10本 = 計31本ウィンドウ確定
   ウィンドウ = 約31時間分の 5M 足（≈372本）
 
+  ⚠️ 後期バイアス（#025修正予定）:
+    現行: dists.idxmin() → 価格最近接のSLを選択
+    問題: 同一価格帯に複数タッチがある場合、再テスト（後の値）が選ばれ機会損失
+    修正: 価格許容範囲(20pips)内で最初の出現を優先
+      price_tol_pips = 20.0
+      close_enough = sl_1h_near[dists <= price_tol_pips * PIP]
+      sl_1h_ts = close_enough.index[0] if len(close_enough) > 0 else dists.idxmin()
+
   検証結果（#020確定値）:
     対象: 89件(4H LONG)
     1H SL 検出率: 100.0%
     距離: 0.0 pips（同一データ源リサンプルのため数学的必然）
     → 設計前提「4H SL ≒ 1H SL」は成立
 
-LAYER 3 — 窓内 15M/5M スキャン（#021〜#023完了）
+LAYER 3 — 窓内 15M/5M スキャン（#021〜#024a完了）
   窓内 5M → 15M リサンプル
-  → check_15m_range_low() で DB/IHS/ASCENDING 判定（既存関数流用）
-  → 15M ネック越え 5M 実体確定 → エントリー
-  
+  → check_15m_range_low() で DB/IHS/ASCENDING パターンラベル取得（#024a以降はラベルのみ）
+  → neck = 1H SL 以降の 15M SH（#024a修正済み: 窓前半の高値を除外）
+  → 5M close > neck + WICKTOL_PIPS(5.0) でエントリー
+
+  ⚠️ 後期バイアス（#025修正予定）:
+    現行: sh_vals.max() → 1H SL以降の15M SH最高値をneckに
+    問題: 2段目以降の高値（ブレイク後）が選ばれレイトエントリー
+    修正: sh_vals.iloc[0] → 時系列で最初のSHをneckに
+    根拠: DB/IHS/ASCENDING全パターンで「初回反発ピーク=本来のneck」
+
   #021実装: 窓左端スキャン（バグ）→ 13件検出（全件誤検出）
   #022修正: 1H SL以降限定スキャン → 2件（IHS×2）に激減
   #023延長: 窓後5本→10本 → 5件（DB:2 / IHS:1 / ASCENDING:2）
+  #024a修正: neck=1H SL以降15M SH最高値 / プロット範囲拡大(前25h後40h) → 4件
 ```
 
 #### エントリーロジック 2段階実装計画（2026-03-26更新）
@@ -257,14 +273,16 @@ src/
 │    時間近傍比較（±8本窓）: 89件100%一致
 │    出力: logs/test_1h_coincidence.csv
 │
-├── window_scanner.py       ✅ 完了（#021〜#023）
+├── window_scanner.py       ✅ #024a完了（後期バイアス修正は#025予定）
 │    窓ベース階層スキャン（Phase 1: シンプル版）
 │    4H→1H窓→窓内15M DB/IHS/ASCENDING→5Mネック越え
 │    既存ファイルを一切変更せず独立動作
 │    #021: 新規作成（窓左端スキャン・バグあり）
 │    #022: sl_1h_ts追加・1H SL以降限定スキャン
 │    #023: WINDOW_1H_POST 5→10延長
-│    結果: 5件検出（DB:2 / IHS:1 / ASCENDING:2）
+│    #024a: neck=1H SL以降最初SH/プロット範囲分離(前25h後40h)
+│    ⚠️ #025予定: 後期バイアス修正（1H SL選択/neck選択）
+│    結果: 4件検出（DB:2 / IHS:1 / ASCENDING:1）※#024a時点
 │    出力: logs/window_scan_entries.csv / logs/window_scan_plots/
 │
 ├── volume_alert.py         ⬜ 未着手（Phase D）
@@ -327,7 +345,12 @@ NONE比率: 修正後42.1%（目標50%以下クリア済み）
 - IHS: 1件（Jul 03）
 - ASCENDING: 2件（Mar 18, Sep 11）
 - 窓数: 33件 / エントリー検出: 5件 / エントリー0件窓: 28件
-- 決済統合: #024以降で実施予定
+- 決済統合: #026以降で実施予定
+
+**#024a確定値（後期バイアス修正前・4件）:**
+- DB: 2件 / IHS: 1件 / ASCENDING: 1件（ASCENDINGが1件減: neck修正により正当除外）
+- プロット範囲: PLOT_PRE_H=25h / PLOT_POST_H=40h（スキャン窓とは独立）
+- ⚠️ 後期バイアス残存: #02（1H SL選択遅延）/ #03（neck1段上）→ #025で修正予定
 
 ---
 
@@ -352,6 +375,9 @@ NONE比率: 修正後42.1%（目標50%以下クリア済み）
 | #021 | 窓ベース階層スキャン Phase 1 | window_scanner.py 新規作成 | ✅ **完了** |
 | #022 | タイミングバグ修正 | sl_1h_ts追加・1H SL以降限定（3箇所修正） | ✅ **完了** |
 | #023 | 1H窓サイズ延長 | WINDOW_1H_POST 5→10（後5本→10本） | ✅ **完了** |
+| #024a | neck修正 + プロット範囲拡大 | neck=1H SL以降初回SH / PLOT_PRE_H=25/POST_H=40 | ✅ **完了** |
+| #025 | 後期バイアス修正（2箇所） | 1H SL選択を初回優先 / neck=iloc[0] | 🔄 **修正予定** |
+| #026 | 決済シミュレーション統合 | manage_exit()統合 → P&L/PF/勝率計算 | ⬜ #025後 |
 
 ---
 
@@ -468,7 +494,24 @@ PNG: 8枚 → logs/1h_windows/
 
 ## 11. 未解決課題・次のステップ
 
-### 🔴 #024（最優先）— 決済シミュレーション統合
+### 🔴 #025（最優先）— 後期バイアス修正（2箇所・window_scanner.pyのみ）
+
+```
+修正①: get_1h_window_range() — 1H SL選択を「最初の出現」優先に（ADR A-4）
+  price_tol_pips = 20.0
+  close_enough   = sl_1h_near[dists <= price_tol_pips * PIP]
+  sl_1h_ts = close_enough.index[0] if len(close_enough) > 0 else dists.idxmin()
+
+修正②: scan_window_entry() — neck = 最初のSH に変更（ADR A-5）
+  neck_15m = float(sh_vals.iloc[0])   # max() → iloc[0]
+
+期待効果:
+  #02: sl_1h_ts が Jul26 08:50 に前倒し → 当日エントリー機会を捕捉
+  #03: neck が 153.913 → 153.75 付近に低下 → 約18pips改善
+  #01/#04: 変化なし
+```
+
+### 🔴 #026（#025完了後）— 決済シミュレーション統合
 
 ```
 window_scanner.py に manage_exit() を統合
@@ -476,13 +519,7 @@ window_scanner.py に manage_exit() を統合
   ② 初動SL / 段階1 / 段階2 / 段階3 の決済判定
   ③ 損益・PF・勝率・MaxDD 計算
   ④ 旧版 backtest.py（PF 5.32）と比較
-
-期待:
-  5件のサンプルで損益シミュレーション可能
-  統計的精度は不十分だが、実装検証には十分
 ```
-
-### 🟡 Phase 2（#024後）— 15M右肩内5M DB
 
 ```
 15M DB/IHS 右肩検出 → 右肩内で 5M DB ネック実体上抜け
