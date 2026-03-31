@@ -123,8 +123,11 @@ def get_1h_window_range(
         return None
 
     # 4H SL 価格に最も近い 1H SL を選択
-    dists    = abs(sl_1h_near - sl_4h_val)
-    sl_1h_ts = dists.idxmin()
+    # ★後期バイアス修正: 価格許容範囲内で「最初の出現」を優先（再テストより初回タッチを優先）
+    dists = abs(sl_1h_near - sl_4h_val)
+    PRICE_TOL_PIPS = 20.0   # 初回タッチと再テストの典型的乖離範囲
+    close_enough   = sl_1h_near[dists <= PRICE_TOL_PIPS * PIP]
+    sl_1h_ts = close_enough.index[0] if len(close_enough) > 0 else dists.idxmin()
 
     # 窓範囲を確定（前 20本 + SL足 + 後 5本）
     idx_sl  = df_1h.index.get_loc(sl_1h_ts)
@@ -176,7 +179,7 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
     sh_vals = df_15m_after_sl['high'][sh_mask]
     if len(sh_vals) == 0:
         return None
-    neck_15m = float(sh_vals.max())
+    neck_15m = float(sh_vals.iloc[0])  # ★後期バイアス修正: 最高値→最初のSH（初回反発ピーク）
 
     # --- 5M ネック越え実体確定（#022修正済み: sl_1h_ts 以降から走査）---
     sl_1h_idx = df_5m_win.index.searchsorted(sl_1h_ts)
