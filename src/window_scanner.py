@@ -28,6 +28,8 @@ from src.swing_detector import (
 )
 from src.entry_logic import check_15m_range_low, ALLOWED_PATTERNS
 
+PLOT_OUT_DIR = _repo_root / 'logs/window_scan_plots'
+
 
 # ========== 定数 ==========
 DATA_PATH      = _repo_root / 'data/raw/usdjpy_multi_tf_2years.parquet'
@@ -38,6 +40,8 @@ WINDOW_SEARCH  = 8    # 4H SL ts 前後 ±8本(8時間)で 1H SL を探す範囲
 DIRECTION_MODE = 'LONG'  # SHORT は将来対応
 WICKTOL_PIPS   = 5.0     # 5M ネック越え許容 pips（実体下端 > neck + 5pips）
 PIP            = 0.01    # USDJPY 1pip = 0.01 円
+PLOT_PRE_H     = 25      # プロット: 1H SL 前 25時間（スキャン窓とは独立）
+PLOT_POST_H    = 40      # プロット: 1H SL 後 40時間
 
 
 # ========== リサンプル（backtest.py と同一。変更禁止） ==========
@@ -192,6 +196,129 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
     return None  # ネック越え未発生
 
 
+# ========== プロット生成 ==========
+
+def save_entry_plot(
+    df_5m: pd.DataFrame,
+    entry: dict,
+    idx: int,
+    total: int,
+) -> None:
+    """検出エントリーの 5M チャート + 参照線を PNG 保存する。
+
+    表示要素（PLOT_DESIGN_CONFIRMED 仕様）:
+      - 5M ローソク足
+      - 5M SH/SL マーカー（scatter）
+      - 15M neck 水平線（黄緑 #ADFF2F）
+      - 4H SL 水平線（青 #1E90FF）
+      - 1H SL 垂直線（シアン #00FFFF）
+      - エントリー時刻垂直線（赤 #FF0000）
+
+    プロット範囲: sl_1h_ts 基準で前25h / 後40h（スキャン窓とは独立）
+    """
+    try:
+        import mplfinance as mpf
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("  [SKIP] mplfinance が未インストールのためプロットをスキップ")
+        return
+
+    sl_1h_ts    = entry['sl_1h_ts']
+    entry_ts    = entry['entry_ts']
+    neck_15m    = entry['neck_15m']
+    sl_4h_val   = entry['sl_4h']
+    pattern     = entry['pattern']
+    entry_price = entry['entry_price']
+
+    # ---- プロット専用範囲（スキャン窓とは別に切り出す）----
+    plot_start = sl_1h_ts - pd.Timedelta(hours=PLOT_PRE_H)
+    plot_end   = sl_1h_ts + pd.Timedelta(hours=PLOT_POST_H)
+    df_plot    = df_5m.loc[plot_start:plot_end].copy()
+    if len(df_plot) < 10:
+        print(f"  [SKIP] プロットデータ不足: {sl_1h_ts}")
+        return
+
+    # ---- 5M SH/SL 検出 ----
+    sh_mask = detect_swing_highs(df_plot['high'], n=2)
+    sl_mask = detect_swing_lows(df_plot['low'],   n=2)
+
+    # ---- mplfinance スタイル ----
+    mc = mpf.make_marketcolors(
+        up='#26a69a', down='#ef5350',
+        edge='inherit', wick='inherit', volume='in'
+    )
+    s = mpf.make_mpf_style(
+        marketcolors=mc, facecolor='#131722',
+        edgecolor='#444', gridcolor='#2a2e39'
+    )
+
+    fig, axes = mpf.plot(
+        df_plot,
+        type='candle', style=s,
+        returnfig=True, figsize=(18, 7),
+        warn_too_much_data=1000,
+    )
+    ax = axes[0]
+    for _ax in axes[1:]:
+        _ax.set_visible(False)
+    fig.patch.set_facecolor('#131722')
+    ax.set_facecolor('#131722')
+
+    # ---- SH/SL マーカー（ax.scatter で整数x軸に描画）----
+    sh_x = [j for j, v in enumerate(sh_mask) if v]
+    sh_y = [float(df_plot['high'].iloc[j]) for j in sh_x]
+    sl_x = [j for j, v in enumerate(sl_mask) if v]
+    sl_y = [float(df_plot['low'].iloc[j]) for j in sl_x]
+    if sh_x:
+        ax.scatter(sh_x, sh_y, marker='v', s=60, color='#FA8072', zorder=5)
+    if sl_x:
+        ax.scatter(sl_x, sl_y, marker='^', s=60, color='#87CEEB', zorder=5)
+
+    # ---- 15M neck 水平線 ----
+    ax.axhline(y=neck_15m, color='#ADFF2F', linewidth=1.5,
+               linestyle='--', label=f'15M neck {neck_15m:.3f}')
+
+    # ---- 4H SL 水平線 ----
+    ax.axhline(y=sl_4h_val, color='#1E90FF', linewidth=1.5,
+               linestyle='--', label=f'4H SL {sl_4h_val:.3f}')
+
+    # ---- 1H SL 垂直線（シアン）----
+    idx_sl = df_plot.index.searchsorted(sl_1h_ts, side='left')
+    if idx_sl < len(df_plot):
+        try:
+            ax.axvline(x=idx_sl, color='#00FFFF', linewidth=1.0,
+                       linestyle=':', label='1H SL')
+        except Exception:
+            pass
+
+    # ---- エントリー垂直線（赤）----
+    idx_entry = df_plot.index.searchsorted(entry_ts, side='left')
+    if idx_entry < len(df_plot):
+        try:
+            ax.axvline(x=idx_entry, color='#FF0000', linewidth=2.0,
+                       linestyle='-', label=f'Entry {entry_price:.3f}')
+        except Exception:
+            pass
+
+    # ---- タイトル（英語: CJK豆腐対策）----
+    ts_str = pd.Timestamp(sl_1h_ts).strftime('%Y%m%d_%H%M')
+    ax.set_title(
+        f'[{idx:02d}/{total}] {ts_str} LONG  pat={pattern}'
+        f'  entry={entry_price:.3f}  neck={neck_15m:.3f}  sl4h={sl_4h_val:.3f}',
+        color='white', fontsize=10
+    )
+    ax.legend(facecolor='#1e222d', labelcolor='white', fontsize=9)
+    ax.tick_params(colors='#aaa')
+
+    # ---- 保存 ----
+    PLOT_OUT_DIR.mkdir(parents=True, exist_ok=True)
+    fname = PLOT_OUT_DIR / f'{idx:02d}_{ts_str}_{pattern}_scan.png'
+    plt.savefig(fname, dpi=150, bbox_inches='tight',
+                facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  plot saved: {fname.name}")
+
+
 # ========== メイン実行 ==========
 
 def run_window_scan() -> pd.DataFrame:
@@ -276,6 +403,13 @@ def run_window_scan() -> pd.DataFrame:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df_entries.to_csv(out_path, index=False)
     print(f"\n結果CSV: {out_path}")
+
+    # ---- プロット生成 ----
+    if total > 0:
+        print(f"\nプロット生成中 ({total}件)...")
+        for i, row in enumerate(entries, start=1):
+            save_entry_plot(df_5m, row, idx=i, total=total)
+        print(f"プロット保存先: {PLOT_OUT_DIR}")
 
     return df_entries
 
