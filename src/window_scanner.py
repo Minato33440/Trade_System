@@ -22,6 +22,7 @@ if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
 from src.swing_detector import (
+    detect_swing_highs,
     detect_swing_lows,
     get_direction_4h,
 )
@@ -35,6 +36,8 @@ WINDOW_1H_PRE  = 20   # 1H窓: SL足の前 20本
 WINDOW_1H_POST = 10   # 1H窓: SL足の後 10本（5 → 10に延長）
 WINDOW_SEARCH  = 8    # 4H SL ts 前後 ±8本(8時間)で 1H SL を探す範囲
 DIRECTION_MODE = 'LONG'  # SHORT は将来対応
+WICKTOL_PIPS   = 5.0     # 5M ネック越え許容 pips（実体下端 > neck + 5pips）
+PIP            = 0.01    # USDJPY 1pip = 0.01 円
 
 
 # ========== リサンプル（backtest.py と同一。変更禁止） ==========
@@ -143,15 +146,12 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
     if len(df_5m_win) < 30:
         return None
 
-    # 窓内 5M → 15M リサンプル
+    # --- 15M リサンプル（窓全体: パターン検出用）---
     df_15m_win = resample_tf(df_5m_win, '15min')
-    if len(df_15m_win) < 10:
+    if len(df_15m_win) < 6:
         return None
 
-    # check_15m_range_low() を呼ぶ
-    # ⚠️ シグネチャ確認済み: (low_15m, high_15m, direction, n=3, lookback=50) -> dict
-    # 戻り値: {'found': bool, 'sl_min': float, 'sl_last': float,
-    #          'neck_15m': float, 'pattern': str, 'reason': str}
+    # --- パターンラベル取得（check_15m_range_low はラベル目的のみ使用）---
     result = check_15m_range_low(
         low_15m=df_15m_win['low'],
         high_15m=df_15m_win['high'],
@@ -159,25 +159,26 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
         n=3,
         lookback=50,
     )
+    pattern = result.get('pattern', 'UNKNOWN') if result.get('found') else 'UNKNOWN'
 
-    if not result['found']:
-        return None
-
-    pattern  = result['pattern']
-    neck_15m = result['neck_15m']
-
-    # パターンフィルター（ALLOWED_PATTERNS は entry_logic.py から import）
     if pattern not in ALLOWED_PATTERNS:
         return None
 
-    # 5M ネック越え実体確定を検出（1H SL 以降から開始）
+    # --- neck = 1H SL 以降の 15M SH 最高値（★修正点: check_15m_range_low の neck は使わない）---
+    df_15m_after_sl = df_15m_win.loc[sl_1h_ts:]
+    if len(df_15m_after_sl) < 3:
+        return None
+    sh_mask = detect_swing_highs(df_15m_after_sl['high'], n=3)
+    sh_vals = df_15m_after_sl['high'][sh_mask]
+    if len(sh_vals) == 0:
+        return None
+    neck_15m = float(sh_vals.max())
+
+    # --- 5M ネック越え実体確定（#022修正済み: sl_1h_ts 以降から走査）---
     sl_1h_idx = df_5m_win.index.searchsorted(sl_1h_ts)
     for j in range(sl_1h_idx, len(df_5m_win) - 1):
-        row      = df_5m_win.iloc[j]
-        body_low = min(float(row['open']), float(row['close']))
-
-        if body_low > neck_15m:
-            # 確定足 = j、執行足 = j+1
+        row = df_5m_win.iloc[j]
+        if min(float(row['open']), float(row['close'])) > neck_15m + WICKTOL_PIPS * PIP:
             entry_bar = df_5m_win.iloc[j + 1]
             return {
                 'pattern':     pattern,
@@ -232,6 +233,11 @@ def run_window_scan() -> pd.DataFrame:
         if win_result is None:
             continue
         win_start, win_end, sl_1h_ts = win_result
+
+        # 窓幅チェック（作業①: 35h超を警告）
+        win_hours = (win_end - win_start).total_seconds() / 3600
+        if win_hours > 35:
+            print(f"  [WARN] 窓幅異常: {win_start} ~ {win_end} = {win_hours:.1f}h")
 
         # 窓内 5M データ抽出
         df_5m_win = df_5m.loc[win_start:win_end]

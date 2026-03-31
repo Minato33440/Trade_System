@@ -21,6 +21,10 @@ except ImportError:
 
 from src.utils import ensure_dir_exists
 
+# ── #024a: プロット範囲定数（スキャン窓とは独立） ────────────────────────────
+PLOT_PRE_H  = 25   # 1H SL 前 25時間
+PLOT_POST_H = 40   # 1H SL 後 40時間（エントリー〜決済帯をカバー）
+
 
 def save_normalized_plot(df: pd.DataFrame, filename: str = "multi_pairs_plot_8.png") -> Path:
     """DataFrame の各列を 0-1 正規化してプロットを保存する。
@@ -652,13 +656,11 @@ def plot_1h_window_5m(
     import matplotlib.pyplot as plt
     from swing_detector import detect_swing_highs, detect_swing_lows
 
-    # ---- 1H ウィンドウ範囲を確定 ----
-    idx_sl       = df_1h.index.get_loc(ts_sl_1h)
-    win_start_1h = df_1h.index[max(0, idx_sl - pre_bars)]
-    win_end_1h   = df_1h.index[min(len(df_1h) - 1, idx_sl + post_bars)]
-
-    # ---- 5M 範囲を抽出 ----
-    df_5m_win = df_5m.loc[win_start_1h:win_end_1h].copy()
+    # ---- #024a: プロット専用範囲を 1H SL 基準の時間幅で切り出す ----
+    # （スキャン窓 df_5m_win とは独立した変数）
+    plot_start = ts_sl_1h - pd.Timedelta(hours=PLOT_PRE_H)
+    plot_end   = ts_sl_1h + pd.Timedelta(hours=PLOT_POST_H)
+    df_5m_win  = df_5m.loc[plot_start:plot_end].copy()
     if len(df_5m_win) < 10:
         return
 
