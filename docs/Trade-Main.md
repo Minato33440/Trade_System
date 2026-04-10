@@ -193,7 +193,7 @@ updated: 2026-01-03 (JST)
 - 2026-01: Trade_Record/versions/distilled/2026/distilled-gm-2026-1.md
 - 2026-02: Trade_Record/versions/distilled/2026/distilled-gm-2026-2.md
 - 2026-03: Trade_Record/versions/distilled/2026/distilled-gm-2026-3.md
-- 2026-03 (3/16〜wk05まで含む): Trade_Record/versions/distilled/2026/distilled-gm-2026-3.md
+- 2026-04: Trade_Record/versions/distilled/2026/distilled-gm-2026-4.md
 
 ## 3-scenario response（週の骨格）
 A) Risk-on confirmation（上抜け“本物”）
@@ -248,6 +248,54 @@ C) Risk-off re-ignition（失速）
   - [review](./logs/gm/weekly/2026/2026-3-27_wk05/review.md)
   - [charts](./logs/gm/weekly/2026/2026-3-27_wk05/charts.md)
 
+
+## Weekly Brief | 2026-4-3_wk01（2026-03-30 → 2026-04-03）
+created: 2026-04-05 (JST)
+
+### Macro / Regime
+- Regime（system）: Equities Down / Oil Surge（equities=down / volatility=normal / oil=surge / gold=off / crypto=range / yields=rising）
+- **VIX 23.87** でwk05（31.05）から低下。ただし地政学エスカレーション最高水準で週明け再上昇警戒。
+- **US100 24,045$** → 23,900$週足ネックを若干上回って終了。48h期限後の確認が最重要。
+- **WTI 112$（土曜）** → 金曜103.5比+8.5$。トランプ48h最後通牒＋JASSM-ER全在庫中東投入で急騰。
+- **XAUUSD 4,702$** → 安全資産買い本格化。wk05比+178$。
+- **US10Y 4.313 / US2Y 3.948** → 債券フライト。US2Y 4%割れ。
+- **トランプ48h最後通牒（4/4）**: 軍事行動の直前シグナル。イランは反発。4/6-7が最大分岐点。
+- **NATO脱退検討**: 欧米同盟への波及リスク。
+
+### Position / Orders
+- Core：Gold（4,702$・安全資産移行確認）/ エネルギー（WTI保有継続）/ 防衛継続保有。
+- Mode：完全凍結継続。4/6-7 48h期限通過まで絶対NO-GO。
+- 弾薬温存：期限通過後の停戦合意確認 + US100維持 + VIX<20全条件確認後のみ初動。
+
+### Key Levels (close-based)
+- US100: 24,045 / R=24,643 / S=23,900（週足ネック）/ 22,222（Fib38.2）/ 22,000
+- JP225: TBD / S=36,000〜35,000（サポート帯）
+- USDJPY: 159.632 / R=160.0（レートチェック）/ 161.0（NOBUターゲット）
+- WTI: 112.060（土曜）/ 103.5（金曜）/ R=120.0（介入水準）/ S=100.0
+- XAUUSD: 4,702.7 / S=4,574（wk05終値）/ 4,100
+- VIX: 23.87 / US10Y: 4.313 / US2Y: 3.948
+
+### Gates（最重要：終値で判定）
+- Add risk ONLY if: 4/6-7 48h期限通過後に停戦合意確認 + US100 24,045$週足維持 + VIX<20（追撃禁止）
+- Reduce / pause if: US100 D1 close <23,400 OR VIX>30再到達 OR WTI>120$ OR JASSM-ER実際に使用
+- Hedge gate: Gold 4,702$維持 / エネルギー / 防衛継続
+
+### This Week Focus（行動: 4/6-4/10）
+- 完全凍結継続。4/6-7 トランプ48h最後通牒期限通過まで絶対NO-GO。
+- 4/6-7（月-火）: 48h期限の停戦合意 or 軍事拡大の確認。最大の地政学分岐点。
+- 4/10（木）米国CPI: WTI急騰背景の物価指標。スタグフレーション確認度に注目。
+- US100 24,045$の偽ブレイク or 本物上抜けの週足確認。
+
+### Signals (weekly, fixed keys)
+- us10y_accel: easing（4.313。債券フライトで低下中）
+- hy_oas_widening: alert（地政学エスカレーション最高水準）
+- vix_spike: easing（23.87。低下も週明け再上昇警戒）
+- wti_shock: on（112$土曜 / 金曜103.5$ / エスカレーション・プレミアム）
+- eps_revision_chain: watch（4/10 CPI・WTI急騰背景のインフレ確認）
+
+## Previous (archived briefs)
+- Weekly Brief | 2026-3-27_wk05（2026-03-23 → 2026-03-27）
+  - see: logs/gm/weekly/2026/2026-3-27_wk05/
 
 ## Weekly Brief | 2026-3-27_wk05（2026-03-23 → 2026-03-27）
 created: 2026-03-29 (JST)

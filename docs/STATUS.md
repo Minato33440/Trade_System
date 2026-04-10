@@ -409,5 +409,54 @@ created: 2026-03-29 (JST)
 - eps_revision_chain: watch（4/3雇用統計・スタグフレーション確認待ち）
 
 ## Previous (archived briefs)
+- Weekly Brief | 2026-3-27_wk05（2026-03-23 → 2026-03-27）
+  - see: logs/gm/weekly/2026/2026-3-27_wk05/
+
+## Weekly Brief | 2026-4-3_wk01（2026-03-30 → 2026-04-03）
+created: 2026-04-05 (JST)
+
+### Macro / Regime
+- Regime（system）: Equities Down / Oil Surge（equities=down / volatility=normal / oil=surge / gold=off / crypto=range / yields=rising）
+- **VIX 23.87** でwk05（31.05）から低下。ただし地政学エスカレーション最高水準で週明け再上昇警戒。
+- **US100 24,045$** → 23,900$週足ネックを若干上回って終了。48h期限後の偽ブレイク or 本物上抜け確認が最重要。
+- **WTI 112$（土曜）** → 金曜103.5$比+8.5$。トランプ48h最後通牒＋JASSM-ER全在庫中東投入ニュースで急騰。
+- **XAUUSD 4,702$** → 安全資産買い本格化。wk05比+178$の回復。
+- **US10Y 4.313 / US2Y 3.948** → 地政学不安による債券フライト。US2Y 4%割れ。
+- **トランプ48h最後通牒（4/4）**: 「48h以内停戦＋ホルムズ開放しなければあらゆる地獄」。イランは反発。
+- **JASSM-ER全在庫中東投入**: 米軍の軍事準備が実戦レベルに到達。4/6-7が最大の地政学分岐点。
+- **NATO脱退検討**: トランプが欧州非協力を理由に明言。欧米同盟への新たなリスク。
+
+### Position / Orders
+- Core：Gold（4,702$・安全資産移行確認）/ エネルギー（WTI保有継続）/ 防衛継続保有。
+- Mode：完全凍結継続。4/6-7 トランプ48h期限通過まで絶対NO-GO。
+- 弾薬温存：期限通過後の停戦合意確認 + US100 24,045$維持 + VIX<20全条件確認後のみ初動。
+
+### Key Levels (close-based)
+- US100: 24,045 / R=24,643 / S=23,900（週足ネック）/ 22,222（Fib38.2）/ 22,000
+- JP225: TBD / S=36,000〜35,000（サポート帯）
+- USDJPY: 159.632 / R=160.0（レートチェック）/ 161.0（NOBUターゲット）
+- WTI: 112.060（土曜）/ 103.5（金曜）/ R=120.0（介入水準）/ S=100.0
+- XAUUSD: 4,702.7 / S=4,574（wk05終値）/ 4,100
+- VIX: 23.87 / US10Y: 4.313 / US2Y: 3.948
+
+### Gates（最重要：終値で判定）
+- Add risk ONLY if: 4/6-7 48h期限通過後に停戦合意確認 + US100 24,045$週足維持 + VIX<20（追撃禁止）
+- Reduce / pause if: US100 D1 close <23,400 OR VIX>30再到達 OR WTI>120$ OR JASSM-ER実際に使用
+- Hedge gate: Gold 4,702$維持確認 / エネルギー / 防衛継続
+
+### This Week Focus（行動: 4/6-4/10）
+- 完全凍結継続。4/6-7 トランプ48h最後通牒期限通過まで絶対NO-GO。
+- **4/6-7（月-火）**: 48h期限の停戦合意 or 軍事拡大の確認。最大の地政学分岐点。
+- **4/10（木）米国CPI**: WTI急騰背景の物価指標。スタグフレーション確認度に注目。
+- US100 24,045$の偽ブレイク or 本物上抜けの週足確認。
+
+### Signals (weekly, fixed keys)
+- us10y_accel: easing（4.313。債券フライトで低下中）
+- hy_oas_widening: alert（地政学エスカレーション最高水準）
+- vix_spike: easing（23.87。低下も週明け再上昇警戒）
+- wti_shock: on（112$土曜エスカレーション・プレミアム / 金曜103.5$）
+- eps_revision_chain: watch（4/10 CPI・WTI急騰背景のインフレ確認）
+
+## Previous (archived briefs)
 - Weekly Brief | 2026-3-20_wk04（2026-03-16 → 2026-03-20）
   - see: logs/gm/weekly/2026/2026-3-20_wk04/

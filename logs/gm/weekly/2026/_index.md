@@ -157,3 +157,15 @@ updated: 2026-01-19 (JST)
   - [meta](./2026-3-27_wk05/meta.yaml)
   - [review](./2026-3-27_wk05/review.md)
   - [charts](./2026-3-27_wk05/charts.md)
+
+### 2026-4-3_wk01（2026-03-30 → 2026-04-03）
+- Regime: Equities Down / Oil Surge（trump_48h_ultimatum + JASSM_ER_deployment + US100_neckline_24045 + WTI_escalation_112 + XAUUSD_safe_haven_4702 + CPI_4_10_looming + nato_withdrawal_risk）
+- 1行：VIX 31→23.87。US100 24,045$と23,900$週足ネックを微上回り終了。しかしトランプ48h最後通牒＋JASSM-ER全在庫中東投入で地政学エスカレーション最高水準。WTI土曜112$急騰。XAU 4,702$と安全資産買い本格化。4/6-7期限が最大分岐点（停戦合意 vs 軍事拡大）。完全凍結継続。
+- Key gates:
+  - Add risk: 4/6-7 48h期限通過後に停戦合意確認 + US100 24,045$週足維持 + VIX<20鎮静（追撃禁止・全条件必須）
+  - Reduce risk: US100 D1 close <23,400 OR VIX>30再到達 OR WTI>120$ OR JASSM-ER実際に使用
+- Links:
+  - [note](./2026-4-3_wk01/note.md)
+  - [meta](./2026-4-3_wk01/meta.yaml)
+  - [review](./2026-4-3_wk01/review.md)
+  - [charts](./2026-4-3_wk01/charts.md)

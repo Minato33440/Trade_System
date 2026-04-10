@@ -1,0 +1,46 @@
+# 2026_04_05_snapshot.yaml
+
+date:
+  start: 2026-03-06
+  end: 2026-04-05
+
+panel:
+  Risk: [US100, BTC/USD]
+  Fear: [VIX]
+  Inflation: [WTI, XAU/USD]
+  Rates: [US2Y, US10Y]
+
+regime:
+  label: "Equities Down / Oil Surge"
+  equities: down
+  volatility: normal
+  oil: surge
+  gold: off
+  crypto: range
+  yields: rising
+
+snapshot_30d:
+  "USD/JPY":
+    latest: 159.632
+    change_pct: 1.33
+  "US100":
+    latest: 24045.529
+    change_pct: -2.42
+  "XAU/USD":
+    latest: 4702.700
+    change_pct: -8.62
+  "WTI":
+    latest: 112.060
+    change_pct: 23.28
+  "US2Y":
+    latest: 3.948
+    change_pct: 6.27
+  "VIX":
+    latest: 23.870
+    change_pct: -19.06
+  "US10Y":
+    latest: 4.313
+    change_pct: 4.36
+  "BTC/USD":
+    latest: 67290.516
+    change_pct: -1.24
