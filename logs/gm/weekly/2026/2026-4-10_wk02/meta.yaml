@@ -1,0 +1,94 @@
+week: 2026-4-10_wk02
+date_range: 2026-04-07 -> 2026-04-11
+created: 2026-04-12
+updated: 2026-04-12
+
+snapshot:
+  US100:
+    close: 25116.338
+    change_30d_pct: 2.38
+    bias: resistance_zone_watch
+    key_levels: [25454, 25116, 25000, 24800, 24773, 24300, 23900, 22222]
+    note: "wk01比+4.5%（24,045→25,116）。「青丸2」ポイント付近（約25,45x）のレジスタンス帯突入。2/27以来の下落トレンドライン抵抗。一旦調整後の反発が想定"
+  JP225:
+    close: TBD
+    weekly_change_pct: TBD
+    bias: bullish_ichimoku_breakout
+    key_levels: [58930, 58400, 55698, 53936]
+    note: "一目均衡表の雲を上抜け（強気シグナル）。上値目標58,930（米・イラン合意シナリオ）。利確推奨58,400。下落転換55,698"
+  USDJPY:
+    close: 159.245
+    change_30d_pct: 0.11
+    bias: range_with_yen_weakness
+    key_levels: [160.50, 159.39, 159.245, 156.54, 155.0]
+    note: "レンジ相場継続。往復ビンタ多発局面。156.54（3H足サポート）が下値引き付けライン。159.39超えで円安トレンド再開→160.50付近で急落警戒。4/28日銀会合（利上げ期待）による円高リスク注意"
+  WTI:
+    close: 95.630
+    change_30d_pct: -0.10
+    bias: geopolitical_premium_stripped
+    key_levels: [100.0, 95.63, 90.0, 80.0, 68.0]
+    note: "wk01土曜112$→95.63$へ大幅下落（-14.6%）。エスカレーション・プレミアム剥落。ただし80$台不回帰は市場が停戦を完全信用していないシグナル"
+  XAUUSD:
+    close: 4771.000
+    change_30d_pct: -6.74
+    bias: geopolitical_hedge_steady
+    key_levels: [5000, 4900, 4771, 4702, 4574, 4100]
+    note: "wk01（4,702$）比+69$。地政学緊張根強い中リスクヘッジ需要底堅い。停戦合意リスクオン→上値重くなる可能性"
+  US10Y:
+    close: 4.317
+    change_30d_pct: 1.03
+    bias: yields_stable_high
+    key_levels: [4.50, 4.317, 4.30, 4.20]
+    note: "wk01（4.313）からほぼ横ばい。FRB利下げ困難な高止まり水準継続。日米金利差による円安バイアス継続"
+  US2Y:
+    close: 3.939
+    change_30d_pct: 1.42
+    bias: easing_watch
+    key_levels: [4.30, 4.00, 3.939, 3.50]
+    note: "wk01（3.948）からほぼ横ばい。FRB利下げ観測残存。高水準維持"
+  VIX:
+    close: 19.230
+    change_30d_pct: -29.53
+    bias: add_risk_gate_open
+    key_levels: [25, 22, 20, 19.23, 15]
+    note: "wk01（23.87）→19.23へ低下。Add risk gate（<20）到達。ただし土日地政学イベント（米・イラン協議）次第で週明け再上昇リスク"
+  BTC_USD:
+    close: 71767.828
+    change_30d_pct: 1.81
+    bias: range_recovery
+    note: "wk01（67,290$）比+6.7%。レンジ内回復"
+
+signals:
+  - VIX_add_risk_gate_open: "VIX 19.23（<20）でAdd risk gate条件達成。ただし地政学イベント次第"
+  - US100_resistance_zone: "25,116と「青丸2」レジスタンス帯（25,45x付近）に接近。2/27以来の下落トレンドライン抵抗"
+  - iran_us_talks_4_11: "4/11（土）パキスタン・イスラマバードでの米・イラン直接停戦協議が最大の分水嶺"
+  - WTI_premium_stripped: "112$→95.6$へエスカレーション・プレミアム剥落。シナリオB（停戦→リスクオン）が概ね進展"
+  - regime_neutral_transition: "Equities Down / Oil Surge → Neutral への転換確認"
+  - CPI_below_forecast: "CPI 3.3%（予想3.4%）・コアCPI 2.6%。インフレ急悪化は回避"
+  - TSMC_strong_earnings: "TSMC 35%増収発表。半導体セクター追い風"
+  - dow_transport_ath: "ダウ輸送株指数が歴代最高値更新。米国株先行指標としてポジティブ"
+  - JP225_ichimoku_breakout: "JP225 一目均衡表の雲を上抜け。強気シグナル"
+  - BOJ_4_28_meeting: "4/28日銀会合で利上げ見込みも「1%頭打ち」コンセンサス。円高リスク注意"
+  - taiwan_risk_deferred_2027: "台湾有事2027年先送り報道。今年の楽観材料"
+  - ukraine_peace_expectation: "ゼレンスキーがプーチンとの交渉に前向き→エネルギー価格低下・物価安定期待"
+  - private_credit_risk_ongoing: "プライベートクレジット（300兆円超負債）は中期リスクとして継続"
+  - jp_private_credit_limited: "金融庁：国内金融機関のプライベートクレジット保有「限定的」。国内金融危機リスク後退"
+
+decision_bias:
+  risk: "条件付き解凍。VIX<20維持 + 4/11協議結果（合意 or 前向き）確認後に分割限定"
+  hedge: "Gold（4,771$・底堅い）/ エネルギー（WTI 95.6$ / 保有継続判断）/ 防衛継続"
+  ammo: "分割買い原則。追撃禁止。月・火買い→水曜売りパターン念頭"
+  usdjpy: "159.245レンジ継続。156.54下値引き付け。159.39超えで追加。4/28会合前は慎重"
+  long_port: "売り不要。底値圏の積立加速継続"
+
+event_risk:
+  - "4/11（土）米・イラン停戦協議（パキスタン・イスラマバード）→ 月曜寄り付き最大の変数"
+  - "4/14（月）月曜寄り付き：協議結果確認が必須"
+  - "4/28（火）日銀金利決定会合 → 利上げ期待 × 「1%頭打ち」コンセンサス。円高ヘッドライン警戒"
+  - "5/14-15 米中首脳会談 → リスクオン期待の持続材料"
+  - "US100「青丸2」レジスタンス（25,45x付近）突破 or 跳ね返り確認"
+  - "WTI 80$台回帰 or 維持（停戦への市場信頼度の目安）"
+  - "VIX<20の継続性確認"
+
+links:
+  charts: "./charts.md"

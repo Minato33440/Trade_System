@@ -169,3 +169,15 @@ updated: 2026-01-19 (JST)
   - [meta](./2026-4-3_wk01/meta.yaml)
   - [review](./2026-4-3_wk01/review.md)
   - [charts](./2026-4-3_wk01/charts.md)
+
+### 2026-4-10_wk02（2026-04-07 → 2026-04-11）
+- Regime: Neutral（equities=up / volatility=normal / oil=range / gold=off / crypto=range / yields=rising）← Equities Down/Oil Surge から転換
+- 1行：株高5材料（空爆抑制・米イラン協議・米中首脳会談期待・台湾2027先送り・ウクライナ終結期待）が一気に出てリスクオン転換。VIX 23.87→19.23（Add risk gate<20 到達）、US100 24,045→25,116（+4.5%）、WTI 112$→95.6$（エスカレーション・プレミアム剥落）。ただし4/11（土）米・イラン協議の結果次第で月曜の方向性が決まる。「条件付き解凍・分割限定」。
+- Key gates:
+  - Add risk: 4/11協議結果確認（合意 or 前向き）+ VIX<20維持 + US100 25,000維持（追撃禁止・分割限定）
+  - Reduce risk: US100 D1 close <24,300 OR VIX>25再到達 OR 協議決裂報道
+- Links:
+  - [note](./2026-4-10_wk02/note.md)
+  - [meta](./2026-4-10_wk02/meta.yaml)
+  - [review](./2026-4-10_wk02/review.md)
+  - [charts](./2026-4-10_wk02/charts.md)

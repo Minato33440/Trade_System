@@ -41,3 +41,45 @@
   - NATO脱退検討：欧米同盟の構造変化リスク。防衛産業・エネルギー安全保障への長期的影響注視。
   - 長期ポートフォリオは売り不要。急落時の積立加速を検討継続。
 - tags: [gm, monthly_distilled, 2026-04, 2026-4-3_wk01, signal:trump_48h_ultimatum, signal:JASSM_ER_deployment, signal:WTI_escalation_112, signal:XAUUSD_safe_haven, signal:US100_neckline_24045, signal:bond_flight_US10Y_US2Y, signal:VIX_easing, signal:nato_withdrawal_risk, signal:iran_divide_conquer, event:CPI_4_10, event:trump_48h_deadline_4_6_7, hypothesis:scenario_A_B_C, risk:US100_fib382_22222, risk:WTI_120_surpassing, risk:stagflation_CPI_surge]
+
+---
+
+## 2026-4-10_wk02（2026-04-07 → 2026-04-11）
+- regime: Neutral（equities=up / volatility=normal / oil=range / gold=off / crypto=range / yields=rising）← wk01「Equities Down / Oil Surge」から転換
+- decision:
+  - regime_neutral_transition=on（wk01のEquities Down/Oil SurgeからNeutralへ転換。シナリオB（停戦合意→リスクオン）が概ね進展）
+  - VIX_add_risk_gate_open=on（VIX 23.87→19.23。Add risk gate<20 到達。ただし土日地政学イベント次第で週明け再上昇リスク）
+  - iran_us_talks_4_11_islamabad=on（4/11（土）パキスタン停戦協議。2週間以内停戦目標。合意成否が来週月曜の最大の変数）
+  - US100_resistance_blue2=on（25,116と「青丸2」レジスタンス帯（25,45x付近）に接近。2/27以来の下落トレンドライン抵抗。一旦調整→反発の可能性）
+  - WTI_premium_stripped_95=on（112$（wk01土曜）→95.6$へ-14.6%。エスカレーション・プレミアム剥落。ただし80$台不回帰は停戦不信シグナル）
+  - CPI_below_expectation=on（CPI 3.3%（予想3.4%）/ コアCPI 2.6%。予想下振れ。急落回避環境整備）
+  - TSMC_35pct_revenue_beat=on（TSMC 35%増収発表。半導体・テック追い風）
+  - dow_transport_ATH=on（ダウ輸送株指数が歴代最高値更新。米国株先行指標としてポジティブ）
+  - JP225_ichimoku_cloud_breakout=on（JP225 一目均衡表の雲を上抜け。強気シグナル。下落圧力一気弱まり）
+  - jp_private_credit_limited=on（金融庁：国内金融機関のプライベートクレジット保有「限定的」確認。国内金融危機リスク後退）
+  - BOJ_4_28_rate_hike_risk=watch（4/28日銀会合で利上げ見込みも「1%頭打ち」コンセンサス。円高ヘッドラインに注意）
+  - taiwan_2027_deferral=watch（台湾有事2027年先送り報道。今年の楽観材料として機能）
+  - ukraine_peace_talks=watch（ゼレンスキーがプーチンとの交渉に前向き→エネルギー価格低下・物価安定期待が株高サポート）
+  - us_china_summit_may=watch（5/14-15 米中首脳会談。リスクオン期待の持続材料）
+  - mon_tue_buy_wed_sell_pattern=watch（来週「月・火買い→水曜売り抜け」パターン。US100青丸2レジスタンス帯での利確を念頭に）
+  - private_credit_risk_ongoing=watch（プライベートクレジット300兆円超負債は中期リスクとして継続）
+  - hormuz_mine_missing=watch（ホルムズ海峡機雷の行方不明問題。完全開放には時間がかかる可能性）
+  - china_taiwan_100vessels=watch（中国が台湾周辺に艦船100隻（異例規模）。有事2027先送りでも軍事的圧力継続）
+- evidence (close / 2026-04-11 snapshot):
+  - US100: 25,116.338（+2.38% / 30d）← wk01（24,045）比+4.5%
+  - USDJPY: 159.245（+0.11% / 30d）← wk01（159.632）からほぼ横ばい。レンジ継続
+  - WTI: 95.630（-0.10% / 30d）← wk01土曜（112$）比-14.6%。エスカレーション・プレミアム剥落
+  - XAUUSD: 4,771.000（-6.74% / 30d）← wk01（4,702$）比+69$。地政学リスクヘッジ底堅い
+  - US2Y: 3.939（+1.42% / 30d）← wk01（3.948）からほぼ横ばい
+  - VIX: 19.230（-29.53% / 30d）← wk01（23.87）→19.23。Add risk gate<20 達成
+  - US10Y: 4.317（+1.03% / 30d）← wk01（4.313）からほぼ横ばい
+  - BTC/USD: 71,767.828（+1.81% / 30d）← wk01（67,290$）比+6.7%
+  - Regime (system): Neutral
+- implication:
+  - 条件付き解凍。VIX<20 + 4/11協議結果確認（合意 or 前向き）+ US100 25,000維持を全条件として分割限定エントリー開始。追撃禁止。
+  - 月曜（4/14）寄り付き前に4/11（土）米・イラン協議結果を必ず確認。
+  - 月・火買い→水曜売りパターンを念頭に。US100「青丸2」（25,45x付近）での利確を意識。
+  - 4/28日銀会合前はJPY関連慎重。利上げ期待ヘッドラインで円高急落リスク。
+  - WTI 80$台回帰の有無で停戦への市場信頼度を継続監視。
+  - 長期ポートフォリオは売り不要。積立加速継続。
+- tags: [gm, monthly_distilled, 2026-04, 2026-4-10_wk02, signal:VIX_add_risk_gate, signal:US100_resistance_blue2, signal:WTI_premium_stripped, signal:CPI_beat_negative, signal:TSMC_earnings_beat, signal:JP225_ichimoku_breakout, signal:regime_neutral_transition, event:iran_us_talks_4_11, event:BOJ_4_28_meeting, event:us_china_summit_may, pattern:mon_tue_buy_wed_sell, risk:협議_決裂_monday_drop, risk:BOJ_yen_appreciation_headline]

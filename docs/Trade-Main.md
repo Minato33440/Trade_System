@@ -248,6 +248,18 @@ C) Risk-off re-ignition（失速）
   - [review](./logs/gm/weekly/2026/2026-3-27_wk05/review.md)
   - [charts](./logs/gm/weekly/2026/2026-3-27_wk05/charts.md)
 
+### 2026-4-10_wk02（2026-04-07 → 2026-04-11）
+- Regime: Neutral（equities=up / volatility=normal / oil=range / gold=off / crypto=range / yields=rising）← Equities Down/Oil Surge から転換
+- 1行：株高5材料（空爆抑制・米イラン協議・米中首脳会談期待・台湾2027先送り・ウクライナ終結期待）が一気に出てリスクオン転換。VIX 23.87→19.23（Add risk gate<20 到達）、US100 24,045→25,116（+4.5%）、WTI 112$→95.6$（エスカレーション・プレミアム剥落）。4/11（土）米・イラン協議結果次第で月曜の方向性が決まる。「条件付き解凍・分割限定」。
+- Key gates:
+  - Add risk: 4/11協議結果確認（合意 or 前向き）+ VIX<20維持 + US100 25,000維持（追撃禁止・分割限定）
+  - Reduce risk: US100 D1 close <24,300 OR VIX>25再到達 OR 協議決裂報道
+- Links:
+  - [note](./logs/gm/weekly/2026/2026-4-10_wk02/note.md)
+  - [meta](./logs/gm/weekly/2026/2026-4-10_wk02/meta.yaml)
+  - [review](./logs/gm/weekly/2026/2026-4-10_wk02/review.md)
+  - [charts](./logs/gm/weekly/2026/2026-4-10_wk02/charts.md)
+
 
 ## Weekly Brief | 2026-4-3_wk01（2026-03-30 → 2026-04-03）
 created: 2026-04-05 (JST)
@@ -393,3 +405,50 @@ created: 2026-03-21 (JST)
 ## Previous (archived briefs)
 - Weekly Brief | 2026-3-13_wk03（2026-03-09 → 2026-03-13）
   - see: logs/gm/weekly/2026/2026-3-13_wk03/
+
+
+## Weekly Brief | 2026-4-10_wk02（2026-04-07 → 2026-04-11）
+created: 2026-04-12 (JST)
+
+### Macro / Regime
+- Regime: Neutral（equities=up / volatility=normal / oil=range / gold=off / crypto=range / yields=rising）← wk01「Equities Down / Oil Surge」から大転換。
+- 株高5材料（トランプ空爆抑制指示・米イラン停戦協議4/11・米中首脳会談期待5/14-15・台湾有事2027先送り・ウクライナ終結期待）が一気に出てリスクオン転換。
+- VIX 23.87→19.23（Add risk gate<20 到達）。US100 24,045→25,116（+4.5%）。WTI 112$→95.6$（エスカレーション・プレミアム剥落）。
+- CPI 3.3%（予想下振れ）/ コアCPI 2.6%。TSMC 35%増収。ダウ輸送株指数ATH（先行指標ポジティブ）。
+- JP225 一目均衡表の雲を上抜け（強気シグナル）。金融庁：国内金融機関プライベートクレジット保有「限定的」→国内金融危機リスク後退。
+- **最大リスク**: 4/11（土）米・イラン停戦協議（パキスタン）の決裂→月曜急落・VIX再上昇。
+
+### Position / Orders
+- Core：Gold（4,771$）/ エネルギー（WTI 95.6$ / 保有継続）/ 防衛継続保有。
+- Mode：条件付き解凍。VIX<20 + 4/11協議結果確認後に分割限定エントリー。追撃禁止。
+- 月・火買い→水曜売り抜けパターンを念頭に短期対応。
+
+### Key Levels (close-based)
+- US100: 25,116 / R=25,454（青丸2レジスタンス）/ S=24,800→24,773→24,300（押し目）
+- JP225: 上値58,930（合意シナリオ）/ 利確58,400 / 下落転換55,698 / S=53,936
+- USDJPY: 159.245 / S=156.54（3H足）/ R=159.39→160.50（急落警戒）
+- WTI: 95.63 / 80$台不回帰継続（停戦不信シグナル）
+- XAUUSD: 4,771 / 地政学リスクヘッジ底堅い
+- VIX: 19.23（Add risk gate<20 達成）/ US10Y: 4.317 / US2Y: 3.939
+
+### Gates（最重要：終値で判定）
+- Add risk ONLY if: 4/11協議結果（合意 or 前向き）確認 + VIX<20維持 + US100 25,000維持（追撃禁止・分割限定）
+- Reduce / pause if: US100 D1 close <24,300 OR VIX>25再到達 OR 協議決裂報道
+- Hedge gate: Gold 4,771$ / エネルギー継続 / 防衛継続
+
+### This Week Focus（行動: 4/14-4/18）
+- **月曜（4/14）寄り付き前**: 4/11（土）米・イラン協議結果を必ず確認してから対応判断。
+- **US100 25,45x付近「青丸2」レジスタンス**: 突破 or 跳ね返り確認。月・火買い→水曜売りパターン活用。
+- **4/28日銀会合**: 利上げ期待ヘッドラインで円高急落リスク。JPY関連は慎重に。
+- **WTI 80$台回帰**: 停戦への市場信頼度の目安として継続監視。
+
+### Signals (weekly, fixed keys)
+- us10y_accel: stable（4.317。FRB利下げ困難で高止まり継続）
+- hy_oas_widening: easing（地政学プレミアム剥落で改善方向）
+- vix_spike: gate_open（19.23。Add risk gate<20 到達。土日イベント次第）
+- wti_shock: easing（95.6$。プレミアム剥落。80$不回帰は停戦不信シグナル継続）
+- eps_revision_chain: positive（CPI下振れ / TSMC好決算 / 輸送株ATH）
+
+## Previous (archived briefs)
+- Weekly Brief | 2026-4-3_wk01（2026-03-30 → 2026-04-03）
+  - see: logs/gm/weekly/2026/2026-4-3_wk01/
