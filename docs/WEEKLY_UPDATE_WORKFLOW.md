@@ -4,6 +4,37 @@
 
 ---
 
+## 🦀 RTK（Rust Token Killer）使用ルール（ClaudeCode 必読・全工程共通）
+
+**すべてのターミナルコマンドは `rtk` プレフィックスを必須とする。**
+
+```bash
+# ❌ 間違い
+git status
+git add .
+git commit -m "msg"
+git push
+python main.py --trade --news
+
+# ✅ 正しい
+rtk git status
+rtk git add logs/gm/weekly/...
+rtk git commit -m "msg"
+rtk git push origin main
+python main.py --trade --news   # ← python は rtk 対象外（パススルー）
+```
+
+**Windows環境での注意**:
+- Unix系の自動フックは使用不可（Mac/Linux専用）。
+- `~/.claude/CLAUDE.md` の指示経由で ClaudeCode が手動で `rtk` を付ける方式が唯一の動作モード。
+- `&&` でチェーンする場合も各コマンドに `rtk` を付ける：
+  ```bash
+  rtk git add . && rtk git commit -m "msg" && rtk git push
+  ```
+- `python` / `rtk init` / `rtk gain` などの RTK メタコマンド自体は `rtk` 不要。
+
+---
+
 ## ⚠️ 作業開始前の最初の一言（ClaudeCode 必読）
 
 週末Git更新の依頼を受けたら、**市況テキストの受け取りより先に**、以下をMianto に依頼すること。
