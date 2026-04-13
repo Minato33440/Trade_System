@@ -8,266 +8,94 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Sora:wght@300;400;600;700&display=swap');
 
 :root {
-  --bg0: #0a0d14;
-  --bg1: #0f1320;
-  --bg2: #141828;
-  --bg3: #1a2035;
-  --border: #1e2a40;
-  --border2: #263248;
-
-  --4h: #f0a500;
-  --4h-dim: rgba(240,165,0,0.12);
-  --1h: #00c9a7;
-  --1h-dim: rgba(0,201,167,0.10);
-  --5m: #4d9fff;
-  --5m-dim: rgba(77,159,255,0.10);
-  --entry: #a78bfa;
-  --entry-dim: rgba(167,139,250,0.10);
-
-  --ok: #22c55e;
-  --warn: #f59e0b;
-  --ng: #ef4444;
-  --muted: #4a5568;
-  --text: #c9d1e0;
-  --text-dim: #6b7a96;
-  --text-bright: #e8edf5;
-
-  --mono: 'JetBrains Mono', monospace;
-  --sans: 'Sora', sans-serif;
+  --bg0: #0a0d14; --bg1: #0f1320; --bg2: #141828; --bg3: #1a2035;
+  --border: #1e2a40; --border2: #263248;
+  --4h: #f0a500; --4h-dim: rgba(240,165,0,0.12);
+  --1h: #00c9a7; --1h-dim: rgba(0,201,167,0.10);
+  --5m: #4d9fff; --5m-dim: rgba(77,159,255,0.10);
+  --entry: #a78bfa; --entry-dim: rgba(167,139,250,0.10);
+  --ok: #22c55e; --warn: #f59e0b; --ng: #ef4444; --muted: #4a5568;
+  --text: #c9d1e0; --text-dim: #6b7a96; --text-bright: #e8edf5;
+  --mono: 'JetBrains Mono', monospace; --sans: 'Sora', sans-serif;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg0); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; min-height: 100vh; }
 
-body {
-  background: var(--bg0);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 13px;
-  line-height: 1.6;
-  min-height: 100vh;
-}
-
-/* ── Header ── */
-.header {
-  background: var(--bg1);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
+.header { background: var(--bg1); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .header-left { display: flex; align-items: center; gap: 14px; }
-.logo {
-  font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--4h);
-  letter-spacing: 0.06em;
-}
+.logo { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--4h); letter-spacing: 0.06em; }
 .logo span { color: var(--1h); }
-.badge {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-weight: 500;
-}
+.badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; font-weight: 500; }
 .badge-version { background: var(--4h-dim); color: var(--4h); border: 1px solid rgba(240,165,0,0.3); }
-.badge-long    { background: var(--ok); color: #000; }
+.badge-long { background: var(--ok); color: #000; }
 .header-meta { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
 
-/* ── Nav Tabs ── */
-.tabs {
-  display: flex;
-  gap: 2px;
-  background: var(--bg1);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  overflow-x: auto;
-}
-.tab {
-  padding: 10px 18px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--text-dim);
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  white-space: nowrap;
-  letter-spacing: 0.03em;
-}
+.tabs { display: flex; gap: 2px; background: var(--bg1); border-bottom: 1px solid var(--border); padding: 0 24px; overflow-x: auto; }
+.tab { padding: 10px 18px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-dim); border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; letter-spacing: 0.03em; }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--4h); border-bottom-color: var(--4h); }
 
-/* ── Main ── */
 .main { padding: 24px; max-width: 1100px; margin: 0 auto; }
-
 .section { display: none; }
 .section.active { display: block; }
 
-/* ── Cards ── */
-.card {
-  background: var(--bg1);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 18px 20px;
-  margin-bottom: 16px;
-}
-.card-title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.card-title::before {
-  content: '';
-  display: inline-block;
-  width: 3px;
-  height: 12px;
-  border-radius: 2px;
-}
-.card-4h .card-title::before  { background: var(--4h); }
-.card-1h .card-title::before  { background: var(--1h); }
-.card-5m .card-title::before  { background: var(--5m); }
+.card { background: var(--bg1); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+.card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.card-title::before { content: ''; display: inline-block; width: 3px; height: 12px; border-radius: 2px; }
+.card-4h .card-title::before { background: var(--4h); }
+.card-1h .card-title::before { background: var(--1h); }
+.card-5m .card-title::before { background: var(--5m); }
 .card-entry .card-title::before { background: var(--entry); }
-.card-gray .card-title::before  { background: var(--muted); }
+.card-gray .card-title::before { background: var(--muted); }
 
-/* ── Layer Diagram ── */
 .layer-diagram { display: flex; flex-direction: column; gap: 4px; }
-.layer {
-  border-radius: 8px;
-  padding: 14px 18px;
-  border: 1px solid;
-  position: relative;
-}
-.layer-4h  { background: var(--4h-dim);   border-color: rgba(240,165,0,0.25); }
-.layer-1h  { background: var(--1h-dim);   border-color: rgba(0,201,167,0.2);  margin: 0 20px; }
-.layer-5m  { background: var(--5m-dim);   border-color: rgba(77,159,255,0.2); margin: 0 40px; }
+.layer { border-radius: 8px; padding: 14px 18px; border: 1px solid; position: relative; }
+.layer-4h  { background: var(--4h-dim); border-color: rgba(240,165,0,0.25); }
+.layer-1h  { background: var(--1h-dim); border-color: rgba(0,201,167,0.2); margin: 0 20px; }
+.layer-5m  { background: var(--5m-dim); border-color: rgba(77,159,255,0.2); margin: 0 40px; }
 .layer-exec{ background: var(--entry-dim); border-color: rgba(167,139,250,0.2); margin: 0 60px; }
-
-.layer-label {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  margin-bottom: 6px;
-}
-.layer-4h  .layer-label { color: var(--4h); }
-.layer-1h  .layer-label { color: var(--1h); }
-.layer-5m  .layer-label { color: var(--5m); }
+.layer-label { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 6px; }
+.layer-4h .layer-label { color: var(--4h); }
+.layer-1h .layer-label { color: var(--1h); }
+.layer-5m .layer-label { color: var(--5m); }
 .layer-exec .layer-label { color: var(--entry); }
-
 .layer-desc { font-size: 12px; color: var(--text); }
-.layer-params {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.param {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 3px;
-  background: rgba(255,255,255,0.05);
-  color: var(--text-dim);
-  border: 1px solid var(--border2);
-}
-.arrow-down {
-  text-align: center;
-  color: var(--border2);
-  font-size: 16px;
-  margin: 2px 0;
-}
+.layer-params { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.param { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 3px; background: rgba(255,255,255,0.05); color: var(--text-dim); border: 1px solid var(--border2); }
+.arrow-down { text-align: center; color: var(--border2); font-size: 16px; margin: 2px 0; }
 
-/* ── Grid ── */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-@media (max-width: 700px) {
-  .grid-2 { grid-template-columns: 1fr; }
-  .grid-3 { grid-template-columns: 1fr; }
-}
+@media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
 
-/* ── KPI ── */
 .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-.kpi {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
-}
+.kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
 .kpi-label { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; letter-spacing: 0.05em; }
 .kpi-value { font-family: var(--mono); font-size: 20px; font-weight: 700; }
-.kpi-sub   { font-size: 10px; color: var(--text-dim); margin-top: 2px; font-family: var(--mono); }
-.kpi-ok    .kpi-value { color: var(--ok); }
-.kpi-warn  .kpi-value { color: var(--warn); }
-.kpi-blue  .kpi-value { color: var(--5m); }
+.kpi-sub { font-size: 10px; color: var(--text-dim); margin-top: 2px; font-family: var(--mono); }
+.kpi-ok .kpi-value { color: var(--ok); }
+.kpi-warn .kpi-value { color: var(--warn); }
+.kpi-blue .kpi-value { color: var(--5m); }
 .kpi-amber .kpi-value { color: var(--4h); }
 
-/* ── Table ── */
 .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-.tbl th {
-  text-align: left;
-  padding: 7px 10px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  border-bottom: 1px solid var(--border);
-}
-.tbl td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11px;
-  vertical-align: top;
-}
+.tbl th { text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+.tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 11px; vertical-align: top; }
 .tbl tr:last-child td { border-bottom: none; }
 .tbl tr:hover td { background: rgba(255,255,255,0.02); }
 .tbl .label { font-family: var(--sans); color: var(--text); font-size: 12px; }
 .tbl .value { color: var(--text-bright); }
 .tbl .note  { font-family: var(--sans); color: var(--text-dim); font-size: 11px; }
 
-/* ── Status pills ── */
-.pill {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  font-family: var(--mono);
-}
-.pill-ok   { background: rgba(34,197,94,0.15);  color: var(--ok);  border: 1px solid rgba(34,197,94,0.3);  }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; font-family: var(--mono); }
+.pill-ok   { background: rgba(34,197,94,0.15); color: var(--ok); border: 1px solid rgba(34,197,94,0.3); }
 .pill-pend { background: rgba(245,158,11,0.15); color: var(--warn); border: 1px solid rgba(245,158,11,0.3); }
-.pill-ng   { background: rgba(239,68,68,0.15);  color: var(--ng);  border: 1px solid rgba(239,68,68,0.3);  }
+.pill-ng   { background: rgba(239,68,68,0.15); color: var(--ng); border: 1px solid rgba(239,68,68,0.3); }
 .pill-blue { background: var(--5m-dim); color: var(--5m); border: 1px solid rgba(77,159,255,0.3); }
+.pill-none { background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border2); }
 
-/* ── Code block ── */
-.code {
-  background: var(--bg0);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 16px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text);
-  white-space: pre;
-  overflow-x: auto;
-  line-height: 1.7;
-  margin: 10px 0;
-}
+.code { background: var(--bg0); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; font-family: var(--mono); font-size: 11px; color: var(--text); white-space: pre; overflow-x: auto; line-height: 1.7; margin: 10px 0; }
 .c-amber { color: var(--4h); }
 .c-teal  { color: var(--1h); }
 .c-blue  { color: var(--5m); }
@@ -275,89 +103,37 @@ body {
 .c-green { color: var(--ok); }
 .c-dim   { color: var(--text-dim); }
 
-/* ── Progress bar ── */
 .progress-wrap { background: var(--bg3); border-radius: 3px; height: 6px; overflow: hidden; margin-top: 6px; }
 .progress-bar  { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
 
-/* ── Issue list ── */
-.issue {
-  padding: 12px 14px;
-  border-radius: 6px;
-  border-left: 3px solid;
-  margin-bottom: 10px;
-  background: var(--bg2);
-}
+.issue { padding: 12px 14px; border-radius: 6px; border-left: 3px solid; margin-bottom: 10px; background: var(--bg2); }
 .issue-red    { border-color: var(--ng); }
 .issue-yellow { border-color: var(--warn); }
 .issue-green  { border-color: var(--ok); }
 .issue-title  { font-weight: 600; font-size: 12px; color: var(--text-bright); margin-bottom: 4px; }
 .issue-body   { font-size: 11px; color: var(--text-dim); }
 
-/* ── Thread handoff box ── */
-.handoff {
-  background: var(--bg0);
-  border: 1px solid rgba(240,165,0,0.3);
-  border-radius: 8px;
-  padding: 16px 18px;
-  margin-bottom: 16px;
-}
-.handoff-title {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--4h);
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.handoff { background: var(--bg0); border: 1px solid rgba(240,165,0,0.3); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; }
+.handoff-title { font-family: var(--mono); font-size: 11px; color: var(--4h); letter-spacing: 0.08em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--4h); display: inline-block; }
-.dot-green  { background: var(--ok); }
-.dot-blue   { background: var(--5m); }
 
-/* ── Flow steps ── */
 .flow-steps { display: flex; flex-direction: column; gap: 0; }
-.flow-step {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
+.flow-step { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .flow-step:last-child { border-bottom: none; }
-.step-num {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  min-width: 28px;
-  height: 24px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.step-4h   { background: var(--4h-dim);   color: var(--4h); }
-.step-1h   { background: var(--1h-dim);   color: var(--1h); }
-.step-5m   { background: var(--5m-dim);   color: var(--5m); }
+.step-num { font-family: var(--mono); font-size: 11px; font-weight: 700; min-width: 28px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-4h   { background: var(--4h-dim); color: var(--4h); }
+.step-1h   { background: var(--1h-dim); color: var(--1h); }
+.step-5m   { background: var(--5m-dim); color: var(--5m); }
 .step-exec { background: var(--entry-dim); color: var(--entry); }
 .step-body { flex: 1; }
-.step-title { font-weight: 600; font-size: 12px; color: var(--text-bright); margin-bottom: 3px; }
+.step-title  { font-weight: 600; font-size: 12px; color: var(--text-bright); margin-bottom: 3px; }
 .step-detail { font-size: 11px; color: var(--text-dim); }
 
-/* ── Pattern cards ── */
-.pattern-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
-}
+.pattern-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
 .pattern-name { font-family: var(--mono); font-size: 12px; font-weight: 700; margin-bottom: 4px; }
 .pattern-rate { font-size: 22px; font-weight: 700; font-family: var(--mono); }
 .pattern-sub  { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
 
-/* scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg0); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
@@ -368,47 +144,46 @@ body {
 <div class="header">
   <div class="header-left">
     <div class="logo">REX<span>.</span>AI</div>
-    <span class="badge badge-version">v#020</span>
+    <span class="badge badge-version">v#025</span>
     <span class="badge badge-long">LONG ONLY</span>
   </div>
-  <div class="header-meta">USDJPY · 2024-03-13 〜 2026-03-13 · 83,112 bars · Last updated: 2026-03-24</div>
+  <div class="header-meta">USDJPY &middot; 2024-03-13 〜 2026-03-13 &middot; 83,112 bars &middot; Last updated: 2026-03-31</div>
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="showTab('overview')">Overview</button>
-  <button class="tab" onclick="showTab('strategy')">Strategy</button>
-  <button class="tab" onclick="showTab('params')">Parameters</button>
-  <button class="tab" onclick="showTab('backtest')">Backtest</button>
-  <button class="tab" onclick="showTab('instructions')">Instructions</button>
-  <button class="tab" onclick="showTab('issues')">Issues</button>
-  <button class="tab" onclick="showTab('handoff')">Handoff</button>
+  <button class="tab active" onclick="showTab(event,'overview')">Overview</button>
+  <button class="tab" onclick="showTab(event,'strategy')">Strategy</button>
+  <button class="tab" onclick="showTab(event,'params')">Parameters</button>
+  <button class="tab" onclick="showTab(event,'backtest')">Backtest</button>
+  <button class="tab" onclick="showTab(event,'instructions')">Instructions</button>
+  <button class="tab" onclick="showTab(event,'issues')">Issues</button>
+  <button class="tab" onclick="showTab(event,'handoff')">Handoff</button>
 </div>
 
 <div class="main">
 
-<!-- ══════════════ OVERVIEW ══════════════ -->
+<!-- ══ OVERVIEW ══ -->
 <div id="tab-overview" class="section active">
-
   <div class="kpi-grid" style="margin-bottom:16px">
     <div class="kpi kpi-ok">
-      <div class="kpi-label">PF (最新 #018)</div>
+      <div class="kpi-label">PF (旧版 #018)</div>
       <div class="kpi-value">5.32</div>
-      <div class="kpi-sub">★★★ LONG のみ</div>
+      <div class="kpi-sub">★★★ LONG 20件</div>
     </div>
     <div class="kpi kpi-blue">
-      <div class="kpi-label">勝率</div>
+      <div class="kpi-label">勝率 (#018)</div>
       <div class="kpi-value">55.0%</div>
       <div class="kpi-sub">20件</div>
     </div>
     <div class="kpi kpi-ok">
-      <div class="kpi-label">MaxDD</div>
+      <div class="kpi-label">MaxDD (#018)</div>
       <div class="kpi-value">14.9p</div>
       <div class="kpi-sub">過去最低</div>
     </div>
     <div class="kpi kpi-amber">
-      <div class="kpi-label">総損益</div>
-      <div class="kpi-value">+91.6p</div>
-      <div class="kpi-sub">2年分バックテスト</div>
+      <div class="kpi-label">#025 検出数</div>
+      <div class="kpi-value">15件</div>
+      <div class="kpi-sub">窓ベース Phase 1</div>
     </div>
   </div>
 
@@ -420,134 +195,152 @@ body {
         <tr><td class="label">対象</td><td class="value">USDJPY 5M</td></tr>
         <tr><td class="label">リポジトリ</td><td class="value">Minato33440/UCAR_DIALY</td></tr>
         <tr><td class="label">ローカル</td><td class="value">C:\Python\REX_AI\Trade_System\</td></tr>
-        <tr><td class="label">データ</td><td class="value">usdjpy_multi_tf_2years.parquet</td></tr>
+        <tr><td class="label">データ</td><td class="value">usdjpy_multi_tf_2years.parquet (83,112本)</td></tr>
+        <tr><td class="label">期間</td><td class="value">2024-03-13 〜 2026-03-13</td></tr>
       </table>
     </div>
     <div class="card card-gray">
       <div class="card-title">チーム</div>
       <table class="tbl">
-        <tr>
-          <td class="label">Minato</td>
-          <td class="value">ディレクター・意思決定</td>
-        </tr>
-        <tr>
-          <td class="label">Rex (claude.ai)</td>
-          <td class="value">設計・分析・指示書作成</td>
-        </tr>
-        <tr>
-          <td class="label">ClaudeCode (VS Code)</td>
-          <td class="value">実装・Git 管理</td>
-        </tr>
+        <tr><td class="label">Minato</td><td class="value">ディレクター・意思決定</td></tr>
+        <tr><td class="label">Rex-Planner (Sonnet4.6)</td><td class="value">設計・分析・指示書作成</td></tr>
+        <tr><td class="label">Rex-Evaluator (Opus4.6)</td><td class="value">評価・監査・修正案</td></tr>
+        <tr><td class="label">ClaudeCode (VS Code)</td><td class="value">実装・Git 管理</td></tr>
       </table>
     </div>
   </div>
 
   <div class="card card-4h">
     <div class="card-title">戦略の本質</div>
-    <div style="font-size:13px; color:var(--text-bright); line-height:1.8; padding: 4px 0">
+    <div style="font-size:13px; color:var(--text-bright); line-height:1.8; padding:4px 0">
       「4H 上昇ダウが継続している限り、押し目条件が揃うたびにエントリーを繰り返す構造」<br>
       <span style="color:var(--text-dim); font-size:12px">エリオット波数カウントは実装しない。初動3波狙いは裁量表現であり、コード上は使わない。</span>
     </div>
   </div>
 
   <div class="card card-gray">
-    <div class="card-title">完了ファイル構成</div>
+    <div class="card-title">ファイル構成（2026-03-31確定）</div>
     <div class="code"><span class="c-teal">src/</span>
-├── swing_detector.py      <span class="c-green">✅</span>  detect_swing_highs/lows, get_direction_4h, get_nearest_swing_high_1h, get_nearest_swing_low_1h
-├── entry_logic.py         <span class="c-green">✅</span>  check_fib_condition, check_15m_range_low, check_5m_double_bottom, evaluate_entry
-├── exit_logic.py          <span class="c-green">✅</span>  check_5m_dow_break, check_15m_dow_break, manage_exit（4段階）
-├── plotter.py             <span class="c-green">✅</span>  plot_swing_check, plot_4h_1h_structure, plot_1h_window_5m <span class="c-dim">← #020予定</span>
-├── backtest.py            <span class="c-green">✅</span>  ポジション管理 neck_1h / exit_phase / entry_pattern / grade
-├── base_scanner.py        <span class="c-green">✅</span>  scan_4h_15m_base
-├── structure_plotter.py   <span class="c-green">✅</span>  scan_4h_neck_breaks（N_4H=5, N_1H=3）
-├── test_1h_coincidence.py <span class="c-amber">🔄</span>  <span class="c-dim">← #020 作業中</span>
-└── volume_alert.py        <span class="c-dim">⬜ Phase D（未着手）</span></div>
-  </div>
+├── swing_detector.py       <span class="c-green">✅</span>  detect_swing_highs/lows, get_direction_4h, get_nearest_swing_high_1h
+│                               get_nearest_swing_low_1h, get_all_swing_lows_1h (#020), _build_direction_5m
+├── entry_logic.py          <span class="c-green">✅</span>  check_fib_condition, check_15m_range_low, check_5m_double_bottom, evaluate_entry
+│                               <span class="c-dim">#018まで確定・変更凍結</span>
+├── exit_logic.py           <span class="c-green">✅</span>  check_5m_dow_break, check_15m_dow_break, check_4h_neck_1h_confirmed, manage_exit(4段階)
+│                               <span class="c-dim">#009以降確定・変更凍結</span>
+├── plotter.py              <span class="c-green">✅</span>  save_normalized_plot, plot_base_scan, plot_swing_check
+│                               plot_4h_1h_structure, plot_1h_window_5m <span class="c-dim">(#020-fix: addplot→scatter済み)</span>
+├── backtest.py             <span class="c-green">✅</span>  PF 5.32 / 勝率 55.0% / MaxDD 14.9p / 総損益 +91.6p  <span class="c-dim">(変更凍結)</span>
+├── base_scanner.py         <span class="c-green">✅</span>  scan_4h_15m_base (#015)
+├── structure_plotter.py    <span class="c-green">✅</span>  scan_4h_neck_breaks (#019)
+├── test_1h_coincidence.py  <span class="c-green">✅</span>  89件 100%一致・#020-fix 修正済み
+├── window_scanner.py       <span class="c-green">✅</span>  <span class="c-amber">#025完了</span>  窓ベース階層スキャン Phase 1
+│                               4H→1H窓→15M DB/IHS/ASCENDING→5Mネック越え (15件検出)
+│                               既存ファイル変更なし・独立動作
+└── volume_alert.py         <span class="c-dim">⬜ Phase D (未着手)</span>
 
+<span class="c-teal">logs/</span>
+├── window_scan_entries.csv    ← 15件 (#025最新)
+├── window_scan_plots/         ← 15枚 (#025最新)
+├── 1h_windows/                ← 8枚 (#020-fix修正済み)
+├── structure_plots/           ← 16枚 (#019)
+└── base_scan/                 ← 4H+15M基礎スキャン結果</div>
+  </div>
 </div>
 
-<!-- ══════════════ STRATEGY ══════════════ -->
+<!-- ══ STRATEGY ══ -->
 <div id="tab-strategy" class="section">
 
   <div class="card card-gray" style="margin-bottom:16px">
-    <div class="card-title">MTF 階層スキャン構造（#020設計）</div>
+    <div class="card-title">MTF 階層スキャン構造（#025確定・window_scanner.py）</div>
     <div class="layer-diagram">
       <div class="layer layer-4h">
         <div class="layer-label">LAYER 1 · 4H 上昇トレンド</div>
-        <div class="layer-desc">SH/SL 高値切り上げ + 安値切り上げ確認 → ダウ崩れまでの各 SL が押し目候補</div>
+        <div class="layer-desc">SH/SL 高値切り上げ + 安値切り上げ確認 → ダウ崩れまでの各 4H SL が押し目候補</div>
         <div class="layer-params">
-          <span class="param">n=3</span>
-          <span class="param">lookback=20</span>
-          <span class="param">MIN_4H_SWING≥20pips</span>
-          <span class="param">方向: LONG のみ</span>
+          <span class="param">n=3</span><span class="param">lookback=20</span>
+          <span class="param">MIN_4H_SWING≥20pips</span><span class="param">方向: LONG のみ</span>
         </div>
       </div>
       <div class="arrow-down">↓</div>
       <div class="layer layer-1h">
-        <div class="layer-label">LAYER 2 · 1H 押し目ウィンドウ</div>
-        <div class="layer-desc">4H SL ≒ 1H SL 最安値（lookback=240）→ 前20本 + SL足 + 後5本 = 26本ウィンドウ確定</div>
+        <div class="layer-label">LAYER 2 · 1H 押し目ウィンドウ（#023確定）</div>
+        <div class="layer-desc">4H SL ts ±8本(8時間)窓内で最近傍 1H SL を探す（price_tol内で初回タッチ優先）<br>
+        → 前20本 + SL足 + 後10本 = <strong>31本</strong>ウィンドウ確定 ≈ 372本の5Mデータ</div>
         <div class="layer-params">
-          <span class="param">lookback=240（10日）</span>
-          <span class="param">前20本</span>
-          <span class="param">後5本</span>
-          <span class="param">≈ 26時間</span>
-          <span class="param">一致閾値: ≤10pips（検証中）</span>
+          <span class="param">WINDOW_1H_PRE=20</span><span class="param">WINDOW_1H_POST=10</span>
+          <span class="param">≈31時間</span><span class="param">price_tol=20pips</span>
+          <span class="param">初回タッチ優先 (#025)</span>
         </div>
       </div>
       <div class="arrow-down">↓</div>
       <div class="layer layer-5m">
-        <div class="layer-label">LAYER 3 · 5M DB/IHS/ASCENDING 検出（ウィンドウ内限定）</div>
-        <div class="layer-desc">ウィンドウ内 5M SH/SL から DB・IHS・ASCENDING を抽出。ネック実体確定をエントリートリガーとする</div>
+        <div class="layer-label">LAYER 3 · 窓内 15M/5M スキャン（#025固定ネック原則）</div>
+        <div class="layer-desc">窓内5M→15Mリサンプル → check_15m_range_low()でパターンラベル取得<br>
+        <strong>neck = 1H SL以降の最初の 15M SH（固定ネック原則 #025確定）</strong><br>
+        5M close &gt; neck + WICKTOL_PIPS でエントリー確定</div>
         <div class="layer-params">
-          <span class="param">n=2</span>
-          <span class="param">WICKTOL=5.0pips</span>
-          <span class="param">ALLOWED: DB / IHS / ASCENDING</span>
+          <span class="param">WICKTOL=5.0pips</span><span class="param">ALLOWED: DB/IHS/ASCENDING</span>
+          <span class="param">neck=sh_vals.iloc[0] (固定)</span><span class="param">LOOKBACK_15M=50</span>
         </div>
       </div>
       <div class="arrow-down">↓</div>
       <div class="layer layer-exec">
         <div class="layer-label">EXEC · エントリー執行</div>
-        <div class="layer-desc">ネック確定足の次の 5M 始値で成行エントリー。Fib ≤55% + 1H neck ±20pips + ★★★グレードのみ</div>
+        <div class="layer-desc">ネック確定足の次の 5M 始値で成行エントリー / MAX_REENTRY=1（同一押し目機会）</div>
         <div class="layer-params">
-          <span class="param">fib_pct≤0.55 (★★★)</span>
-          <span class="param">NECK_TOL=20pips</span>
-          <span class="param">MAX_REENTRY=1</span>
+          <span class="param">確定足の次足始値</span><span class="param">MAX_REENTRY=1</span>
         </div>
       </div>
     </div>
   </div>
 
   <div class="card card-gray">
-    <div class="card-title">エントリーフロー（3段階フィルター）</div>
+    <div class="card-title">固定ネック原則（#025確立）</div>
+    <div class="code"><span class="c-dim"># 1H SL以降の15M SHを時系列順に取得</span>
+sh_vals = df_5m_win.loc[df_5m_win.index >= sl_1h_ts, <span class="c-green">'sh_5m'</span>]
+sh_vals = sh_vals.dropna()
+
+<span class="c-dim"># 最初のSH = 初回反発ピーク = ネックとして固定（変更されない）</span>
+<span class="c-amber">neck_15m = sh_vals.iloc[0]</span>   <span class="c-dim"># ← 一度確定したら変わらない</span>
+
+<span class="c-dim"># 全パターンへの適用根拠:</span>
+<span class="c-dim">#   DB:        2番底直後の初回反発ピーク = 本来のneck ✓</span>
+<span class="c-dim">#   IHS:       頭部後の右肩ピーク（最初のSH）= 本来のneck ✓</span>
+<span class="c-dim">#   ASCENDING: 直近SL後の最初の抵抗線 = 本来のneck ✓</span>
+<span class="c-dim">#   廃止: sh_vals.max() → レンジ最高値 → 遅すぎる (#024a)</span></div>
+  </div>
+
+  <div class="card card-gray">
+    <div class="card-title">エントリーフロー（window_scanner.py — Phase 1）</div>
     <div class="flow-steps">
       <div class="flow-step">
         <div class="step-num step-4h">4H</div>
         <div class="step-body">
-          <div class="step-title">Step 0 · 前提ガード</div>
-          <div class="step-detail">get_direction_4h() == 'LONG' ／ 4H Swing幅 ≥ 20pips ／ WARMUP_BARS=1728</div>
-        </div>
-      </div>
-      <div class="flow-step">
-        <div class="step-num step-4h">4H</div>
-        <div class="step-body">
-          <div class="step-title">Step 1 · Fib + 1H neck + support</div>
-          <div class="step-detail">★★★: fib_pct≤0.55 ／ 1H neck ±20pips 以内 ／ sl_last ≥ support_1h<br>
-          neck_4h = 1H SH (n=2, lb=20)  ／  support_1h = 1H SL (n=2, lb=240) ← #020変更予定</div>
+          <div class="step-title">Step 1 · 4H 上昇ダウスキャン</div>
+          <div class="step-detail">get_direction_4h() == 'LONG' ／ 4H Swing幅 ≥ 20pips ／ 各 4H SL タイムスタンプ取得</div>
         </div>
       </div>
       <div class="flow-step">
         <div class="step-num step-1h">1H</div>
         <div class="step-body">
-          <div class="step-title">Step 2 · 15M 統合レンジロジック</div>
-          <div class="step-detail">check_15m_range_low() → DB / IHS / ASCENDING 統合判定<br>
-          SL_last ≥ SL_min ／ 等距離ルール ／ neck_15m = SL_min以降の最高SH</div>
+          <div class="step-title">Step 2 · 1H 窓確定</div>
+          <div class="step-detail">4H SL ts ±8本窓内 → 最近傍 1H SL（price_tol=20pips内で初回タッチ優先）<br>
+          窓: 前20本 + SL足 + 後10本 = 31時間 ≈ 372本の5Mデータ</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num step-5m">15M</div>
+        <div class="step-body">
+          <div class="step-title">Step 3 · 15M パターン検出</div>
+          <div class="step-detail">窓内5M→15Mリサンプル → check_15m_range_low()でDB/IHS/ASCENDINGラベル取得<br>
+          neck = 1H SL以降の最初の15M SH（固定ネック）</div>
         </div>
       </div>
       <div class="flow-step">
         <div class="step-num step-5m">5M</div>
         <div class="step-body">
-          <div class="step-title">Step 3 · 5M DB ネック実体確定</div>
-          <div class="step-detail">min(open,close) が neck_15m を上抜け確定 ／ 5M SL2 ≥ 15M_SL − 5.0pips</div>
+          <div class="step-title">Step 4 · 5M ネック越え確認</div>
+          <div class="step-detail">1H SL以降 → 5M close &gt; neck + WICKTOL_PIPS(5.0) → エントリー確定足</div>
         </div>
       </div>
       <div class="flow-step">
@@ -561,7 +354,7 @@ body {
   </div>
 
   <div class="card card-gray">
-    <div class="card-title">決済ロジック（4段階）</div>
+    <div class="card-title">決済ロジック（4段階・exit_logic.py）</div>
     <div class="flow-steps">
       <div class="flow-step">
         <div class="step-num step-5m" style="font-size:10px">初動</div>
@@ -595,7 +388,7 @@ body {
   </div>
 
   <div class="card card-gray">
-    <div class="card-title">再エントリーロジック</div>
+    <div class="card-title">再エントリー・撤退ロジック</div>
     <table class="tbl">
       <tr><td class="label">最大再試行</td><td class="value">1回（MAX_REENTRY=1）</td></tr>
       <tr><td class="label">継続条件</td><td class="value">4H ダウ intact ／ 1H 戻り高値未達 → 次の 5M DB が 1H 2番底</td></tr>
@@ -603,182 +396,204 @@ body {
       <tr><td class="label">撤退条件（⑪）</td><td class="value">4H サポートを 15M 実体下抜け確定 → 戦略撤退（下ヒゲ戻りは継続）</td></tr>
     </table>
   </div>
+
+  <div class="card card-gray">
+    <div class="card-title">実装ロードマップ（2段階）</div>
+    <table class="tbl">
+      <tr>
+        <td class="label"><span class="pill pill-ok">Phase 1 完了</span></td>
+        <td class="value">#021〜#025</td>
+        <td class="note">窓内15M ネック越え → 5M実体確定 → エントリー<br>15件検出 (DB:3 / IHS:3 / ASCENDING:9) · 決済未統合</td>
+      </tr>
+      <tr>
+        <td class="label"><span class="pill pill-pend">Phase 2 未着手</span></td>
+        <td class="value">#027以降</td>
+        <td class="note">15M DB/IHS 右肩検出 → 右肩内で5M DBネック実体上抜け<br>Phase 1との比較で改善幅を定量確認</td>
+      </tr>
+    </table>
+  </div>
 </div>
 
-<!-- ══════════════ PARAMETERS ══════════════ -->
+<!-- ══ PARAMETERS ══ -->
 <div id="tab-params" class="section">
 
   <div class="card card-4h">
-    <div class="card-title">entry_logic.py — 確定パラメータ</div>
+    <div class="card-title">window_scanner.py — 確定パラメータ（#025）</div>
     <div class="code"><span class="c-dim"># DIRECTION</span>
 <span class="c-amber">DIRECTION_MODE</span>     = <span class="c-green">'LONG'</span>       <span class="c-dim"># SHORT一時停止 (#012)</span>
-<span class="c-amber">ALLOWED_GRADES</span>     = <span class="c-green">['★★★']</span>      <span class="c-dim"># (#018確定)</span>
 <span class="c-amber">ALLOWED_PATTERNS</span>   = <span class="c-green">['DB','ASCENDING','IHS']</span>
 
-<span class="c-dim"># ENTRY FILTER</span>
-<span class="c-amber">MIN_4H_SWING_PIPS</span>  = <span class="c-blue">20.0</span>         <span class="c-dim"># (#010確定)</span>
-<span class="c-amber">WICKTOL_PIPS</span>       = <span class="c-blue">5.0</span>          <span class="c-dim"># (#013確定)</span>
-<span class="c-amber">NECK_TOLERANCE_PIPS</span>= <span class="c-blue">20.0</span>         <span class="c-dim"># (#017確定 pips基準化)</span>
-<span class="c-amber">LOOKBACK_15M_RANGE</span> = <span class="c-blue">50</span>           <span class="c-dim"># (#014確定)</span>
-<span class="c-amber">WARMUP_BARS</span>        = <span class="c-blue">1728</span>         <span class="c-dim"># (#012確定)</span>
-<span class="c-amber">MAX_REENTRY</span>        = <span class="c-blue">1</span>            <span class="c-dim"># 同一機会での再試行上限</span>
+<span class="c-dim"># WINDOW (#023確定)</span>
+<span class="c-amber">WINDOW_1H_PRE</span>      = <span class="c-blue">20</span>           <span class="c-dim"># 1H SL前 20本</span>
+<span class="c-amber">WINDOW_1H_POST</span>     = <span class="c-blue">10</span>           <span class="c-dim"># 1H SL後 10本 (旧: 5)</span>
+<span class="c-amber">PRICE_TOL_PIPS</span>     = <span class="c-blue">20.0</span>         <span class="c-dim"># 1H SL選択許容・初回タッチ優先 (#025)</span>
+
+<span class="c-dim"># ENTRY</span>
+<span class="c-amber">MIN_4H_SWING_PIPS</span>  = <span class="c-blue">20.0</span>         <span class="c-dim"># (#010)</span>
+<span class="c-amber">WICKTOL_PIPS</span>       = <span class="c-blue">5.0</span>          <span class="c-dim"># (#013)</span>
+<span class="c-amber">LOOKBACK_15M_RANGE</span> = <span class="c-blue">50</span>           <span class="c-dim"># (#014)</span>
+<span class="c-amber">MAX_REENTRY</span>        = <span class="c-blue">1</span>
+
+<span class="c-dim"># PLOT (スキャン窓とは独立 #024a)</span>
+<span class="c-amber">PLOT_PRE_H</span>         = <span class="c-blue">25</span>           <span class="c-dim"># sl_1h_ts 基準・表示専用</span>
+<span class="c-amber">PLOT_POST_H</span>        = <span class="c-blue">40</span>           <span class="c-dim"># エントリー後余白確保</span>
+
+<span class="c-dim"># 固定ネック原則 (#025確定)</span>
+neck_15m           = sh_vals.<span class="c-amber">iloc[0]</span>  <span class="c-dim"># 1H SL以降の最初のSH</span></div>
+  </div>
+
+  <div class="card card-4h">
+    <div class="card-title">backtest.py / entry_logic.py — 確定パラメータ（変更凍結）</div>
+    <div class="code"><span class="c-amber">DIRECTION_MODE</span>     = <span class="c-green">'LONG'</span>
+<span class="c-amber">ALLOWED_GRADES</span>     = <span class="c-green">['★★★']</span>        <span class="c-dim"># (#018)</span>
+<span class="c-amber">ALLOWED_PATTERNS</span>   = <span class="c-green">['DB','ASCENDING','IHS']</span>
+<span class="c-amber">MIN_4H_SWING_PIPS</span>  = <span class="c-blue">20.0</span>
+<span class="c-amber">WICKTOL_PIPS</span>       = <span class="c-blue">5.0</span>
+<span class="c-amber">NECK_TOLERANCE_PIPS</span>= <span class="c-blue">20.0</span>         <span class="c-dim"># (#017 pips基準化)</span>
+<span class="c-amber">LOOKBACK_15M_RANGE</span> = <span class="c-blue">50</span>
+<span class="c-amber">WARMUP_BARS</span>        = <span class="c-blue">1728</span>         <span class="c-dim"># (#012)</span>
+<span class="c-amber">MAX_REENTRY</span>        = <span class="c-blue">1</span>
 
 <span class="c-dim"># GRADE ★★★ 条件</span>
-fib_pct            <span class="c-amber">≤ 0.55</span>
+fib_pct            <span class="c-amber">&lt;= 0.55</span>
 neck_4h            = 1H SH <span class="c-dim">(n=2, lookback=20)</span>     <span class="c-dim"># (#016)</span>
-support_1h         = 1H SL <span class="c-dim">(n=2, lookback=240)</span>    <span class="c-dim"># (#020変更予定)</span>
+support_1h         = 1H SL <span class="c-dim">(n=2, lookback=240)</span>    <span class="c-dim"># (#020確定)</span>
 neck_tolerance     <span class="c-amber">±20pips</span></div>
   </div>
 
   <div class="card card-1h">
-    <div class="card-title">Swing 検出パラメータ一覧</div>
+    <div class="card-title">Swing 検出パラメータ一覧（2026-03-31確定）</div>
     <table class="tbl">
-      <thead>
-        <tr>
-          <th>用途</th>
-          <th>TF</th>
-          <th>n</th>
-          <th>lookback</th>
-          <th>備考</th>
-        </tr>
-      </thead>
+      <thead><tr><th>用途</th><th>TF</th><th>n</th><th>lookback</th><th>備考</th></tr></thead>
       <tbody>
-        <tr>
-          <td class="label">4H 方向判定（backtest）</td>
-          <td class="value">4H</td><td class="value">3</td><td class="value">20</td>
-          <td class="note">確定</td>
-        </tr>
-        <tr>
-          <td class="label">4H 方向判定（structure_plotter）</td>
-          <td class="value">4H</td><td class="value">5</td><td class="value">100</td>
-          <td class="note">確定</td>
-        </tr>
-        <tr>
-          <td class="label">1H neck_4h 取得</td>
-          <td class="value">1H</td><td class="value">2</td><td class="value">20</td>
-          <td class="note">#016確定</td>
-        </tr>
-        <tr>
-          <td class="label">1H support_1h（新）</td>
-          <td class="value" style="color:var(--4h)">1H</td><td class="value" style="color:var(--4h)">2</td><td class="value" style="color:var(--4h)">240</td>
-          <td class="note" style="color:var(--4h)">← #020 変更予定</td>
-        </tr>
-        <tr>
-          <td class="label">15M レンジロジック</td>
-          <td class="value">15M</td><td class="value">3</td><td class="value">50</td>
-          <td class="note">#014確定</td>
-        </tr>
-        <tr>
-          <td class="label">5M DB 確定</td>
-          <td class="value">5M</td><td class="value">2</td><td class="value">20</td>
-          <td class="note">確定</td>
-        </tr>
+        <tr><td class="label">4H 方向判定（backtest）</td><td class="value">4H</td><td class="value">3</td><td class="value">20</td><td class="note">確定</td></tr>
+        <tr><td class="label">4H 方向判定（structure_plotter）</td><td class="value">4H</td><td class="value">5</td><td class="value">100</td><td class="note">確定</td></tr>
+        <tr><td class="label">4H SH/SL取得（base_scanner）</td><td class="value">4H</td><td class="value">3</td><td class="value">100</td><td class="note">確定</td></tr>
+        <tr><td class="label">1H neck_4h 取得</td><td class="value">1H</td><td class="value">2</td><td class="value">20</td><td class="note">#016確定</td></tr>
+        <tr><td class="label">1H SL 窓内検索（window_scanner）</td><td class="value">1H</td><td class="value">2</td><td class="value">±8本窓</td><td class="note">#020確定</td></tr>
+        <tr><td class="label">1H 窓サイズ（window_scanner）</td><td class="value">1H</td><td class="value">-</td><td class="value">前20+後10</td><td class="note">#023確定</td></tr>
+        <tr><td class="label">support_1h（backtest）</td><td class="value">1H</td><td class="value">2</td><td class="value">240</td><td class="note">#020確定</td></tr>
+        <tr><td class="label">15M レンジロジック（窓内）</td><td class="value">15M</td><td class="value">3</td><td class="value">50</td><td class="note">#014確定</td></tr>
+        <tr><td class="label">5M DB確定</td><td class="value">5M</td><td class="value">2</td><td class="value">20</td><td class="note">確定</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="card card-gray">
     <div class="card-title">廃止済みパラメータ</div>
-    <div class="code"><span class="c-dim">廃止: NECK_TOLERANCE_PCT     → NECK_TOLERANCE_PIPS=20.0 に置換 (#017)
-廃止: check_double_bottom_1h  → check_15m_range_low() に統合 (#011)
-廃止: calc_limit_price         → 成行エントリーに変更
-廃止: check_limit_triggered    → 同上</span></div>
+    <div class="code"><span class="c-dim">廃止: NECK_TOLERANCE_PCT       → NECK_TOLERANCE_PIPS=20.0 に置換 (#017)
+廃止: check_double_bottom_1h    → check_15m_range_low() に統合 (#011)
+廃止: calc_limit_price           → 成行エントリーに変更
+廃止: check_limit_triggered      → 同上
+廃止: WINDOW_1H_POST=5           → =10 に延長 (#023)
+廃止: neck=sh_vals.max()         → neck=sh_vals.iloc[0] に変更 (#025)
+廃止: sl_1h_ts=dists.idxmin()    → price_tol内で初回タッチ優先 (#025)</span></div>
   </div>
 </div>
 
-<!-- ══════════════ BACKTEST ══════════════ -->
+<!-- ══ BACKTEST ══ -->
 <div id="tab-backtest" class="section">
 
   <div class="card card-gray">
     <div class="card-title">バックテスト結果推移</div>
     <table class="tbl">
-      <thead>
-        <tr>
-          <th>指示書</th><th>トレード数</th><th>勝率</th><th>PF</th><th>MaxDD</th><th>総損益</th><th>モード</th>
-        </tr>
-      </thead>
+      <thead><tr><th>指示書</th><th>トレード数</th><th>勝率</th><th>PF</th><th>MaxDD</th><th>総損益</th><th>モード</th></tr></thead>
       <tbody>
         <tr>
-          <td class="value">#009</td>
-          <td class="value">25</td>
-          <td class="value">48.0%</td>
-          <td class="value">0.98</td>
-          <td class="value" style="color:var(--ng)">106.5p</td>
-          <td class="value" style="color:var(--ng)">-2.2p</td>
+          <td class="value">#009</td><td class="value">25</td><td class="value">48.0%</td><td class="value">0.98</td>
+          <td class="value" style="color:var(--ng)">106.5p</td><td class="value" style="color:var(--ng)">-2.2p</td>
           <td class="note">LONG+SHORT</td>
         </tr>
         <tr>
-          <td class="value">#011</td>
-          <td class="value">36</td>
-          <td class="value">55.6%</td>
-          <td class="value">2.86</td>
-          <td class="value" style="color:var(--warn)">27.4p</td>
-          <td class="value" style="color:var(--ok)">+79.1p</td>
+          <td class="value">#011</td><td class="value">36</td><td class="value">55.6%</td><td class="value">2.86</td>
+          <td class="value" style="color:var(--warn)">27.4p</td><td class="value" style="color:var(--ok)">+79.1p</td>
           <td class="note">LONG 限定</td>
         </tr>
         <tr>
-          <td class="value" style="color:var(--ok)">#018 (最新)</td>
-          <td class="value" style="color:var(--ok)">20</td>
-          <td class="value" style="color:var(--ok)">55.0%</td>
-          <td class="value" style="color:var(--ok)">5.32</td>
-          <td class="value" style="color:var(--ok)">14.9p</td>
+          <td class="value" style="color:var(--ok)">#018 (旧版最新)</td>
+          <td class="value" style="color:var(--ok)">20</td><td class="value" style="color:var(--ok)">55.0%</td>
+          <td class="value" style="color:var(--ok)">5.32</td><td class="value" style="color:var(--ok)">14.9p</td>
           <td class="value" style="color:var(--ok)">+91.6p</td>
           <td class="note">LONG+★★★</td>
+        </tr>
+        <tr>
+          <td class="value" style="color:var(--warn)">#025 (新版Phase1)</td>
+          <td class="value" style="color:var(--warn)">15</td>
+          <td class="value" style="color:var(--text-dim)">未計算</td>
+          <td class="value" style="color:var(--text-dim)">未計算</td>
+          <td class="value" style="color:var(--text-dim)">未計算</td>
+          <td class="value" style="color:var(--text-dim)">未計算</td>
+          <td class="note">LONG+窓ベース<br><span style="color:var(--warn)">決済統合 #026待ち</span></td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="grid-3">
+  <div class="card card-gray">
+    <div class="card-title">#025 窓ベース検出結果（確定・2026-03-31）</div>
+    <table class="tbl">
+      <tr><td class="label">スキャン窓数</td><td class="value">33件</td></tr>
+      <tr><td class="label">エントリー検出数</td><td class="value" style="color:var(--ok)">15件（#024aの4件から+275%）</td></tr>
+      <tr><td class="label">エントリー0件窓</td><td class="value">18件</td></tr>
+      <tr><td class="label">Jul29 DB 改善</td><td class="value">neck 22pips低下(153.913→153.692) / エントリー4時間早化</td></tr>
+    </table>
+  </div>
+
+  <div class="grid-3" style="margin-top:16px">
     <div class="pattern-card">
       <div class="pattern-name" style="color:var(--5m)">DB</div>
-      <div class="pattern-rate" style="color:var(--ok)">75.0%</div>
-      <div class="pattern-sub">9件 ／ +7.1 pips</div>
-      <div class="progress-wrap"><div class="progress-bar" style="width:75%; background:var(--ok)"></div></div>
+      <div class="pattern-rate" style="color:var(--ok)">3件</div>
+      <div class="pattern-sub">#018: 9件 / 勝率75.0% / +7.1p</div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:20%; background:var(--5m)"></div></div>
     </div>
     <div class="pattern-card">
       <div class="pattern-name" style="color:var(--5m)">ASCENDING</div>
-      <div class="pattern-rate" style="color:var(--warn)">60.0%</div>
-      <div class="pattern-sub">10件 ／ +3.7 pips</div>
+      <div class="pattern-rate" style="color:var(--ok)">9件</div>
+      <div class="pattern-sub">#018: 10件 / 勝率60.0% / +3.7p</div>
       <div class="progress-wrap"><div class="progress-bar" style="width:60%; background:var(--warn)"></div></div>
     </div>
     <div class="pattern-card">
       <div class="pattern-name" style="color:var(--5m)">IHS</div>
-      <div class="pattern-rate" style="color:var(--ng)">0.0%</div>
-      <div class="pattern-sub">1件 ／ -2.2 pips（サンプル不足）</div>
-      <div class="progress-wrap"><div class="progress-bar" style="width:0%; background:var(--ng)"></div></div>
+      <div class="pattern-rate" style="color:var(--warn)">3件</div>
+      <div class="pattern-sub">#018: 1件 / 勝率0.0%（サンプル不足）</div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:20%; background:var(--ng)"></div></div>
     </div>
   </div>
 
   <div class="card card-gray" style="margin-top:16px">
+    <div class="card-title">#025 プロット評価（15枚）</div>
+    <table class="tbl">
+      <tr><td class="label">正常エントリー</td><td class="value" style="color:var(--ok)">10件</td></tr>
+      <tr><td class="label">構造確認要</td><td class="value" style="color:var(--warn)">4件（早すぎるではなく正確の可能性大）</td></tr>
+      <tr><td class="label">再評価</td><td class="note">レンジ内の正常な調整を「急落」と誤認した可能性あり</td></tr>
+    </table>
+  </div>
+
+  <div class="card card-gray">
     <div class="card-title">base_scanner 知見（#015）</div>
     <table class="tbl">
       <tr><td class="label">総イベント</td><td class="value">1,938件</td></tr>
       <tr><td class="label">NONE 比率</td><td class="value">42.1%（目標50%以下 ✅）</td></tr>
       <tr><td class="label">IHS 比率</td><td class="value">LONG全体の52.8%（最多）</td></tr>
-      <tr><td class="label">★★★ (#017前)</td><td class="value" style="color:var(--ng)">0件（neck_4h設計バグ）→ #017修正後に正常化</td></tr>
     </table>
   </div>
 
   <div class="card card-gray">
     <div class="card-title">structure_plotter 結果（#019）</div>
     <table class="tbl">
-      <tr><td class="label">総イベント</td><td class="value">16件（LONG: 13 ／ SHORT: 3）</td></tr>
-      <tr><td class="label">スキャン条件</td><td class="value">N_4H=5 ／ N_1H=3 ／ LOOKBACK_4H=100 ／ LOOKBACK_1H=240</td></tr>
-      <tr><td class="label">4H + 1H trend OK</td><td class="value" style="color:var(--ok)">16/16（全件整合）</td></tr>
-      <tr><td class="label">スキップ内訳</td><td class="value">NONE=3,002 ／ ネック越えNO=4,153 ／ 1H不整合=15</td></tr>
+      <tr><td class="label">累計目視</td><td class="value">17件（LONG: 17 ／ SHORT: 3）</td></tr>
+      <tr><td class="label">合格率</td><td class="value" style="color:var(--ok)">16/17（94%）</td></tr>
+      <tr><td class="label">NG 1件</td><td class="value" style="color:var(--ng)">20260113_0545 TOPエントリー → 15M SH密集フィルターで対応予定</td></tr>
     </table>
   </div>
 </div>
 
-<!-- ══════════════ INSTRUCTIONS ══════════════ -->
+<!-- ══ INSTRUCTIONS ══ -->
 <div id="tab-instructions" class="section">
   <div class="card card-gray">
-    <div class="card-title">指示書完了履歴</div>
+    <div class="card-title">指示書完了履歴（2026-03-31）</div>
     <table class="tbl">
-      <thead>
-        <tr><th>#</th><th>内容</th><th>主要変更</th><th>状態</th></tr>
-      </thead>
+      <thead><tr><th>#</th><th>内容</th><th>主要変更</th><th>状態</th></tr></thead>
       <tbody>
         <tr><td class="value">#001〜008</td><td class="label">Phase A 基盤構築</td><td class="note">swing_detector / entry_logic 基礎</td><td><span class="pill pill-ok">完了</span></td></tr>
         <tr><td class="value">#009</td><td class="label">決済ロジック4段階</td><td class="note">exit_logic.py 刷新</td><td><span class="pill pill-ok">完了</span></td></tr>
@@ -792,9 +607,23 @@ neck_tolerance     <span class="c-amber">±20pips</span></div>
         <tr><td class="value">#017</td><td class="label">ネック許容 pips 基準化</td><td class="note">NECK_TOLERANCE_PIPS=20.0</td><td><span class="pill pill-ok">完了</span></td></tr>
         <tr><td class="value">#018</td><td class="label">★★★ 限定 + クロス集計</td><td class="note">ALLOWED_GRADES / debug m/n</td><td><span class="pill pill-ok">完了</span></td></tr>
         <tr><td class="value">#019</td><td class="label">4H+1H 構造確認プロット</td><td class="note">structure_plotter.py / 16 PNG</td><td><span class="pill pill-ok">完了</span></td></tr>
-        <tr><td class="value" style="color:var(--4h)">#020</td><td class="label" style="color:var(--4h)">1H-4H 一致検証 + 窓プロット</td><td class="note" style="color:var(--4h)">get_nearest_swing_low_1h / test_1h_coincidence</td><td><span class="pill pill-pend">実装中</span></td></tr>
-        <tr><td class="value">#021</td><td class="label">support_1h 正式変更</td><td class="note">15M SL → 1H SL(lookback=240)</td><td><span class="pill" style="background:var(--bg3);color:var(--text-dim);border:1px solid var(--border2)">未着手</span></td></tr>
-        <tr><td class="value">#022</td><td class="label">15M エントリーロジック精査</td><td class="note">ウィンドウ内スキャン本格実装</td><td><span class="pill" style="background:var(--bg3);color:var(--text-dim);border:1px solid var(--border2)">未着手</span></td></tr>
+        <tr><td class="value">#020</td><td class="label">1H-4H 一致検証 + 窓プロット</td><td class="note">test_1h_coincidence(v2) / plot_1h_window_5m / 89件100%一致</td><td><span class="pill pill-ok">完了</span></td></tr>
+        <tr><td class="value">#020-fix</td><td class="label">プロットレンダリングバグ修正</td><td class="note">addplot→scatter / CJK→英語タイトル</td><td><span class="pill pill-ok">完了</span></td></tr>
+        <tr><td class="value">#021</td><td class="label">窓ベース階層スキャン Phase 1</td><td class="note">window_scanner.py 新規（13件・窓左端バグ発見）</td><td><span class="pill pill-ok">完了</span></td></tr>
+        <tr><td class="value">#022</td><td class="label">タイミングバグ修正</td><td class="note">sl_1h_ts追加・1H SL以降限定（3箇所）13件→2件</td><td><span class="pill pill-ok">完了</span></td></tr>
+        <tr><td class="value">#023</td><td class="label">1H 窓サイズ延長</td><td class="note">WINDOW_1H_POST 5→10 / 2件→5件</td><td><span class="pill pill-ok">完了</span></td></tr>
+        <tr><td class="value">#024a</td><td class="label">neck修正 + プロット範囲分離</td><td class="note">neck=1H SL以降初回SH / PLOT_PRE=25h / POST=40h</td><td><span class="pill pill-ok">完了</span></td></tr>
+        <tr><td class="value" style="color:var(--ok)">#025</td>
+          <td class="label" style="color:var(--ok)">固定ネック原則確定</td>
+          <td class="note" style="color:var(--ok)">neck=sh_vals.iloc[0] / 4件→15件(+275%) / 初回タッチ優先</td>
+          <td><span class="pill pill-ok">完了</span></td>
+        </tr>
+        <tr style="background:rgba(239,68,68,0.05)">
+          <td class="value" style="color:var(--ng)">#026</td>
+          <td class="label" style="color:var(--ng)">決済シミュレーション統合</td>
+          <td class="note" style="color:var(--ng)">manage_exit()統合 → P&amp;L/PF/勝率/MaxDD / 旧版比較レポート</td>
+          <td><span class="pill pill-ng">最優先</span></td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -810,43 +639,44 @@ neck_tolerance     <span class="c-amber">±20pips</span></div>
   </div>
 </div>
 
-<!-- ══════════════ ISSUES ══════════════ -->
+<!-- ══ ISSUES ══ -->
 <div id="tab-issues" class="section">
 
   <div class="issue issue-red">
-    <div class="issue-title">🔴 #020 実装中 — 1H-4H 一致検証</div>
+    <div class="issue-title">🔴 #026 最優先 — manage_exit() 統合</div>
     <div class="issue-body">
-      get_nearest_swing_low_1h(lookback=240) 追加 → test_1h_coincidence.py で 4H SL との距離分布を計測。<br>
-      合格ライン: 1H SL 検出率 90%以上 ／ 4H SLとの距離 中央値 ≤20pips ／ ≤10pips 一致率 70%以上
+      window_scanner.py に決済シミュレーションを統合。exit_logic.py は変更しない。<br>
+      ① エントリー記録から manage_exit() を呼び出す決済ループ<br>
+      ② 損益・PF・勝率・MaxDD の計算<br>
+      ③ 結果CSV出力（エントリー+決済+損益）<br>
+      完了条件: 旧版 backtest.py (#018) との比較レポート出力
     </div>
   </div>
 
   <div class="issue issue-yellow">
-    <div class="issue-title">🟡 #021 待機中 — support_1h 正式変更</div>
+    <div class="issue-title">🟡 15M SH 密集フィルター（将来課題）</div>
     <div class="issue-body">
-      現行: get_nearest_swing_low_15m(lookback=20) = 5時間分のみ → 矛盾<br>
-      修正: get_nearest_swing_low_1h(lookback=240) = 10日分 → #020 検証合格後に実施
+      4本以上密集時はエントリー見送り → 20260113_0545 TOPエントリーNG事例対応。<br>
+      #026 結果を見て優先度を判断。
     </div>
   </div>
 
   <div class="issue issue-yellow">
-    <div class="issue-title">🟡 #022 待機中 — 15M エントリーロジック本格精査</div>
+    <div class="issue-title">🟡 IHS サンプル数（#025 Phase 1: 3件）</div>
     <div class="issue-body">
-      #020 ウィンドウプロット目視確認後に設計着手。<br>
-      ウィンドウ内 5M SH/SL スキャン → 15M DB / IHS / ASCENDING をシンプルに検出
-    </div>
-  </div>
-
-  <div class="issue issue-yellow">
-    <div class="issue-title">🟡 IHS サンプル不足（1件）</div>
-    <div class="issue-body">
-      ALLOWED_PATTERNS に残して継続監視。サンプルが10件以上揃ってから評価。
+      #018: 1件(勝率0%) → #025: 3件。評価にはまだ不十分。<br>
+      ALLOWED_PATTERNS に残して継続監視。サンプル10件以上で評価。
     </div>
   </div>
 
   <div class="issue" style="border-color:var(--muted)">
+    <div class="issue-title" style="color:var(--text-dim)">⬜ Phase 2 — 15M 右肩内 5M DB ネスト（#027以降）</div>
+    <div class="issue-body">15M DB/IHS 右肩検出 → 右肩内で5M DBネック実体上抜け。Phase 1との比較で改善幅を定量確認。</div>
+  </div>
+
+  <div class="issue" style="border-color:var(--muted)">
     <div class="issue-title" style="color:var(--text-dim)">⬜ Phase D — volume_alert.py</div>
-    <div class="issue-body">出来高急増検知 + LINE通知。#022完了後着手。</div>
+    <div class="issue-body">出来高急増検知 + LINE通知。#026完了後着手。</div>
   </div>
 
   <div class="issue" style="border-color:var(--muted)">
@@ -860,50 +690,63 @@ neck_tolerance     <span class="c-amber">±20pips</span></div>
   </div>
 </div>
 
-<!-- ══════════════ HANDOFF ══════════════ -->
+<!-- ══ HANDOFF ══ -->
 <div id="tab-handoff" class="section">
 
   <div class="handoff">
-    <div class="handoff-title"><span class="dot"></span> 新スレッド引き継ぎプロンプト（随時更新）</div>
+    <div class="handoff-title"><span class="dot"></span> 新スレッド引き継ぎプロンプト（2026-03-31更新）</div>
     <div class="code" id="handoff-text" style="white-space:pre-wrap; font-size:11px; line-height:1.8; cursor:text">
 <span class="c-dim"># REX Project Invasion — 新スレッド引き継ぎ</span>
-<span class="c-dim"># 最終更新: 2026-03-24 / 最終指示書: #020</span>
+<span class="c-dim"># 最終更新: 2026-03-31 / 最終指示書: #025完了 / 次: #026</span>
 
 ultrathink
 
 <span class="c-amber">## 現在地</span>
-- 完了: 指示書 #001〜#019
-- 進行中: #020（1H-4H 一致検証 + 26本ウィンドウプロット）
+- 完了: 指示書 #001〜#025（#020-fix含む）
+- 次の最優先: #026 — window_scanner.py に manage_exit() 統合
 
-<span class="c-amber">## 最新バックテスト（#018確定）</span>
+<span class="c-amber">## #025 完了結果（固定ネック原則確定）</span>
+スキャン窓: 33件 / エントリー検出: 15件 (+275% from #024a)
+パターン別: DB:3 / IHS:3 / ASCENDING:9
+neck = sh_vals.iloc[0]（1H SL以降の最初の15M SH = 固定ネック）
+決済シミュレーション: 未統合（#026で実施）
+
+<span class="c-amber">## 旧版バックテスト（#018確定・変更凍結）</span>
 総トレード: 20件 / 勝率: 55.0% / PF: 5.32
 MaxDD: 14.9 pips / 総損益: +91.6 pips
 ★★★ LONG のみ / WICKTOL=5.0
 
-<span class="c-amber">## 確定パラメータ（entry_logic.py）</span>
+<span class="c-amber">## window_scanner.py 確定パラメータ</span>
 DIRECTION_MODE      = 'LONG'
-ALLOWED_GRADES      = ['★★★']
 ALLOWED_PATTERNS    = ['DB', 'ASCENDING', 'IHS']
-WICKTOL_PIPS        = 5.0
+WINDOW_1H_PRE       = 20
+WINDOW_1H_POST      = 10
+PRICE_TOL_PIPS      = 20.0
 MIN_4H_SWING_PIPS   = 20.0
+WICKTOL_PIPS        = 5.0
 LOOKBACK_15M_RANGE  = 50
-NECK_TOLERANCE_PIPS = 20.0
-WARMUP_BARS         = 1728
+PLOT_PRE_H          = 25
+PLOT_POST_H         = 40
+neck                = sh_vals.iloc[0]  # 固定ネック原則
 
-<span class="c-amber">## #020 設計方針（NEW — 3層アーキテクチャ）</span>
-1. 1H(lookback=240) から 4H SL + 1H SL 最安値を同時抽出
-2. 4H SL ≒ 1H SL（≤10pips）の一致イベントを特定
-3. 1H SL 足: 前20本 + SL足 + 後5本 = 26本ウィンドウを切り出し
-4. ウィンドウ内 5M SH/SL → DB/IHS/ASCENDING 検出
-5. ネック実体確定 → エントリー
+<span class="c-amber">## #026 実装内容</span>
+① window_scanner.py に manage_exit() 統合（exit_logic.py は変更しない）
+② 各エントリーに対して決済シミュレーションを実行
+③ 損益・PF・勝率・MaxDD を計算してCSV/コンソール出力
+④ 旧版 backtest.py (#018) との比較レポートを生成
 
-<span class="c-amber">## 次スレッドの最初のアクション</span>
-#020 実行結果（test_1h_coincidence.py の数値）を確認し、
-合格（≤10pips 一致率 ≥70%）であれば plot_1h_window_5m() のプロットを目視。
-その後 #021（support_1h 正式変更）へ進む。
+<span class="c-amber">## ClaudeCode 不変ルール（ADR準拠）</span>
+1. 既存関数呼出前に必ず実ファイルの def 行を read する
+2. backtest.py / entry_logic.py / exit_logic.py / swing_detector.py は
+   明示的に許可されない限り変更しない
+3. resample_tf は label='right', closed='right' で統一
+4. mplfinance は returnfig=True パターンのみ
+5. 全トレランスは pip ベース（PCT ベース禁止）
 
 <span class="c-amber">## 参照ファイル</span>
-EX_DESIGN_CONFIRMED-2026-3-22.md / PLOT_DESIGN_CONFIRMED.md</div>
+EX_DESIGN_CONFIRMED-2026-3-31.md
+ADR-2026-3-31_updated.md
+PLOT_DESIGN_CONFIRMED-2026-3-31.md</div>
   </div>
 
   <div class="card card-gray">
@@ -950,11 +793,11 @@ masterへのmerge: テスト確認後
 </div><!-- end main -->
 
 <script>
-function showTab(name) {
+function showTab(e, name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  event.target.classList.add('active');
+  e.target.classList.add('active');
 }
 </script>
 </body>
