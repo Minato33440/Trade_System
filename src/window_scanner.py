@@ -8,6 +8,14 @@ REX Window Scanner — 窓ベース階層スキャン（Phase 1: シンプル版
   - backtest.py / entry_logic.py / exit_logic.py / swing_detector.py を変更しない
   - resample_tf の label='right', closed='right' を変更しない
   - manage_exit() の統合は #022 以降
+
+#026a 変更内容:
+  - neck_15m: SL「以降」最初のSH → SL「以前」最後のSH（統一ネック原則）
+  - neck_1h 追加: 窓内かつSL以前の最後の1H SH
+  - neck_4h 追加: sl_4h_ts 以前の最後の4H SH（4Hデータ全体から取得）
+  - None ガード: いずれかがNoneのエントリーはCSV除外
+  - CSV: 10カラム → 12カラム（neck_1h, neck_4h 追加）
+  - プロット: neck_1h（オレンジ破線）/ neck_4h（赤紫破線）追加
 """
 from __future__ import annotations
 
@@ -129,7 +137,7 @@ def get_1h_window_range(
     close_enough   = sl_1h_near[dists <= PRICE_TOL_PIPS * PIP]
     sl_1h_ts = close_enough.index[0] if len(close_enough) > 0 else dists.idxmin()
 
-    # 窓範囲を確定（前 20本 + SL足 + 後 5本）
+    # 窓範囲を確定（前 20本 + SL足 + 後 10本）
     idx_sl  = df_1h.index.get_loc(sl_1h_ts)
     win_start = df_1h.index[max(0, idx_sl - WINDOW_1H_PRE)]
     win_end   = df_1h.index[min(len(df_1h) - 1, idx_sl + WINDOW_1H_POST)]
@@ -142,13 +150,18 @@ def get_1h_window_range(
 def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Timestamp):
     """窓内の 5M データから 15M DB/IHS 検出 → 5M ネック越えエントリーを返す。
 
+    #026a 変更:
+      - neck_15m: SL「以前」の最後の15M SH（統一ネック原則）
+      - neck_1h:  窓内かつSL「以前」の最後の1H SH（新規追加）
+      - neck_15m / neck_1h が None の場合は None を返す
+
     Args:
         df_5m_win : 窓内の 5M 足 DataFrame（open/high/low/close）
         sl_4h_val : 4H SL の価格（エントリー情報として記録）
-        sl_1h_ts  : 1H SL のタイムスタンプ（ネック越えループの開始位置限定）
+        sl_1h_ts  : 1H SL のタイムスタンプ（ネック計算・ネック越えループの基準）
 
     Returns:
-        エントリー情報 dict、またはエントリー未発生の場合 None
+        エントリー情報 dict（neck_1h を含む）、またはエントリー未発生/Noneの場合 None
     """
     if len(df_5m_win) < 30:
         return None
@@ -171,15 +184,27 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
     if pattern not in ALLOWED_PATTERNS:
         return None
 
-    # --- neck = 1H SL 以降の 15M SH 最高値（★修正点: check_15m_range_low の neck は使わない）---
-    df_15m_after_sl = df_15m_win.loc[sl_1h_ts:]
-    if len(df_15m_after_sl) < 3:
+    # --- neck_15m = 窓内かつ 1H SL 以前 の最後の 15M SH (#026a 統一ネック原則) ---
+    # 正しいneckは「底（SL）の直前にあった最後の抵抗線（SH）」
+    df_15m_before_sl = df_15m_win[df_15m_win.index < sl_1h_ts]
+    if len(df_15m_before_sl) < 3:
         return None
-    sh_mask = detect_swing_highs(df_15m_after_sl['high'], n=3)
-    sh_vals = df_15m_after_sl['high'][sh_mask]
-    if len(sh_vals) == 0:
+    sh_mask_15m = detect_swing_highs(df_15m_before_sl['high'], n=3)
+    sh_vals_15m = df_15m_before_sl['high'][sh_mask_15m]
+    if len(sh_vals_15m) == 0:
+        print(f"  → SKIP: neck_15m=None (sl_1h_ts={sl_1h_ts}, 15M SH before SL not found)")
         return None
-    neck_15m = float(sh_vals.iloc[0])  # ★後期バイアス修正: 最高値→最初のSH（初回反発ピーク）
+    neck_15m = float(sh_vals_15m.iloc[-1])  # SL直前の最後のSH = 正しいneck
+
+    # --- neck_1h = 窓内かつ 1H SL 以前 の最後の 1H SH (#026a 新規追加) ---
+    df_1h_win = resample_tf(df_5m_win, '1h')
+    sh_mask_1h = detect_swing_highs(df_1h_win['high'], n=2)
+    sh_vals_1h_all = df_1h_win['high'][sh_mask_1h]
+    sh_1h_before = sh_vals_1h_all[sh_vals_1h_all.index < sl_1h_ts]
+    if len(sh_1h_before) == 0:
+        print(f"  → SKIP: neck_1h=None (sl_1h_ts={sl_1h_ts}, 1H SH before SL not found)")
+        return None
+    neck_1h = float(sh_1h_before.iloc[-1])  # SL直前の最後の1H SH
 
     # --- 5M ネック越え実体確定（#022修正済み: sl_1h_ts 以降から走査）---
     sl_1h_idx = df_5m_win.index.searchsorted(sl_1h_ts)
@@ -190,6 +215,7 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
             return {
                 'pattern':     pattern,
                 'neck_15m':    neck_15m,
+                'neck_1h':     neck_1h,
                 'confirm_ts':  df_5m_win.index[j],
                 'entry_ts':    df_5m_win.index[j + 1],
                 'entry_price': float(entry_bar['open']),
@@ -209,10 +235,12 @@ def save_entry_plot(
 ) -> None:
     """検出エントリーの 5M チャート + 参照線を PNG 保存する。
 
-    表示要素（PLOT_DESIGN_CONFIRMED 仕様）:
+    表示要素（#026a更新）:
       - 5M ローソク足
       - 5M SH/SL マーカー（scatter）
       - 15M neck 水平線（黄緑 #ADFF2F）
+      - 1H neck 水平線（オレンジ orange）  ← #026a追加
+      - 4H neck 水平線（赤紫 #c084fc）     ← #026a追加
       - 4H SL 水平線（青 #1E90FF）
       - 1H SL 垂直線（シアン #00FFFF）
       - エントリー時刻垂直線（赤 #FF0000）
@@ -229,6 +257,8 @@ def save_entry_plot(
     sl_1h_ts    = entry['sl_1h_ts']
     entry_ts    = entry['entry_ts']
     neck_15m    = entry['neck_15m']
+    neck_1h     = entry.get('neck_1h')
+    neck_4h     = entry.get('neck_4h')
     sl_4h_val   = entry['sl_4h']
     pattern     = entry['pattern']
     entry_price = entry['entry_price']
@@ -277,11 +307,29 @@ def save_entry_plot(
     if sl_x:
         ax.scatter(sl_x, sl_y, marker='^', s=60, color='#87CEEB', zorder=5)
 
-    # ---- 15M neck 水平線 ----
+    # ---- 15M neck 水平線（黄緑）----
     ax.axhline(y=neck_15m, color='#ADFF2F', linewidth=1.5,
                linestyle='--', label=f'15M neck {neck_15m:.3f}')
 
-    # ---- 4H SL 水平線 ----
+    # ---- 1H neck 水平線（オレンジ）#026a追加 ----
+    if neck_1h is not None:
+        ax.axhline(y=neck_1h, color='orange', linewidth=0.8,
+                   linestyle='--', label=f'1H neck {neck_1h:.3f}')
+
+    # ---- 4H neck 水平線（赤紫）#026a追加 ----
+    # プロット範囲外の場合も凡例には記載する
+    if neck_4h is not None:
+        ymin, ymax = ax.get_ylim()
+        if ymin <= neck_4h <= ymax:
+            ax.axhline(y=neck_4h, color='#c084fc', linewidth=0.8,
+                       linestyle='--', label=f'4H neck {neck_4h:.3f}')
+        else:
+            # 範囲外: 凡例のみ（描画はスキップ）
+            ax.axhline(y=neck_4h, color='#c084fc', linewidth=0.8,
+                       linestyle='--', label=f'4H neck {neck_4h:.3f} (out of range)',
+                       alpha=0.0)
+
+    # ---- 4H SL 水平線（青）----
     ax.axhline(y=sl_4h_val, color='#1E90FF', linewidth=1.5,
                linestyle='--', label=f'4H SL {sl_4h_val:.3f}')
 
@@ -305,9 +353,11 @@ def save_entry_plot(
 
     # ---- タイトル（英語: CJK豆腐対策）----
     ts_str = pd.Timestamp(sl_1h_ts).strftime('%Y%m%d_%H%M')
+    n1h_str = f'{neck_1h:.3f}' if neck_1h is not None else 'N/A'
+    n4h_str = f'{neck_4h:.3f}' if neck_4h is not None else 'N/A'
     ax.set_title(
         f'[{idx:02d}/{total}] {ts_str} LONG  pat={pattern}'
-        f'  entry={entry_price:.3f}  neck={neck_15m:.3f}  sl4h={sl_4h_val:.3f}',
+        f'  entry={entry_price:.3f}  n15={neck_15m:.3f}  n1h={n1h_str}  n4h={n4h_str}',
         color='white', fontsize=10
     )
     ax.legend(facecolor='#1e222d', labelcolor='white', fontsize=9)
@@ -347,9 +397,14 @@ def run_window_scan() -> pd.DataFrame:
 
     print(f"Data: 5M={len(df_5m)} / 1H={len(df_1h)} / 4H={len(df_4h)}")
 
+    # ---- 4H SH を全体から事前計算（neck_4h 算出用・ループ内で毎回計算しない）----
+    sh_flags_4h_all = detect_swing_highs(df_4h['high'], n=3)
+    sh_vals_4h_all  = df_4h['high'][sh_flags_4h_all]
+
     # ---- スキャン ----
     entries      = []
     seen_windows = set()  # 同一窓の重複スキップ用
+    skip_none    = 0      # neck=None でスキップした件数
 
     for (i_4h, ts_4h, sl_4h_val, sl_4h_ts) in scan_4h_events(df_4h):
 
@@ -364,7 +419,7 @@ def run_window_scan() -> pd.DataFrame:
             continue
         win_start, win_end, sl_1h_ts = win_result
 
-        # 窓幅チェック（作業①: 35h超を警告）
+        # 窓幅チェック（35h超を警告）
         win_hours = (win_end - win_start).total_seconds() / 3600
         if win_hours > 35:
             print(f"  [WARN] 窓幅異常: {win_start} ~ {win_end} = {win_hours:.1f}h")
@@ -374,11 +429,21 @@ def run_window_scan() -> pd.DataFrame:
         if len(df_5m_win) < 30:
             continue
 
-        # Layer 3: 窓内エントリースキャン
+        # Layer 3: 窓内エントリースキャン（neck_15m / neck_1h を含む dict を返す）
         entry = scan_window_entry(df_5m_win, sl_4h_val, sl_1h_ts)
         if entry is None:
             continue
 
+        # ---- neck_4h = sl_4h_ts 以前の最後の 4H SH (#026a 新規追加) ----
+        sh_4h_before = sh_vals_4h_all[sh_vals_4h_all.index < sl_4h_ts]
+        if len(sh_4h_before) == 0:
+            print(f"  → SKIP: neck_4h=None (sl_4h_ts={sl_4h_ts}, 4H SH not found)")
+            skip_none += 1
+            continue
+        neck_4h = float(sh_4h_before.iloc[-1])
+
+        # ---- 全 neck が揃った: エントリー確定 ----
+        entry['neck_4h']  = neck_4h
         entry['ts_4h']    = ts_4h
         entry['sl_4h_ts'] = sl_4h_ts
         entry['sl_1h_ts'] = sl_1h_ts
@@ -386,33 +451,47 @@ def run_window_scan() -> pd.DataFrame:
         entries.append(entry)
 
         print(f"  ENTRY: {entry['entry_ts']} @ {entry['entry_price']:.3f}"
-              f" | pat={entry['pattern']} | neck={entry['neck_15m']:.3f}")
+              f" | pat={entry['pattern']}"
+              f" | n15={entry['neck_15m']:.3f}"
+              f" | n1h={entry['neck_1h']:.3f}"
+              f" | n4h={neck_4h:.3f}")
 
     # ---- 結果出力 ----
-    df_entries = pd.DataFrame(entries)
-    total      = len(df_entries)
+    # カラム順を仕様通りに固定（12カラム）
+    col_order = [
+        'pattern', 'neck_15m', 'neck_1h', 'neck_4h',
+        'confirm_ts', 'entry_ts', 'entry_price',
+        'sl_4h', 'ts_4h', 'sl_4h_ts', 'sl_1h_ts', 'window',
+    ]
+    if entries:
+        df_entries = pd.DataFrame(entries)[col_order]
+    else:
+        df_entries = pd.DataFrame(columns=col_order)
 
-    print(f"\n=== Window Scanner Phase 1 結果 ===")
-    print(f"スキャン窓数     : {len(seen_windows)}")
-    print(f"エントリー検出数 : {total}")
+    total = len(df_entries)
+
+    print(f"\n=== Window Scanner #026a Results ===")
+    print(f"Scan windows       : {len(seen_windows)}")
+    print(f"Entries detected   : {total}  (#025: 15)")
+    print(f"Skipped (neck=None): {skip_none}")
 
     if total > 0:
         for pat in ['DB', 'IHS', 'ASCENDING']:
             n = len(df_entries[df_entries['pattern'] == pat])
-            print(f"  {pat}: {n} 件")
+            print(f"  {pat}: {n}  (#025: DB=3, IHS=3, ASCENDING=9)")
 
     # CSV 保存
     out_path = _repo_root / 'logs/window_scan_entries.csv'
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df_entries.to_csv(out_path, index=False)
-    print(f"\n結果CSV: {out_path}")
+    print(f"\nCSV: {out_path}")
 
     # ---- プロット生成 ----
     if total > 0:
-        print(f"\nプロット生成中 ({total}件)...")
+        print(f"\nGenerating plots ({total})...")
         for i, row in enumerate(entries, start=1):
             save_entry_plot(df_5m, row, idx=i, total=total)
-        print(f"プロット保存先: {PLOT_OUT_DIR}")
+        print(f"Plots saved: {PLOT_OUT_DIR}")
 
     return df_entries
 
