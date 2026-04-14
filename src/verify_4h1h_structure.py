@@ -62,8 +62,8 @@ sh_4h_vals  = df_4h['high'][sh_4h_flags]   # 4H SH の価格 Series
 sl_4h_vals  = df_4h['low'][sl_4h_flags]    # 4H SL の価格 Series
 
 # 1H Swing: n=2（window_scanner.py: get_1h_window_range と同値）
-sh_1h_flags = detect_swing_highs(df_1h['high'], n=2)
-sl_1h_flags = detect_swing_lows(df_1h['low'],   n=2)
+sh_1h_flags = detect_swing_highs(df_1h['high'], n=3)
+sl_1h_flags = detect_swing_lows(df_1h['low'],   n=3)
 sh_1h_vals  = df_1h['high'][sh_1h_flags]   # 1H SH の価格 Series
 sl_1h_vals  = df_1h['low'][sl_1h_flags]    # 1H SL の価格 Series
 
@@ -124,7 +124,7 @@ def plot_verify(start_str: str, end_str: str, save_name: str):
     # タイトル設定（日本語禁止・ADR C-5）
     ax.set_title(
         f'4H/1H Structure Verify  {start_str} ~ {end_str}\n'
-        f'4H SH/SL: n=3  |  1H SH/SL: n=2',
+        f'4H SH/SL: n=3  |  1H SH/SL: n=3',
         fontsize=11, color='white', pad=10
     )
 
