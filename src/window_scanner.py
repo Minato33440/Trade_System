@@ -50,6 +50,7 @@ WICKTOL_PIPS   = 5.0     # 5M ネック越え許容 pips（実体下端 > neck +
 PIP            = 0.01    # USDJPY 1pip = 0.01 円
 PLOT_PRE_H     = 25      # プロット: 1H SL 前 25時間（スキャン窓とは独立）
 PLOT_POST_H    = 40      # プロット: 1H SL 後 40時間
+N_1H_SWING     = 3       # 1H Swing検出パラメータ（#026a-v2 確定）
 
 
 # ========== リサンプル（backtest.py と同一。変更禁止） ==========
@@ -125,7 +126,7 @@ def get_1h_window_range(
     we = min(len(df_1h) - 1, idx_center + WINDOW_SEARCH)
     search_window = df_1h['low'].iloc[ws:we + 1]
 
-    mask = detect_swing_lows(search_window, n=2)
+    mask = detect_swing_lows(search_window, n=N_1H_SWING)
     sl_1h_near = search_window[mask]
     if len(sl_1h_near) == 0:
         return None
@@ -198,7 +199,7 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
 
     # --- neck_1h = 窓内かつ 1H SL 以前 の最後の 1H SH (#026a 新規追加) ---
     df_1h_win = resample_tf(df_5m_win, '1h')
-    sh_mask_1h = detect_swing_highs(df_1h_win['high'], n=2)
+    sh_mask_1h = detect_swing_highs(df_1h_win['high'], n=N_1H_SWING)
     sh_vals_1h_all = df_1h_win['high'][sh_mask_1h]
     sh_1h_before = sh_vals_1h_all[sh_vals_1h_all.index < sl_1h_ts]
     if len(sh_1h_before) == 0:
