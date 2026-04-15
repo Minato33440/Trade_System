@@ -314,7 +314,7 @@ def save_entry_plot(
 
     # ---- 1H neck 水平線（オレンジ）#026a追加 ----
     if neck_1h is not None:
-        ax.axhline(y=neck_1h, color='orange', linewidth=0.8,
+        ax.axhline(y=neck_1h, color='#FFA500', linewidth=0.8,
                    linestyle='--', label=f'1H neck {neck_1h:.3f}')
 
     # ---- 4H neck 水平線（赤紫）#026a追加 ----
@@ -322,11 +322,11 @@ def save_entry_plot(
     if neck_4h is not None:
         ymin, ymax = ax.get_ylim()
         if ymin <= neck_4h <= ymax:
-            ax.axhline(y=neck_4h, color='#c084fc', linewidth=0.8,
+            ax.axhline(y=neck_4h, color='#DA70D6', linewidth=0.8,
                        linestyle='--', label=f'4H neck {neck_4h:.3f}')
         else:
             # 範囲外: 凡例のみ（描画はスキップ）
-            ax.axhline(y=neck_4h, color='#c084fc', linewidth=0.8,
+            ax.axhline(y=neck_4h, color='#DA70D6', linewidth=0.8,
                        linestyle='--', label=f'4H neck {neck_4h:.3f} (out of range)',
                        alpha=0.0)
 
@@ -338,7 +338,7 @@ def save_entry_plot(
     idx_sl = df_plot.index.searchsorted(sl_1h_ts, side='left')
     if idx_sl < len(df_plot):
         try:
-            ax.axvline(x=idx_sl, color='#00FFFF', linewidth=1.0,
+            ax.axvline(x=idx_sl, color='#00CED1', linewidth=1.0,
                        linestyle=':', label='1H SL')
         except Exception:
             pass
@@ -347,7 +347,7 @@ def save_entry_plot(
     idx_entry = df_plot.index.searchsorted(entry_ts, side='left')
     if idx_entry < len(df_plot):
         try:
-            ax.axvline(x=idx_entry, color='#FF0000', linewidth=2.0,
+            ax.axvline(x=idx_entry, color='#FF4444', linewidth=2.0,
                        linestyle='-', label=f'Entry {entry_price:.3f}')
         except Exception:
             pass
@@ -442,6 +442,17 @@ def run_window_scan() -> pd.DataFrame:
             skip_none += 1
             continue
         neck_4h = float(sh_4h_before.iloc[-1])
+
+        # ---- None ガード（#026a-v2 必須）----
+        neck_15m = entry.get('neck_15m')
+        neck_1h = entry.get('neck_1h')
+        if neck_15m is None or neck_1h is None or neck_4h is None:
+            print(
+                f"  → SKIP(neck=None): "
+                f"neck15m={neck_15m}, n1h={neck_1h}, n4h={neck_4h}"
+            )
+            skip_none += 1
+            continue
 
         # ---- 全 neck が揃った: エントリー確定 ----
         entry['neck_4h']  = neck_4h
