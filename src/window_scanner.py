@@ -47,6 +47,7 @@ WINDOW_1H_POST = 10   # 1H窓: SL足の後 10本（5 → 10に延長）
 WINDOW_SEARCH  = 8    # 4H SL ts 前後 ±8本(8時間)で 1H SL を探す範囲
 DIRECTION_MODE = 'LONG'  # SHORT は将来対応
 WICKTOL_PIPS   = 5.0     # 5M ネック越え許容 pips（実体下端 > neck + 5pips）
+ENTRY_OFFSET_PIPS = 7.0  # 指値エントリー: neck_15m からのオフセット pips（#026c）
 PIP            = 0.01    # USDJPY 1pip = 0.01 円
 PLOT_PRE_H     = 25      # プロット: 1H SL 前 25時間（スキャン窓とは独立）
 PLOT_POST_H    = 40      # プロット: 1H SL 後 40時間
@@ -207,19 +208,20 @@ def scan_window_entry(df_5m_win: pd.DataFrame, sl_4h_val: float, sl_1h_ts: pd.Ti
         return None
     neck_1h = float(sh_1h_before.iloc[-1])  # SL直前の最後の1H SH
 
-    # --- 5M ネック越え実体確定（#022修正済み: sl_1h_ts 以降から走査）---
+    # --- 5M 指値エントリー判定（#026c: neck_15m + 7pips 到達で約定）---
+    entry_level = neck_15m + ENTRY_OFFSET_PIPS * PIP
     sl_1h_idx = df_5m_win.index.searchsorted(sl_1h_ts)
-    for j in range(sl_1h_idx, len(df_5m_win) - 1):
+    for j in range(sl_1h_idx, len(df_5m_win)):
         row = df_5m_win.iloc[j]
-        if min(float(row['open']), float(row['close'])) > neck_15m + WICKTOL_PIPS * PIP:
-            entry_bar = df_5m_win.iloc[j + 1]
+        if float(row['high']) >= entry_level:
+            bar_ts = df_5m_win.index[j]
             return {
                 'pattern':     pattern,
                 'neck_15m':    neck_15m,
                 'neck_1h':     neck_1h,
-                'confirm_ts':  df_5m_win.index[j],
-                'entry_ts':    df_5m_win.index[j + 1],
-                'entry_price': float(entry_bar['open']),
+                'confirm_ts':  bar_ts,
+                'entry_ts':    bar_ts,
+                'entry_price': entry_level,
                 'sl_4h':       sl_4h_val,
             }
 
