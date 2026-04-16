@@ -2,7 +2,7 @@
 
 > 最終更新: 2026-03-27
 > 設計確定文書: `docs/EX_DESIGN_CONFIRMED-2026-3-26_2.md`（本ファイルと必ず併読）
-> リポジトリ: GitHub `Minato33440/UCAR_DIALY`
+> リポジトリ: GitHub `Minato33440/Trade_System`
 
 ---
 
@@ -154,7 +154,7 @@ LAYER 3 — 窓内 15M/5M スキャン
 ### エグジット 4段階
 
 | 段階 | トリガー | 決済内容 |
-|------|---------|---------|
+|------|---------|---------| 
 | **初動SL** | エントリー直後〜5M Swing確定前 | 15M ダウ崩れ実体確定→次足始値で全量損切 |
 | **段階1** | 5M Swing確定後〜1H ネック未到達 | 5M ダウ崩れ実体確定→次の5M始値で全量決済 |
 | **段階2** | 4H ネックライン到達 | 50%決済・残り50%のSLを建値移動（ノーリスク化） |
@@ -163,7 +163,7 @@ LAYER 3 — 窓内 15M/5M スキャン
 ### パラメータ確定値
 
 | 定数 | 値 | 確定タイミング |
-|------|----|--------------|
+|------|----|--------------| 
 | `DIRECTION_MODE` | `'LONG'`（SHORT一時停止） | #012 |
 | `MAX_REENTRY` | 1 | #020 |
 | `WICKTOL_PIPS` | 5.0 | #013 |
@@ -189,8 +189,6 @@ data_fetch.py :: fetch_multi_tf()
 前処理（UTC→JST変換・TFごとffill）
 
 【旧エンジン — ベースライン保持・変更凍結】
-        ↓
-signals.py（廃止方向）
         ↓
 entry_logic.py :: evaluate_entry()（3ステップ）
         ↓
@@ -234,66 +232,14 @@ exit_logic :: manage_exit() 統合 → P&L・PF・勝率・MaxDD 計算
 
 ---
 
-## --trade モード フロー（週末 GM レビュー）
-
-```
-python main.py --trade [--news]
-        ↓
-market.py :: fetch_trade_data()（8ペア 30日）
-        ↓
-regime.py :: build_regime_snapshot()
-  └─ equities / volatility / oil / gold / crypto / yields を判定
-  └─ ラベル例: "Geopolitical Risk-Off + Energy Shock"
-        ↓
-plotter.py :: save_normalized_plot()
-  └─ logs/png_data/multi_pairs_plot_8.png 保存
-        ↓
-YAML スナップショット保存
-  └─ logs/png_data/YYYY_MM_DD_snapshot.yaml
-        ↓
-rex_chat.py :: インタラクティブ対話
-  └─ systemメッセージにレジーム・市場データを注入した状態で開始
-```
-
----
-
-## 現在の運用フロー（週末の理想形）
-
-1. **データ取得 & Rex 対話**
-   ```
-   python main.py --trade [--news]
-   ```
-   → 8ペア30日データ取得・レジーム判定
-   → `logs/png_data/` に `multi_pairs_plot_8.png` と `YYYY_MM_DD_snapshot.yaml` を自動保存
-   → レジームサマリー注入済みで Rex との対話開始
-
-2. **バックテスト実行（確認用）**
-   ```
-   python src/backtest.py
-   ```
-   → 旧版 #018 ベースライン確認用（変更凍結）
-
-3. **週末 Git 更新（手動）**
-   - `multi_pairs_plot_8.png` → 当該週の `logs/gm/weekly/2026/YYYY-MM-DD_wkNN/charts/` にコピー
-   - `YYYY_MM_DD_snapshot.yaml` の `regime.label` を `meta.yaml` の `signals` に追記
-   - 詳細: `docs/WEEKLY_UPDATE_WORKFLOW.md` 参照
-
-4. **レビュー生成**
-   Rex に「このデータで週明け動向分析して」と依頼 → `review.md` / `meta.yaml` にコピペ
-
----
-
 ## 次のステップ（開発ロードマップ）
 
 | 優先度 | # | 内容 |
 |--------|---|------|
-| 🔴 最優先 | #024 | `window_scanner.py` に `manage_exit()` を統合 → 5件の P&L シミュレーション・PF/MaxDD 計算 → 旧版 #018（PF 5.32）と比較 |
+| 🔴 最優先 | #024 | `window_scanner.py` に `manage_exit()` を統合 → P&L シミュレーション・PF/MaxDD 計算 |
 | 🟡 次フェーズ | Phase 2 | 15M 右肩内での 5M DB ネック実体上抜けによる精度向上版エントリー |
-| 🟡 次フェーズ | 窓幅精査 | `get_1h_window_range()` の境界計算統一（実害なし・Phase 2 で対応） |
 | ⬜ 将来 | Phase D | `volume_alert.py` — 出来高急増検知 + LINE 通知 |
 | ⬜ 将来 | Phase 3 | Vision AI 自動チェック（PNG → Gemini/GPT-4o） |
-| ⬜ 将来 | — | SHORT 運用再開（サンプル充足後） |
-| ⬜ 将来 | — | マルチペア拡張（EUR/JPY・XAU/USD 等） |
 
 ---
 
@@ -303,18 +249,9 @@ rex_chat.py :: インタラクティブ対話
 |---|---------|------|
 | #001〜#008 | Phase A 基盤構築（swing_detector / entry_logic 基礎） | 完了 |
 | #009 | 決済ロジック 4段階実装（exit_logic.py 刷新） | 完了 |
-| #010 | MIN_4H_SWING_PIPS=20 導入（4H幅ガード） | 完了 |
-| #011 | 15M 統合レンジロジック（DB/IHS/ASCENDING 統合） | 完了 |
-| #012 | LONG限定化・フォールバック修正・WARMUP_BARS=1728 | 完了 |
-| #013 | WICKTOL_PIPS=5.0・IHSフラグ除外 | 完了 |
-| #014 | IHS 復活・LOOKBACK_15M_RANGE=50 | 完了 |
-| #015 | base_scanner.py 新規作成（4H+15M基礎スキャン） | 完了 |
-| #016 | neck_4h=1H SH に修正（★★★が成立しないバグ修正） | 完了 |
-| #017 | NECK_TOLERANCE_PIPS=20.0（pips 基準修正） | 完了 |
-| #018 | ALLOWED_GRADES=['★★★']・クロス集計 → **PF 5.32 / MaxDD 14.9 pips** | 完了・凍結 |
+| #010〜#018 | パラメータ最適化・機能追加 → **PF 5.32 / MaxDD 14.9 pips** | 完了・凍結 |
 | #019 | structure_plotter.py 新規・4H+1H構造確認（16枚） | 完了 |
 | #020 | 1H-4H 一致検証（100%・数学的必然）・窓プロット | 完了 |
-| #020-fix | plotter.py バグ修正（addplot→scatter / CJK→英語） | 完了 |
 | #021 | window_scanner.py 新規作成（窓左端バグあり・13件誤検出） | 完了 |
 | #022 | タイミングバグ修正（1H SL 以降限定）→ 2件 | 完了 |
 | #023 | WINDOW_1H_POST=10 に延長 → **5件（DB:2/IHS:1/ASCENDING:2）** | 完了 |
@@ -324,7 +261,7 @@ rex_chat.py :: インタラクティブ対話
 ## 思考フラグ運用ルール（ClaudeCode 向け）
 
 | フラグ | 使うタイミング |
-|--------|--------------|
+|--------|--------------| 
 | `think` | 単純な修正・パラメータ変更 |
 | `think hard` | 複数ファイル修正・バグ修正 |
 | `think harder` | 設計判断が必要な実装 |
