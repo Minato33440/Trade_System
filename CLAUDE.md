@@ -1,5 +1,5 @@
 # CLAUDE.md — REX AI Trade System
-# 更新: 2026-04-17（#026d完了・wrap-up前）
+# 更新: 2026-04-17（git pull --rebase 必須化）
 # このファイルはClaudeCodeがTrade_Systemリポジトリで作業する際に自動で読み込まれる
 
 ---
@@ -173,10 +173,18 @@ logs/claudecode/execution_results/REX_{番号}_result.md
 
 ### Git コミット手順
 ```bash
+# ⚠️ 必ず最初に実行（MCP経由pushと競合防止）
+git pull --rebase
+
 git add src/ logs/
 git commit -m "Feat: #{番号} {内容}"
 git push
 ```
+
+**git pull --rebase が必須の理由:**
+Claude.ai（MCP経由）とClaudeCode（ローカル）の両方からpushが発生するため、
+pull なしで push すると diverge（分岐）が起きる。
+rebase を使うことでコミット履歴をクリーンに保つ。
 
 ### コミットメッセージ規則
 ```
