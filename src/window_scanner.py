@@ -456,6 +456,18 @@ def run_window_scan() -> pd.DataFrame:
             skip_none += 1
             continue
 
+        # ★ ---- 4H構造優位性フィルター (#026d) ----
+        # 条件: neck_4h >= neck_1h
+        # 根拠: 4H-SwgH の値幅 >= 1H-SwgH の値幅
+        #       sl_4h ≈ sl_1h（#020 検証済み）なので neck_4h >= neck_1h に等価
+        # 除外: 4H neck ブレイク後の裏確認パターン（#026c #07/#11 型）
+        if neck_4h < neck_1h:
+            print(
+                f"  → SKIP(4H優位性なし): "
+                f"neck_4h={neck_4h:.3f} < neck_1h={neck_1h:.3f}"
+            )
+            continue
+
         # ---- 全 neck が揃った: エントリー確定 ----
         entry['neck_4h']  = neck_4h
         entry['ts_4h']    = ts_4h
