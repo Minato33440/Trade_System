@@ -1,0 +1,209 @@
+# CLAUDE.md — REX AI Trade System
+# 更新: 2026-04-17（#026d完了・wrap-up前）
+# このファイルはClaudeCodeがTrade_Systemリポジトリで作業する際に自動で読み込まれる
+
+---
+
+## プロジェクト概要
+
+USDJPY アルゴリズミック・トレーディングシステム（Minato浤1MTF短期売買）
+データ: 83,112本 / 5M足 / 2024-03-13〜2026-03-13
+戦略: 4H上昇ダウ継続中の押し目エントリー（窓ベース階層スキャン）
+
+---
+
+## チーム構成
+
+| 役割 | 担当 | 権限 |
+|---|---|---|
+| ディレクター | Minato（ボス） | 全ての最終判断 |
+| Planner | Rex-Planner（Sonnet 4.6） | 指示書作成・設計 |
+| Evaluator | Rex-Evaluator（Opus 4.6） | 監査・承認・ADR管理 |
+| 実装 | ClaudeCode（Sonnet 4.6） | コード実装・Git管理 |
+
+ロジック変更は Evaluator 承認後のみ。
+
+---
+
+## セッション開始手順
+
+```
+STEP 1: このファイル（CLAUDE.md）を読む ← 自動
+STEP 2: docs/ 直下のファイルを確認（最新版のみ存在するはず）
+STEP 3: 指示書を確認（logs/claudecode/instructions/ の該当ファイル）
+STEP 4: 不明点があれば Vault の設計文書を参照
+         パス: C:\Python\REX_AI\REX_Brain_Vault\
+         または @notebooklm-mcp にクエリ
+STEP 5: 不明点が解消しない場合はボスに報告して停止
+```
+
+---
+
+## ❌ 凍結ファイル（変更禁止）
+
+以下のファイルは絶対に変更しない。明示的な許可があっても慎重に。
+
+```
+src/backtest.py        — #018ベースライン保持（PF 5.32 / 55% / +91.6p）
+src/entry_logic.py     — #018まで凍結
+src/exit_logic.py      — #009以降凍結
+src/swing_detector.py  — #020まで凍結
+```
+
+変更禁止の理由: これらは比較のベースラインや、他ファイルが依存するAPIを提供している。
+変更するとベースライン数値が再現不能になるか、依存先が壊れる。
+
+完了条件に必ず含めること:
+```bash
+git diff -- src/backtest.py src/entry_logic.py src/exit_logic.py src/swing_detector.py
+# → 差分ゼロであること
+```
+
+---
+
+## ⚠️ 拡張可能ファイル（機能追加OK・ロジック変更は要確認）
+
+```
+src/window_scanner.py   — カラム追加・出力OK / スキャンロジック変更は要Evaluator確認
+src/exit_simulator.py   — 方式Bとして独立運用 / exit_logic.pyと混同しない
+src/plotter.py          — 表示機能の追加は自由
+src/structure_plotter.py
+```
+
+---
+
+## ✅ 新規作成（自由）
+
+既存ファイルをimportして使うのはOK。既存ファイルの内部を書き換えるのはNG。
+
+---
+
+## 不変ルール（全作業共通）
+
+```
+1. 既存関数を呼ぶ前に必ず実ファイルの def 行を read する
+2. 凍結ファイルは変更しない（上記4ファイル）
+3. resample_tf は label='right', closed='right' で統一。変更禁止
+4. mplfinance は returnfig=True パターンのみ
+5. 全てのトレランスは pip ベース。PCT ベースは使わない
+6. 指示書のコードをそのままコピペせず、実APIに合わせる
+7. git diff で凍結ファイルの差分ゼロを完了条件に含める
+8. エラーが出たら自分で「想像で」修正しない。ボスに報告して停止
+9. window_scanner.py はカラム追加・出力OK。スキャンロジック変更は要確認
+```
+
+---
+
+## docs/ 参照ルール
+
+```
+docs/ 直下のファイルのみが「現在有効な設計」
+  - EX_DESIGN_CONFIRMED.md   — 設計確定文書（最新版）
+  - ADR.md                   — バグパターン集 + 設計方针ガイド
+  - PLOT_DESIGN_CONFIRMED.md — プロット設計
+  - SYSTEM_OVERVIEW.md       — ファイル構成・依存関係
+
+logs/docs_archive/ は旧版保管庫 — 参照禁止
+複数バージョンが docs/ にある場合はボスに報告して停止
+```
+
+---
+
+## 確定パラメータ（#026d時点）
+
+```python
+# エントリー
+DIRECTION_MODE      = 'LONG'
+ALLOWED_PATTERNS    = ['DB', 'ASCENDING', 'IHS']
+ENTRY_OFFSET_PIPS   = 7.0      # neck_15m + 7pips 指値方式（#026c確定）
+MIN_4H_SWING_PIPS   = 20.0
+LOOKBACK_15M_RANGE  = 50
+MAX_REENTRY         = 1
+PIP_SIZE            = 0.01
+N_1H_SWING          = 3        # 1H Swing検出粒度（#026a-v2確定）
+
+# 窓
+WINDOW_1H_PRE       = 20
+WINDOW_1H_POST      = 10
+PRICE_TOL_PIPS      = 20.0
+
+# プロット（窓と独立）
+PLOT_PRE_H          = 25
+PLOT_POST_H         = 40
+
+# neck定義（統一neck原則 #026a確定）
+# 全TF共通: neck = SL直前の最後のSH (sh_before_sl.iloc[-1])
+
+# フィルター
+# 4H構造優位性: neck_4h >= neck_1h（#026d確定）
+```
+
+---
+
+## neck の用途定義
+
+```
+neck_15m — エントリートリガー（5M high >= neck_15m + 7pips で指値約定）
+neck_1h  — 窓特定アンカー（決済トリガーではない）
+neck_4h  — 半値決済トリガー（段階2: High >= neck_4h → 50%決済）
+```
+
+---
+
+## 決済ロジック（4段階シ・exit_simulator.py 方式B）
+
+```
+初動SL: 15M ダウ崩れ → 全量損切
+段階1:  5M ダウ崩れ → 全量決済（neck_4h未到達時）
+段階2:  High >= neck_4h → 50%決済 + 残りストップを建値移動
+段階3:  1H Close > 4H SH 確定後 → 15M ダウ崩れで残り全量決済
+
+⚠️ exit_logic.py の manage_exit() は使わない（neck_1h/neck_4h定義が旧版）
+   → exit_simulator.py の方式B（独自実装）が正式な決済エンジン
+```
+
+---
+
+## ファイル管理ルール
+
+### 結果報告の出力先
+```
+logs/claudecode/execution_results/REX_{番号}_result.md
+```
+
+### Git コミット手順
+```bash
+git add src/ logs/
+git commit -m "Feat: #{番号} {内容}"
+git push
+```
+
+### コミットメッセージ規則
+```
+Phase A: "Phase A: ..."
+バグ修正: "Fix: ..."
+パラメータ調整: "Tune: ..."
+新機能: "Feat: ..."
+ドキュメント: "Docs: ..."
+```
+
+---
+
+## 思考フラグ（指示書ヘッダーに記載）
+
+| フラグ | タイミング |
+|---|---|
+| think | 単純な修正・パラメータ変更 |
+| think hard | 複数ファイル修正・バグ修正 |
+| think harder | 設計判断が必要な実装 |
+| ultrathink | アーキテクチャ全体変更・最適化 |
+
+---
+
+## 外部リソース参照先
+
+```
+Vault:      C:\Python\REX_AI\REX_Brain_Vault\
+NLM:        REX_Trade_Brain (2d41d672-f66f-4036-884a-06e4d6729866)
+GitHub:     Minato33440/Trade_System
+```
