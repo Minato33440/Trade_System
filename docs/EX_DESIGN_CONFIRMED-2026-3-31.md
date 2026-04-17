@@ -6,7 +6,7 @@
 
 ## 1. プロジェクト基本情報
 
-- リポジトリ: GitHub Minato33440/UCAR_DIALY
+- リポジトリ: GitHub Minato33440/Trade_System
 - ローカルパス: C:\Python\REX_AI\Trade_System\
 - 対象通貨ペア: USDJPY（将来的に他ペアへ拡張予定）
 - データ: data/raw/usdjpy_multi_tf_2years.parquet
@@ -236,62 +236,16 @@ DIRECTION_MODE = 'LONG'（SHORT一時停止中 — #012確定）
 ```
 src/
 ├── swing_detector.py       ✅ 完了（#020追加分含む）
-│    detect_swing_highs/lows
-│    get_nearest_swing_high/low
-│    get_nearest_swing_high_1h（#016: neck_4h取得用）
-│    get_nearest_swing_low_15m（#016: support_1h暫定）
-│    get_nearest_swing_low_1h（#020追加: support_1h正式版）
-│    get_all_swing_lows_1h（#020追加: 最安値検索用）
-│    get_direction_4h
-│    get_direction_from_raw_4h
-│    _build_direction_5m（パフォーマンス最適化版）
-│
 ├── entry_logic.py          ✅ 完了（#018まで・変更凍結）
-│    check_fib_condition
-│    check_15m_range_low()  ← #011: 統合レンジロジック（DB/IHS/ASCENDING）
-│    check_5m_double_bottom()（WICKTOL_PIPS対応）
-│    evaluate_entry（3段階統合 + 1H neck/support + grade filter）
-│    LOOKBACK_15M_RANGE = 50（#014確定）
-│
 ├── exit_logic.py           ✅ 完了（#009以降・変更凍結）
-│    check_5m_dow_break / check_15m_dow_break
-│    check_4h_neck_1h_confirmed
-│    manage_exit（4段階決済統合）
-│
 ├── plotter.py              ✅ 完了（#020-fix適用済み）
-│    save_normalized_plot()
-│    save_swing_debug_plot()
-│    plot_base_scan()（#015追加）
-│    plot_swing_check()（Phase1完了・#009）
-│    plot_4h_1h_structure()（#019追加）
-│    plot_1h_window_5m()（#020追加・#020-fix: addplot→scatter修正）
-│
 ├── backtest.py             ✅ 完了（#018まで・ベースライン保持・変更凍結）
 │    PF 5.32 / 勝率 55.0% / MaxDD 14.9 pips / 総損益 +91.6 pips
-│    WARMUP_BARS = 1728（#012確定）
-│
 ├── base_scanner.py         ✅ 完了（#015）
 ├── structure_plotter.py    ✅ 完了（#019）
-│
 ├── test_1h_coincidence.py  ✅ 完了（#020・修正版v2適用済み）
-│    時間近傍比較（±8本窓）: 89件100%一致
-│    出力: logs/test_1h_coincidence.csv
-│
 ├── window_scanner.py       ✅ #025完了
-│    窓ベース階層スキャン（Phase 1: シンプル版）
-│    4H→1H窓→窓内15M DB/IHS/ASCENDING→5Mネック越え
-│    既存ファイルを一切変更せず独立動作
-│    
-│    実装履歴:
-│      #021: 新規作成（窓左端スキャン・バグあり）
-│      #022: sl_1h_ts追加・1H SL以降限定スキャン
-│      #023: WINDOW_1H_POST 5→10延長
-│      #024a: neck=1H SL以降最初SH / プロット範囲分離
-│      #025: 固定ネック原則確定（完了）
-│    
 │    結果: 15件検出（DB:3 / IHS:3 / ASCENDING:9）
-│    出力: logs/window_scan_entries.csv / logs/window_scan_plots/
-│
 ├── volume_alert.py         ⬜ 未着手（Phase D）
 ├── signals.py              廃止方向
 ├── data_fetch.py           変更なし
@@ -348,10 +302,8 @@ NONE比率: 修正後42.1%（目標50%以下クリア済み）
 - IHS: 1件 / 勝率0.0% / -2.2 pips（サンプル不足・継続監視）
 
 **#025確定値（窓ベース・15件 — エントリー検出のみ・決済未統合）:**
-- DB: 3件
-- IHS: 3件
-- ASCENDING: 9件
-- 窓数: 33件 / エントリー検出: 15件 / エントリー0件窓: 18件
+- DB: 3件 / IHS: 3件 / ASCENDING: 9件
+- 窓数: 33件 / エントリー検出: 15件
 - 決済統合: #026で実施予定
 
 ---
@@ -362,203 +314,19 @@ NONE比率: 修正後42.1%（目標50%以下クリア済み）
 |---|---|---|---|
 | #001〜#008 | Phase A 基盤構築 | swing_detector / entry_logic 基礎 | ✅ |
 | #009 | 決済ロジック4段階 | exit_logic.py 刷新 | ✅ |
-| #010 | MIN_4H_SWING_PIPS | 4H幅ガード20pips | ✅ |
-| #011 | 15M統合レンジロジック | DB/IHS/ASCENDING 統合 | ✅ |
-| #012 | LONG限定 + フォールバック修正 | DIRECTION_MODE='LONG' / None返却 | ✅ |
-| #013 | IHSフラグ除外 + WICKTOL修正 | WICKTOL_PIPS=5.0 | ✅ |
-| #014 | IHS復活 + lookback拡張 | LOOKBACK_15M_RANGE=50 | ✅ |
-| #015 | 4H+15M基礎スキャナー | base_scanner.py 新規 | ✅ |
-| #016 | 1Hロジック導入 | neck_4h=1H SH / support_1h=15M SL | ✅ |
-| #017 | ネック許容 pips基準修正 | NECK_TOLERANCE_PIPS=20.0 | ✅ |
-| #018 | ★★★限定 + クロス集計 | ALLOWED_GRADES / debug m/n | ✅ |
-| #019 | 4H+1H構造確認プロット | plot_4h_1h_structure() / structure_plotter.py | ✅ |
-| #020 | 1H-4H一致検証 + 窓プロット | test_1h_coincidence(v2) / plot_1h_window_5m | ✅ |
-| #020-fix | プロットレンダリングバグ修正 | addplot→scatter / CJK→英語タイトル | ✅ |
-| #021 | 窓ベース階層スキャン Phase 1 | window_scanner.py 新規作成 | ✅ |
-| #022 | タイミングバグ修正 | sl_1h_ts追加・1H SL以降限定（3箇所修正） | ✅ |
-| #023 | 1H窓サイズ延長 | WINDOW_1H_POST 5→10（後5本→10本） | ✅ |
-| #024a | neck修正 + プロット範囲拡大 | neck=1H SL以降初回SH / PLOT_PRE_H=25/POST_H=40 | ✅ |
-| #025 | 固定ネック原則確定 | neck=sh_vals.iloc[0] / 4→15件 | ✅ **完了** |
-| #026 | 決済シミュレーション統合 | manage_exit()統合 → P&L/PF/勝率計算 | 🔴 **次の最優先** |
+| #010〜#018 | パラメータ最適化・機能追加 | 各種確定値 | ✅ |
+| #019 | 4H+1H構造確認プロット | structure_plotter.py | ✅ |
+| #020 | 1H-4H一致検証 + 窓プロット | test_1h_coincidence(v2) | ✅ |
+| #020-fix | プロットレンダリングバグ修正 | addplot→scatter | ✅ |
+| #021〜#024a | 窓ベース階層スキャン Phase 1 | window_scanner.py | ✅ |
+| #025 | 固定ネック原則確定 | neck=sh_vals.iloc[0] / 15件 | ✅ **完了** |
+| #026 | 決済シミュレーション統合 | manage_exit()統合 → P&L計算 | 🔴 **次の最優先** |
 
 ---
 
-## 8. #025 完了結果（2026-03-31確定）
+## 8〜11. 完了結果詳細
 
-### 実装内容
-
-**ネック計算ロジックの確定（固定ネック原則）:**
-```python
-# 1H SL以降の15M SHを時系列順に取得
-sh_vals = df_5m_win.loc[df_5m_win.index >= sl_1h_ts, 'sh_5m']
-sh_vals = sh_vals.dropna()
-
-# 最初のSH = 初回反発ピーク = ネックとして確定
-if len(sh_vals) > 0:
-    neck_15m = sh_vals.iloc[0]  # ← 固定ネック
-```
-
-### 結果
-
-```
-スキャン窓数: 33件
-エントリー検出数: 4件 → 15件（+275%）
-パターン別:
-  DB:        2件 → 3件
-  IHS:       1件 → 3件
-  ASCENDING: 1件 → 9件
-```
-
-### #024a → #025 の変化
-
-**重要な発見:**
-- #024a（neck=sh_vals.max()）は「レンジ全体の最高値」を使用
-- → 2番底形成後の2段目以降の高値（遅すぎるネック）を捕捉
-- → 機会損失（例: Jul29 DB で22 pips遅延、2時間遅延）
-
-- #025（neck=sh_vals.iloc[0]）は「初回反発ピーク」を使用
-- → 2番底形成直後の正確なネックを捕捉
-- → DB戦略の定義通りのエントリー
-
-**具体例（Jul 29 DB）:**
-| 項目 | #024a（旧） | #025（新） | 差分 |
-|---|---|---|---|
-| ネック | 153.913 | 153.692 | -22 pips |
-| エントリー時刻 | 12:20 | 08:20 | -4時間 |
-| 判定 | レンジ高値越え | 2番底直後の正確なネック ✅ |
-
-### 固定ネック原則の優位性
-
-1. **2番底直後の正確なネック**
-   - 初回反発ピーク = DB/IHS/ASCENDINGの本来のネック
-   - 「一度確定したら変わらない」原則
-
-2. **機会損失を防ぐ**
-   - レンジ全体の最高値ではなく、最初のピークを使用
-   - 早すぎず、遅すぎず
-
-3. **三尊・レンジへの適応性**
-   - ピークA → ピークB → ピークC のような多段構造でも
-   - ピークAが確定ネックとして維持される
-   - ピークBやピークCは新しいネックにならない
-
-### プロット検証結果（15枚）
-
-**評価内訳（Evaluator確認）:**
-- ✅ 正常エントリー: 10件
-- ⚠️ 構造確認要: 4件
-  - #02 ASCENDING: SL直後すぐにエントリー
-  - #03 IHS: エントリー後に急落（レンジ内調整）
-  - #06 ASCENDING: エントリー後に急後退
-  - #14 ASCENDING: シアン線が見えない
-
-**再評価:**
-- ⚠️4件は「早すぎる」ではなく「正確」の可能性が高い
-- レンジ内の正常な調整を「急落」と誤認した可能性
-
----
-
-## 9. #021〜#024a 完了結果（2026-03-26確定）
-
-### #021 — window_scanner.py 新規作成
-
-```
-作業内容:
-  ① scan_4h_events() — 4H LONG期間スキャン
-  ② get_1h_window_range() — 1H窓確定（前20+SL+後5=26本）
-  ③ scan_window_entry() — 窓内15M/5Mスキャン
-
-結果:
-  スキャン窓数: 33件
-  エントリー検出: 13件（DB:1 / IHS:7 / ASCENDING:5）
-  
-バグ発見:
-  全13件が「底を打つ前」にエントリー
-  原因: 窓左端（底より20時間前）からスキャン開始
-```
-
-### #022 — タイミングバグ修正
-
-```
-修正内容（3箇所のみ）:
-  ① def scan_window_entry(df_5m_win, sl_4h_val, sl_1h_ts)  # 引数追加
-  ② sl_1h_idx = df_5m_win.index.searchsorted(sl_1h_ts)
-     for j in range(sl_1h_idx, len(df_5m_win) - 1):        # 1H SL以降限定
-  ③ scan_window_entry(df_5m_win, sl_4h_val, sl_1h_ts)       # 呼び出し修正
-
-結果:
-  13件 → 2件（IHS×2のみ）
-  エントリー0件窓: 31/33件
-  DB 0件 / ASCENDING 0件 → 窓の右端5本（5時間）が短すぎる
-```
-
-### #023 — 窓サイズ延長
-
-```
-修正内容（1行のみ）:
-  WINDOW_1H_POST = 5 → 10  # 後5本 → 後10本に延長
-
-結果:
-  2件 → 5件（+150%）
-  DB: 0件 → 2件
-  IHS: 2件 → 1件（入替）
-  ASCENDING: 0件 → 2件
-  エントリー0件窓: 28/33件
-  
-窓構造:
-  前20本 + SL足 + 後10本 = 31時間（約1.3日分）
-```
-
-### #024a — neck修正 + プロット範囲拡大
-
-```
-修正内容:
-  ① neck計算: check_15m_range_low()の返り値 → 1H SL以降の最初のSH
-  ② プロット範囲: PLOT_PRE_H=25h / PLOT_POST_H=40h（窓とは独立）
-
-結果:
-  5件 → 4件
-  DB: 2件 / IHS: 1件 / ASCENDING: 1件
-  ASCENDING 1件減: neck修正により正当除外
-```
-
----
-
-## 10. #020 完了結果（2026-03-25確定）
-
-### 作業② 一致検証（修正版v2: 時間近傍比較）
-
-```
-対象: 89件（4H LONG期間）
-方法: 4H SL ts ±8本(8時間)窓内で最近傍 1H SL を検索
-結果: 89件全てで 1H SL を検出（100.0%）
-距離: 0.0 pips（同一データ源リサンプルのため数学的必然）
-→ 設計前提「4H SL ≒ 1H SL」は成立
-```
-
-### 作業③ 窓プロット生成（修正版: #020-fix適用）
-
-```
-生成枚数: 8枚（89件中ランダムサンプル）
-出力先: logs/1h_windows/*.png
-検証結果: 全8枚で構造OK
-  - 1H SL（シアン点線）が窓中央付近に位置
-  - 4H SL（青破線）と価格が一致
-  - 5M SH/SL マーカーが正確
-```
-
----
-
-## 11. #019 検証結果（累計）
-
-### structure_plotter 初回（2026-03-22）
-
-- 16件（LONG:13 / SHORT:3）→ 9枚目視で合格率90%
-
-### structure_plotter 追加検証（2026-03-25）
-
-- 7枚追加目視（LONG:4 / SHORT:3）→ **全件OK（100%）**
-- 累計合格率: 16/17（94%）— NG 1件は 20260113_0545 TOPエントリーのみ
+（#020〜#025の詳細結果は省略 — ADR / NLM に記録済み）
 
 ---
 
@@ -566,69 +334,18 @@ if len(sh_vals) > 0:
 
 ### 🔴 #026（最優先）— manage_exit() 統合
 
-```
-window_scanner.py に決済シミュレーションを統合
-  
-実装内容:
-  ① エントリー記録から manage_exit() を呼び出す決済ループ
-  ② 損益・PF・勝率・MaxDD の計算
-  ③ 結果CSV出力（エントリー+決済+損益）
-  
-完了条件:
-  旧版 backtest.py との比較レポート出力
-  （PF / 勝率 / MaxDD / 総損益）
-```
+window_scanner.py に決済シミュレーションを統合。
+旧版 backtest.py（PF 5.32）との比較レポート出力が完了条件。
 
 ### 🟡 将来課題
 
-- 15M SH 密集フィルター: 4本以上密集時はエントリー見送り
-- SHORT 運用再開: サンプル充足後にリスクリワード比較
-- volume_alert.py: 出来高急増検知 + LINE通知（Phase D）
-- Vision AI 自動チェック: PNG → Gemini/GPT-4o（Phase 3）
+- 15M SH 密集フィルター / SHORT 運用再開 / volume_alert.py / Vision AI
 
 ---
 
-## 13. 思考フラグ運用ルール（ClaudeCode向け）
+## 13〜16. 運用ルール
 
-| フラグ | 使うタイミング |
-|---|---|
-| think | 単純な修正・パラメータ変更 |
-| think hard | 複数ファイル修正・バグ修正 |
-| think harder | 設計判断が必要な実装 |
-| ultrathink | アーキテクチャ全体変更・最適化 |
+（思考フラグ / Git運用 / プロット設計 / 設計管理 — 変更なし）
 
----
-
-## 14. Git運用
-
-作業ブランチ命名: claude/[作業内容]-[ID]
-masterへのmerge: テスト確認後
-
-コミットメッセージ規則:
-```
-Phase A: "Phase A: ..."
-バグ修正: "Fix: ..."
-パラメータ調整: "Tune: ..."
-新機能: "Feat: ..."
-ドキュメント: "Docs: ..."
-```
-
----
-
-## 15. プロット設計（参照先）
-
-詳細は `REX_Trade_System/docs/PLOT_DESIGN_CONFIRMED-2026-3-31.md` を参照。
-
----
-
-## 16. 設計管理ファイル
-
-```
-docs/REX_ARCHITECTURE.html
-  全設計を俯瞰する Live ドキュメント（ブラウザで開く）
-
-スレッド引き継ぎ時の手順:
-  1. EX_DESIGN_CONFIRMED-{日付}.md を読み込む（本ファイル）
-  2. PLOT_DESIGN_CONFIRMED-{日付}.md を読み込む
-  3. ultrathink フラグを付与して新スレッド開始
-```
+思考フラグ: think / think hard / think harder / ultrathink
+Git: `claude/[作業内容]-[ID]` ブランチ / Feat / Fix / Tune / Docs
