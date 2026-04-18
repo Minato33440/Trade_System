@@ -1,0 +1,46 @@
+# 2026_04_18_snapshot.yaml
+
+date:
+  start: 2026-03-19
+  end: 2026-04-18
+
+panel:
+  Risk: [US100, BTC/USD]
+  Fear: [VIX]
+  Inflation: [WTI, XAU/USD]
+  Rates: [US2Y, US10Y]
+
+regime:
+  label: "Gold Bid"
+  equities: up
+  volatility: normal
+  oil: range
+  gold: bid
+  crypto: strong
+  yields: falling
+
+snapshot_30d:
+  "USD/JPY":
+    latest: 158.584
+    change_pct: -0.76
+  "US100":
+    latest: 26672.430
+    change_pct: 9.51
+  "XAU/USD":
+    latest: 4857.600
+    change_pct: 5.58
+  "WTI":
+    latest: 83.850
+    change_pct: -12.78
+  "US2Y":
+    latest: 3.838
+    change_pct: -2.07
+  "VIX":
+    latest: 17.480
+    change_pct: -27.35
+  "US10Y":
+    latest: 4.246
+    change_pct: -0.82
+  "BTC/USD":
+    latest: 77126.875
+    change_pct: 10.32

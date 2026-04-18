@@ -83,3 +83,42 @@
   - WTI 80$台回帰の有無で停戦への市場信頼度を継続監視。
   - 長期ポートフォリオは売り不要。積立加速継続。
 - tags: [gm, monthly_distilled, 2026-04, 2026-4-10_wk02, signal:VIX_add_risk_gate, signal:US100_resistance_blue2, signal:WTI_premium_stripped, signal:CPI_beat_negative, signal:TSMC_earnings_beat, signal:JP225_ichimoku_breakout, signal:regime_neutral_transition, event:iran_us_talks_4_11, event:BOJ_4_28_meeting, event:us_china_summit_may, pattern:mon_tue_buy_wed_sell, risk:협議_決裂_monday_drop, risk:BOJ_yen_appreciation_headline]
+
+---
+
+## 2026-4-17_wk03（2026-04-14 → 2026-04-18）
+- regime: Gold Bid（equities=up / volatility=normal / oil=range / gold=bid / crypto=strong / yields=falling）← wk02「Neutral」から転換
+- decision:
+  - hormuz_full_opening=on（ホルムズ海峡全面開放：アラグチ外相SNS投稿。米・イラン合意枠組み進展（凍結資産200億ドル解放+核開発中止）。パキスタン仲介。4/17深夜に全市場がリスクオンへ急転換）
+  - US100_blue2_breakout=on（wk02「青丸2」レジスタンス（25,45x）を突破→26,672。次の目標27,000〜27,250pt。wk02からの週間上昇率+6.2%）
+  - regime_gold_bid=on（Neutral → Gold Bid へ転換。リスクオンとGold上昇が共存する特殊局面。通常リスクオン時はGoldが売られるが、地政学リスクが完全には消えていない中での株高がGoldの底堅さを維持）
+  - WTI_hormuz_decline=on（95.63$（wk02）→83.85$（-12.4%）。ホルムズ解放でエスカレーションプレミアム完全剥落。79〜81ドルの自律反発は一時的。76.98ドル前回安値再訪を想定）
+  - BOJ_4_28_no_hike_confirmed=on（4/28日銀利上げなしほぼ確定。高市首相の圧力封じが確認（赤澤大臣発言→高市首相に注意）。上田総裁は利上げ望むも政治的圧力に屈した形。円安バイアス維持）
+  - GW_intervention_risk=on（4/29以降のGW期間：161円接近時の政府為替介入リスク。2024年4月29日昭和の日介入再現懸念）
+  - TSMC_60pct_profit_beat=on（TSMC四半期純利益+60%（過去最高）。半導体・テック追い風継続）
+  - gold_5060_target=on（Gold 4,857$で高値更新。5,060〜5,070ドル目標。Gold Bidレジームで買いシグナル継続）
+  - private_credit_BOE_warning=on（英BOEベイリー総裁がG20財務大臣・中央銀行総裁会議でプライベートクレジットリスクを警戒表明。3兆円規模解約請求・返金率53%のファンドあり）
+  - BTC_strong=watch（77,127$。crypto=strong。80,000ドル節目突破の有無を注視）
+  - ceasefire_4_22_deadline=watch（4/22停戦期限。延長合意 or 決裂が次週月曜の最大の変数）
+  - jp225_ath_approaching=watch（日経平均6万円接近。過去最高値6万51円が射程。超えた後は一旦急落の可能性）
+  - EDP_7792_diamond=watch（国内唯一の人工ダイヤモンド種結晶製造企業。次世代半導体（ダイヤモンド半導体）期待で日経新聞が「第2のTSMC候補」として掲載）
+- evidence (close / 2026-04-18 snapshot):
+  - US100: 26,672.430（+9.51% / 30d）← wk02（25,116）比+6.2%。「青丸2」突破
+  - USDJPY: 158.584（-0.76% / 30d）← wk02（159.245）比-0.4%。有事ドル買い剥落
+  - WTI: 83.850（-12.78% / 30d）← wk02（95.63$）比-12.4%。ホルムズ解放効果
+  - XAUUSD: 4,857.600（+5.58% / 30d）← wk02（4,771$）比+1.8%。Gold Bid確認
+  - US2Y: 3.838（-2.07% / 30d）← wk02（3.939）から低下。FRB利下げ期待再浮上
+  - VIX: 17.480（-27.35% / 30d）← wk02（19.23）からさらに低下。Add risk深化
+  - US10Y: 4.246（-0.82% / 30d）← wk02（4.317）から低下。yields=falling
+  - BTC/USD: 77,126.875（+10.32% / 30d）← wk02（71,768$）比+7.5%。crypto=strong
+  - Regime (system): Gold Bid
+- implication:
+  - Add risk継続。VIX<18 + WTI<90$ + US100 26,000維持を前提に分割限定エントリー。追撃禁止。
+  - 4/22停戦期限：延長合意 or 決裂の確認（週明け前に必ず確認）。
+  - US100 27,000〜27,250pt帯での短期利確を念頭に置く（到達したら分割利確検討）。
+  - 4/28日銀会合（利上げなし確認）→円安バイアス再確認後にUSDJPY整理検討。
+  - 4/29 GW・161円接近時の政府介入リスクに備え、JPYロングは慎重に。
+  - WTI：76.98ドル前回安値再訪想定。90ドル超えは株高否定シグナルとして最警戒。
+  - Gold：5,060〜5,070ドル目標。買いシグナル継続。
+  - 長期ポートフォリオは売り不要。積立加速継続。
+- tags: [gm, monthly_distilled, 2026-04, 2026-4-17_wk03, signal:hormuz_full_opening, signal:US100_blue2_breakout, signal:regime_gold_bid, signal:WTI_hormuz_decline, signal:BOJ_4_28_no_hike, signal:gold_bid_5060_target, signal:TSMC_60pct_beat, signal:BTC_strong, event:ceasefire_4_22_deadline, event:BOJ_4_28_meeting, event:GW_intervention_risk_4_29, risk:US100_27000_resistance, risk:WTI_90_negation_signal, risk:GW_yen_intervention]

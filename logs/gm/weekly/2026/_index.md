@@ -181,3 +181,15 @@ updated: 2026-01-19 (JST)
   - [meta](./2026-4-10_wk02/meta.yaml)
   - [review](./2026-4-10_wk02/review.md)
   - [charts](./2026-4-10_wk02/charts.md)
+
+### 2026-4-17_wk03（2026-04-14 → 2026-04-18）
+- Regime: Gold Bid（equities=up / volatility=normal / oil=range / gold=bid / crypto=strong / yields=falling）← Neutral から転換
+- 1行：ホルムズ海峡全面開放報道（4/17深夜）でリスクオンが加速。US100 25,116→26,672（+6.2%）と「青丸2」レジスタンス突破。WTI 95.63→83.85（-12.4%）エスカレーションプレミアム完全剥落。VIX 17.48でAdd risk環境が深化。Regime「Neutral」→「Gold Bid」へ（株+金同時上昇の特殊局面）。4/22停戦期限・4/28日銀（利上げなし確認）・4/29 GW介入リスクが次週の三大焦点。
+- Key gates:
+  - Add risk: VIX<18維持 + WTI<90$確認 + US100 26,000維持（追撃禁止・分割限定）
+  - Reduce risk: US100 D1 close <25,800 OR VIX>22再到達 OR WTI>90$急騰 OR 停戦破綻報道
+- Links:
+  - [note](./2026-4-17_wk03/note.md)
+  - [meta](./2026-4-17_wk03/meta.yaml)
+  - [review](./2026-4-17_wk03/review.md)
+  - [charts](./2026-4-17_wk03/charts.md)

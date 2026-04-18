@@ -1,0 +1,12 @@
+取得期間: 2026-03-19 〜 2026-04-18 (JST基準)
+
+USD/JPY: 最新 158.584 (30日変化: -0.76%)
+US100:   最新 26672.430 (30日変化: +9.51%)
+XAU/USD: 最新 4857.600  (30日変化: +5.58%)
+WTI:     最新 83.850    (30日変化: -12.78%)
+US2Y:    最新 3.838     (30日変化: -2.07%)
+VIX:     最新 17.480    (30日変化: -27.35%)
+US10Y:   最新 4.246     (30日変化: -0.82%)
+BTC/USD: 最新 77126.875 (30日変化: +10.32%)
+
+[regime] Gold Bid (label=Gold Bid, equities=up, volatility=normal, oil=range, gold=bid, crypto=strong, yields=falling)

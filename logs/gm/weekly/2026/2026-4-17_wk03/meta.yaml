@@ -1,0 +1,90 @@
+week: 2026-4-17_wk03
+date_range: 2026-04-14 -> 2026-04-18
+created: 2026-04-18
+updated: 2026-04-18
+
+snapshot:
+  US100:
+    close: 26672.430
+    change_30d_pct: 9.51
+    bias: bullish_breakout_above_blue2
+    key_levels: [27250, 27000, 26672, 26500, 26000, 25800, 25454, 25000]
+    note: "wk02（25,116）比+6.2%。「青丸2」レジスタンス（25,45x）を上抜けて続伸。次の目標27,000〜27,250pt。条件：完全停戦+WTI<90$"
+  JP225:
+    close: TBD
+    weekly_change_pct: TBD
+    bias: bullish_approaching_ath
+    key_levels: [61000, 60051, 58000]
+    note: "過去最高値6万51円接近。超えた後は一旦急落の可能性→その後6万1,000円目標。下値サポート5万8,000円"
+  USDJPY:
+    close: 158.584
+    change_30d_pct: -0.76
+    bias: range_yen_weakness_with_gw_risk
+    key_levels: [161.0, 159.50, 158.584, 157.57, 156.50, 155.0]
+    note: "有事ドル買い剥落で一時157.57→156.50サポートで反発。4/28日銀利上げなし確定で円安バイアス継続。4/29 GW介入リスク（161円時）"
+  WTI:
+    close: 83.850
+    change_30d_pct: -12.78
+    bias: temporary_rebound_then_retest_lows
+    key_levels: [90.0, 84.0, 83.85, 81.0, 79.0, 76.98, 68.0]
+    note: "ホルムズ解放でwk02（95.63$）比-12.4%。79〜81ドルの自律反発は一時的。76.98ドル前回安値再訪を想定。90ドル超えは株高否定シグナル"
+  XAUUSD:
+    close: 4857.600
+    change_30d_pct: 5.58
+    bias: gold_bid_strong
+    key_levels: [5070, 5060, 4857, 4800, 4771, 4700]
+    note: "Gold Bidレジーム確認。wk02（4,771$）比+1.8%。5,060〜5,070ドル目標。リスクオンでもGoldが売られない特殊局面"
+  US10Y:
+    close: 4.246
+    change_30d_pct: -0.82
+    bias: yields_falling
+    key_levels: [4.50, 4.317, 4.246, 4.20, 4.00]
+    note: "wk02（4.317）から低下。yields=falling。金利低下は株高・Gold支援"
+  US2Y:
+    close: 3.838
+    change_30d_pct: -2.07
+    bias: easing_watch
+    key_levels: [4.00, 3.939, 3.838, 3.50]
+    note: "wk02（3.939）から低下。FRB利下げ期待が再浮上中"
+  VIX:
+    close: 17.480
+    change_30d_pct: -27.35
+    bias: add_risk_deep
+    key_levels: [25, 22, 20, 18, 17.48, 15]
+    note: "wk02（19.23）からさらに低下。Add risk環境が深化。ただし17台は楽観過多ゾーンに入りつつある"
+  BTC_USD:
+    close: 77126.875
+    change_30d_pct: 10.32
+    bias: strong_recovery
+    note: "wk02（71,768$）比+7.5%。暗号資産strong（レジーム）。80,000ドル節目突破の有無を注視"
+
+signals:
+  - hormuz_full_opening: "ホルムズ海峡全面開放（アラグチ外相SNS投稿）。米・イラン合意枠組み進展。4/22停戦期限が次の焦点"
+  - US100_blue2_breakout: "「青丸2」レジスタンス（25,45x）を上抜け。26,672へ。次は27,000〜27,250pt"
+  - regime_gold_bid: "Neutral → Gold Bid へ転換。リスクオンとGold上昇が共存する特殊局面"
+  - WTI_hormuz_decline: "95.63→83.85（-12.4%）。ホルムズ解放プレミアム剥落が加速。76.98ドル再訪想定"
+  - BOJ_4_28_no_hike_confirmed: "4/28日銀利上げなしほぼ確定（高市首相圧力封じ確認）。円安バイアス維持"
+  - GW_intervention_risk: "4/29以降のGW期間：161円接近時に政府為替介入リスク（昭和の日2024年再現懸念）"
+  - TSMC_60pct_profit_beat: "TSMC四半期純利益+60%（過去最高）。半導体・テック追い風継続"
+  - gold_5060_target: "Gold 5,060〜5,070ドル目標。Gold Bidレジームで買いシグナル継続"
+  - private_credit_BOE_warning: "英BOEベイリー総裁がG20でプライベートクレジットリスクを警戒表明。中期リスクとして継続"
+  - BTC_strong: "77,127$。暗号資産strongレジーム。80,000ドル節目突破の有無を注視"
+
+decision_bias:
+  risk: "継続Add risk。VIX<18 + WTI<90$ + US100 26,000維持を前提に分割限定"
+  hedge: "Gold（4,857$・Gold Bidレジーム継続）/ WTI保有（83.85$、リバウンド局面・利確検討）/ 防衛継続"
+  ammo: "分割買い原則。追撃禁止。27,000〜27,250pt付近での利確を念頭に"
+  usdjpy: "156.50下値引き付け。4/28日銀後に整理検討。4/29 GW介入リスクに備え161円接近で慎重"
+  long_port: "売り不要。積立加速継続"
+
+event_risk:
+  - "4/22 停戦期限：延長合意 or 決裂で方向性が決まる"
+  - "4/28（火）日銀金融政策決定会合：利上げなし確認→円安バイアス維持確認"
+  - "4/29（水）昭和の日前後：USD/JPY 161円接近時の政府介入リスク"
+  - "US100 27,000〜27,250pt到達時の調整 or 突破確認"
+  - "WTI 76.98ドル前回安値の再訪 or 反発"
+  - "Gold 5,060〜5,070ドル目標への進捗"
+  - "BTC/USD 80,000ドル節目突破の有無"
+
+links:
+  charts: "./charts.md"

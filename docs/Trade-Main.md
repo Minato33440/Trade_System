@@ -407,6 +407,47 @@ created: 2026-03-21 (JST)
   - see: logs/gm/weekly/2026/2026-3-13_wk03/
 
 
+## Weekly Brief | 2026-4-17_wk03（2026-04-14 → 2026-04-18）
+created: 2026-04-18 (JST)
+
+### Macro / Regime
+- Regime: Gold Bid（equities=up / volatility=normal / oil=range / gold=bid / crypto=strong / yields=falling）← wk02「Neutral」から転換。
+- ホルムズ海峡全面開放（4/17深夜）でリスクオンが加速。US100 25,116→26,672（+6.2%）と「青丸2」（25,45x）を突破。WTI 95.63→83.85（-12.4%）、VIX 19.23→17.48。Goldは4,857$で高値更新中。
+- TSMC四半期純利益+60%（過去最高）。日銀4/28利上げなしほぼ確定（高市首相圧力封じ確認）。
+
+### Position / Orders
+- Core：Gold（4,857$・Gold Bid継続）/ WTI（83.85$・リバウンド局面・利確検討）/ 防衛継続保有。
+- Mode：Add risk継続。VIX<18 + WTI<90$ + US100 26,000維持を前提に分割限定。追撃禁止。
+
+### Key Levels (close-based)
+- US100: 26,672 / R=27,250→27,000 / S=26,500→26,000→25,800
+- JP225: 過去最高値60,051接近 / S=58,000
+- USDJPY: 158.584 / S=156.50 / R=161.0（介入警戒・GW）
+- WTI: 83.85 / 76.98再訪想定 / 90ドル超えは株高否定シグナル
+- XAUUSD: 4,857 / 目標5,060〜5,070
+- VIX: 17.48 / US10Y: 4.246 / US2Y: 3.838
+
+### Gates（最重要：終値で判定）
+- Add risk ONLY if: VIX<18維持 + WTI<90$確認 + US100 26,000維持（追撃禁止・分割限定）
+- Reduce / pause if: US100 D1 close <25,800 OR VIX>22再到達 OR WTI>90$急騰 OR 停戦破綻報道
+- Hedge gate: Gold 4,857$ / WTI利確検討 / 防衛継続
+
+### This Week Focus（行動: 4/21-4/25）
+- **4/22 停戦期限**: 延長合意 or 決裂で週明けの方向性が決まる（最重要確認事項）。
+- **US100 27,000〜27,250pt**: 到達時の調整 or 突破確認。
+- **4/28 日銀会合**: 利上げなし確認→円安バイアス再確認。
+- **4/29 GW**: USD/JPY 161円接近時の政府介入リスク。JPYロングは慎重に。
+
+### Signals (weekly, fixed keys)
+- us10y_accel: falling（4.246。yields=falling）
+- hy_oas_widening: easing（Gold Bid環境でリスクプレミアムさらに縮小）
+- vix_spike: add_risk_deep（17.48）
+- wti_shock: declining（83.85$。ホルムズ解放でプレミアム完全剥落）
+- eps_revision_chain: positive（TSMC+60%好決算）
+
+## Previous (archived briefs)
+- Weekly Brief | 2026-4-10_wk02（2026-04-07 → 2026-04-11）
+
 ## Weekly Brief | 2026-4-10_wk02（2026-04-07 → 2026-04-11）
 created: 2026-04-12 (JST)
 
