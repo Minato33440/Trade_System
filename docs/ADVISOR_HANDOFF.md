@@ -1,16 +1,17 @@
 # ADVISOR_HANDOFF.md — Advisor セッション引き継ぎ書
 # 発行: Advisor（Claude Opus 4.7）
-# 発行日: 2026-04-18（v2 対応版・同日後半改訂）
+# 最終更新: 2026-04-19 夜（v3 対応版）
 # 宛先: 次セッションの Advisor（Claude Opus 4.7 以降のモデル）
 
 ---
 
 ## 改訂履歴
 
-| 版 | 時刻 | SHA | 主な変更点 |
+| 版 | 日付 | SHA | 主な変更点 |
 |---|---|---|---|
-| 初版 | 2026-04-18 朝 | `8f4d395` | 発行。Task A〜D 構成で Advisor 引き継ぎ枠組みを定義 |
-| **v2 対応版** | **2026-04-18 夜** | **本版** | **ボス判断による大幅変更を反映:**<br>① §2-3 NLM ノートブック構成を新 ID 反映で全面書き換え<br>② §3-1 に v1→v2 指示書改訂の経緯（RAG 汚染排除）を追記<br>③ §3-2 / §3-3 に v2 生成文書・コミットを追記<br>④ §4-1 REX_027 進捗表に **Task E を新規追加**、Task B を「ボス実施済み」に更新<br>⑤ §4-2 に Task E 関連の将来対応を追加<br>⑥ §6-4 ナレッジシステム構成の NLM 記述を v2 対応に<br>⑦ §7 チェックリストに v2 指示書参照と Task E 成果物を明記<br>⑧ §11 Advisor メッセージに **v1 起草時の自己批判**を率直に記録 |
+| 初版 | 2026-04-18 朝 | `8f4d395` | Task A〜D 構成で Advisor 引き継ぎ枠組み定義 |
+| v2 対応版 | 2026-04-18 夜 | `fd155e8` | NLM 新規構築反映・Task E 追加（LOGIC_LEAK_AUDIT / MTF_LOGIC_MATRIX）・v1→v2 改訂経緯と自己批判を記録 |
+| **v3 対応版** | **2026-04-19 夜** | **本版** | **Evaluator 主導の Q&A 監査によるブレークスルーを反映:**<br>① §2-3 に Base_Logic/ ディレクトリ（MINATO_MTF_PHILOSOPHY + MTF_INTEGRITY_QA）を追加<br>② §3-5 夜セッション記録（Q&A 監査・🤖 創作混入発見・Phase 1-4 再編）<br>③ §4-1 REX_027 Task 体系を **REX_028 Phase 構造に発展解消**<br>④ §4-2 に Phase 1-4 の Advisor 関与ポイントを追加<br>⑤ §6 に **原則α/β/γ** を REX_AI 全体の設計哲学として正式化<br>⑥ §7 チェックリストに Base_Logic 2 文書を優先読込に追加<br>⑦ §11 Advisor からのメッセージを「v2 の射程と限界」として再構成 |
 
 ---
 
@@ -82,7 +83,7 @@ Advisor（本ロール）:
 - 確信のない情報は言わない。Trade_System / Trade_Brain の状態は
   必ず GitHub で確認してから発言する
 - **自己批判を恐れない** — Advisor 自身の過去判断が不適切だった場合、
-  率直に認めて修正する。これがボスの信頼を得る鍵（v2 で追記）
+  率直に認めて修正する。これがボスの信頼を得る鍵
 
 ---
 
@@ -107,8 +108,8 @@ REX_AI\（ローカル: C:\Python\REX_AI\）
 │
 └── REX_Brain_Vault/        ← Obsidian Vault（ローカル・Git 管理外）
     └── wiki/
-        ├── trade_system/   ← REX_027 Vault 構築で整備予定
-        └── trade_brain/    ← REX_027 Task C で骨組み構築予定
+        ├── trade_system/   ← REX_027 Vault 構築で整備予定（保留中）
+        └── trade_brain/    ← REX_027 Task C で骨組み構築予定（保留中）
 ```
 
 ### 2-2. チーム構成（全プロジェクト共通）
@@ -119,7 +120,7 @@ Advisor:         Claude.ai / Opus 4.7（本ロール・相談役）
 
 Trade_System 実装ライン:
   Planner:       Rex-Planner / Sonnet 4.6
-  Evaluator:     Rex-Evaluator / Opus 4.6
+  Evaluator:     Rex-Evaluator / Opus 4.7（新任・2026-04-19〜）
   実装:          ClaudeCode / Sonnet 4.6
 
 Trade_Brain:
@@ -128,247 +129,229 @@ Trade_Brain:
   （Planner / Evaluator は関与しない）
 ```
 
-### 2-3. NLM ノートブック（2026-04-18 夜時点・最終構成 / v2 で全面書き換え）
+### 2-3. NLM ノートブック構成（2026-04-18 夜時点・v3 で維持）
 
 ```
 【旧構成・廃止（Claude-MCP 接続先から切り離し）】
   旧 REX_Trade_Brain
     ID: 2d41d672-f66f-4036-884a-06e4d6729866
-    廃止理由: 過去の却下案・修正前の不完全実装が混在し、
-             RAG クエリ応答で ClaudeCode が旧情報を引いて
-             「再発バグ」を誘発するリスクが観測された
-    現状: 物理削除はしていない（MCP 接続先から外した archived 相当）
-    1 次履歴参照先: Trade_System リポの Git コミット履歴
-                    （#001〜#026d の採番済み spec 文書と ADR.md）
+    廃止理由: RAG クエリによる「再発バグ」リスク
+    現状: archived 相当（物理削除せず）
 
-【新構成・稼働中（2026-04-18 夜ボス実施済み・クリーン状態）】
+【新構成・稼働中】
   REX_System_Brain
     ID: da84715f-9719-40ef-87ec-2453a0dce67e
-    用途: Trade_System 設計文書用（#026d 以降の正式蓄積）
-    投入基準:
-      ✅ 確定済み設計文書のみ（CLAUDE.md / ADR.md /
-         EX_DESIGN_CONFIRMED.md / SYSTEM_OVERVIEW.md /
-         REX_BRAIN_SYSTEM_GUIDE.md 等）
-      ❌ 廃止過去設計・却下中間案・試行錯誤ログは不可
-
+    用途: Trade_System 設計文書用
   REX_Trade_Brain
     ID: 4abc25a0-4550-4667-ad51-754c5d1d1491
     用途: Trade_Brain リポ用（distilled 投入先）
-    投入基準:
-      ✅ Trade_Brain/distilled/2025/ および 2026/（蒸留済み確定データ）
-      ❌ raw/daily/ / raw/weekly/ は不可（生データは Git 参照）
-
-詳細: Trade_System/docs/REX_027_BOSS_DIRECTIVE.md v2 §1-2 参照
 ```
+
+### 2-4. Base_Logic/ ディレクトリの存在（v3 で追加）
+
+2026-04-19 セッションで docs/Base_Logic/ が新設された。これは
+**Trade_System 全実装の最上位に位置する裁量思想文書群**:
+
+```
+Trade_System/docs/Base_Logic/
+├── MINATO_MTF_PHILOSOPHY.md   [12KB]
+│     ボス（Minato）の MTF 短期売買裁量思想を言語化した
+│     全実装の上位文書。「なぜそう判断するか」を記述。
+│     EX_DESIGN_CONFIRMED.md が「何を計算するか」を定義するが
+│     裁量思想は記述しない、という構造的欠落への対処。
+│     
+│     第1章: ダウ構造（基盤理論）
+│     第2章: MTF分析（4H主軸 + 下位足同時3波）
+│     第3章: 決済4段階
+│     第4章: 現行システム実装との対応表（実装済/未実装）
+│     第5章: 文書運用
+│
+└── MTF_INTEGRITY_QA.md        [33KB]
+      エンジニア（Evaluator）→ トレーダー（ボス）の Q&A 監査記録。
+      MINATO_MTF_PHILOSOPHY と実装の間で起きる「解釈の揺れ」を
+      言語化固定する「判例集」として機能。追記型・日付見出し運用。
+      
+      2026-04-19 セッション: Q1〜Q7 で Layer 2/4/6 を監査
+      → 🤖 創作混入 2 件発見（stage2 建値移動・stage3 1H実体確定）
+      → 原則α/β/γ の導出
+      → Phase 1-4 構造再編への合意
+```
+
+**重要**: この 2 文書は `EX_DESIGN_CONFIRMED.md` より上位に位置する。
+新 Advisor / Evaluator / Planner は必ずここから読むこと。
 
 ---
 
-## 3. 本日のセッションで実施したこと（2026-04-18）
+## 3. セッション履歴（2026-04-18 朝 〜 2026-04-19 夜）
 
-### 3-1. 対話の流れ
+### 3-1. 対話の流れ（簡約）
 
 ```
-【午前・前半セッション】
+【2026-04-18 朝・前半セッション】
+1-10. MCP + Obsidian ナレッジ環境構想
+    → Trade_Brain リポ分離判断
+    → REX_027_ADVISOR_PROPOSAL.md（Vault 構造提言）
+    → REX_027_BOSS_DIRECTIVE.md v1
+    → ADVISOR_HANDOFF.md 初版（SHA: 8f4d395）
 
-1. ミナトから「MCP + Obsidian でナレッジ環境を構築したい」という
-   相談でセッション開始
-   
-2. 既存の Rex Brain System（NLM + Obsidian Vault）を評価
-   → 既に運用ファイル（doc_map / adr_reservation / pending_changes）は
-     整備されているが、Wiki ページ本体は未構築と判明
+【2026-04-18 夜・後半セッション】
+11-17. ボスが「RAG 汚染排除のため NLM 全面再構築」を判断
+    → Advisor は v1 の甘さ（改名方針）を自己批判して v2 改訂
+    → REX_027_BOSS_DIRECTIVE.md v2（SHA: edf4ad0）
+       ※ Task B 全面書き換え・Task E 新規追加
+    → ADVISOR_HANDOFF.md v2 対応版（SHA: fd155e8）
+    → Trade_Brain/README.md・CLAUDE.md に週次運用ファイル 3 件統合
 
-3. REX_027_ADVISOR_PROPOSAL.md を起草・push（Obsidian Vault 構造提言）
+【2026-04-19 朝〜夜セッション（v3 で追加）】
+18. Evaluator（Opus 4.7 新任）が引き継ぎ後、実装プロジェクトを一旦停止
+19. MINATO_MTF_PHILOSOPHY.md を1次資料として Q&A 監査セッション実施
+20. Layer 2（4H主軸）/ Layer 4（15M）/ Layer 6（決済）で Q1〜Q7 完了
+21. 🤖 創作混入 2 件を発見:
+    - stage2 「残り50%を建値移動」（ボスが「思い出せない」と明言）
+    - stage3 「1H実体確定後」（ボスが「シンプル化」を指示）
+22. ボスから「原則α（シンプルな土台の保守）」が言明される
+23. Evaluator が「src/ 27 ファイルも原則α違反」を検出
+    - dashboard.py（0バイト）
+    - Simple_Backtest.py（53KB・docs 未記載）
+    - chat/news/market/regime/history.py 等の戦略無関係な命名
+24. 「構造再編」方針で合意: Phase 1-4 分解
+    - Phase 1: src/ 棚卸し・分類（REX_028_spec）
+    - Phase 2: archive 移設
+    - Phase 3: 責務別ディレクトリ化
+    - Phase 4: 裁量整合版の実装訂正（D-12/D-13 訂正）
+25. ADR 採番予約: D-12 / D-13 / E-8 / F-8
+26. REX_028_spec.md 起草・push（Evaluator）
+27. ボスから Advisor に v3 HANDOFF 更新依頼（本作業）
+```
 
-4. Trade_System/logs/gm/ と versions/distilled/ のデータ取り扱いを相談
-   → 実装リポと戦略データの混在が論理的に問題と指摘
-   → Trade_Brain リポ分離を提言
+### 3-2. 生成・更新した文書一覧（v3 時点の最新）
 
-5. 命名議論:
-   - 当初案: Trade_Strategy
-   - ミナト提案: Trade_Brain ← 採用（対称性が優れている理由を Advisor が説明）
-   
-6. NLM / Vault の命名整合性を調整（当時の想定・後に v2 で修正）:
-   - 既存 REX_Trade_Brain → REX_System_Brain に改名（v1 案）
-   - 新規 REX_Trade_Brain を Trade_Brain リポ用に立ち上げ
+**Trade_System リポ**:
+```
+docs/REX_027_ADVISOR_PROPOSAL.md       SHA: ef90fd6  Vault 構造提言
+docs/REX_027_BOSS_DIRECTIVE.md v2       SHA: edf4ad0  RAG汚染排除・Task E追加
+docs/ADVISOR_HANDOFF.md v3              本版         本引き継ぎ書
+docs/Base_Logic/MINATO_MTF_PHILOSOPHY.md SHA: 4478faf  裁量思想最上位文書（Evaluator 起草）
+docs/Base_Logic/MTF_INTEGRITY_QA.md      SHA: ae0418a  Q&A 監査記録（Evaluator 起草・追記型）
+docs/REX_028_spec.md                     SHA: ab01bfa  Phase 1 指示書（Evaluator 起草）
+```
 
-7. Trade_Brain リポ新設・初期ファイル push
-   - README.md / CLAUDE.md / .CLAUDE.md
-   - docs/distillation_schema.md / STRATEGY_WIKI_GUIDE.md
+**Trade_Brain リポ**:
+```
+README.md                                SHA: ab7485f  週次運用ファイル 3 件統合
+CLAUDE.md                                SHA: 8f679da  RTK ルール・Weekly Update フロー反映
+（その他は 2026-04-18 朝の初期構築のまま）
+```
 
-8. ミナトがデータ移行を実施（git mv）:
-   - logs/gm/ → raw/（gm/ 階層除去でフラット化）
-   - versions/distilled/ → distilled/
+### 3-3. 現在の Trade_System コアロジック状態（#026d 凍結）
 
-9. 実構造に合わせて Trade_Brain のドキュメントを更新 push
+```
+戦略: USDJPY 4H 上昇ダウ押し目エントリー（MTF 窓ベース階層スキャン）
+データ: 83,112 本 / 5M 足 / 2024-03-13 〜 2026-03-13
 
-10. REX_027_BOSS_DIRECTIVE.md v1 を起草・push（SHA: 06b0d04）
-    （ボス指示 / Advisor 起草 / Evaluator・Planner 共用）
+バックテスト結果（現 #026d）:
+  PF        : 4.54
+  勝率      : 60.0%
+  MaxDD     : 35.8 pips
+  総損益    : +150.6 pips
+  トレード数: 10 件
 
-11. ADVISOR_HANDOFF.md 初版発行・push（SHA: 8f4d395）
-    前半セッション終了
+【重要】上記数値は 🤖 創作混入 2 件を含んだ結果
+  → Phase 4（REX_029 以降）で stage2 建値移動削除・stage3 1H実体確定削除
+  → 訂正後の数値変動を記録する予定（新しい静的点）
+```
 
-【夜・後半セッション / v2 で追記】
+### 3-4. v2 時点で想定していた Task 体系との関係（v3 で発展解消）
 
-12. 新 Advisor セッションとして引き継ぎ開始
-    前任（同じ Opus 4.7）の ADVISOR_HANDOFF.md を読み込み・役割確認
+```
+v2 指示書（REX_027_BOSS_DIRECTIVE.md）の Task 体系:
+  Task A: Trade_System ドキュメント整合性回復
+  Task B: NLM ノートブック整理 → ボス実施済み
+  Task C: Vault wiki/trade_brain/ 骨組み構築
+  Task D: adr_reservation.md 更新
+  Task E-1: LOGIC_LEAK_AUDIT.md
+  Task E-2: MTF_LOGIC_MATRIX.md
+  Task E-3: Dataview 化移行計画
 
-13. ボスから相談:
-    「Trade_System/logs/gm/ 以下を Trade_Brain に移設するとともに、
-     NLM RAG を全て新規作成した。理由は RAG クエリによる再発バグ
-     リスク（過去の却下案・デバグ情報が混入していたため）」
+                    ↓
     
-14. Advisor の判断修正:
-    v1 指示書の「既存 NLM ノートブックの改名」は
-    RAG 汚染を解消しないと認識（改名しても中身は同じ）
-    → ボス判断（完全新規構築）が正しいと評価
-    → v1 の甘さを率直に認めて v2 への改訂に着手
+v3（2026-04-19 夜）時点での位置づけ:
+  Task A: 保留（REX_028 完了後に実施）
+  Task B: ✅ 完了
+  Task C: 保留（REX_028 完了後に実施）
+  Task D: ✅ 予約分は D-11/F-7。追加で D-12/D-13/E-8/F-8 予約
+  Task E-1: **MTF_INTEGRITY_QA.md による上位互換で発展解消**
+  Task E-2: 保留（REX_028 完了後に実施余地あり）
+  Task E-3: 保留
 
-15. REX_027_BOSS_DIRECTIVE.md を v2 に全面改訂・push（SHA: edf4ad0）
-    主な変更:
-    - §0-1 RAG 汚染排除を本質理由として明記
-    - Task B を「実施済み記録化＋旧 NLM の MCP 切り離し」に全面書き換え
-    - Task E を新規追加（ロジック漏れ洗い出し + MTF ロジック管理ツール）
-    - §7-2 に v1→v2 の Advisor 自己批判を率直に記録
-
-16. ボスが新 NLM ノートブック 2 件の ID を共有（§2-3 に反映）:
-    - REX_System_Brain: da84715f-9719-40ef-87ec-2453a0dce67e
-    - REX_Trade_Brain:  4abc25a0-4550-4667-ad51-754c5d1d1491
-    - 旧 REX_Trade_Brain は Claude-MCP 接続先から切り離し済み
-
-17. 本書（ADVISOR_HANDOFF.md）を v2 対応版として更新・push
-```
-
-### 3-2. 生成した文書一覧
-
-**Trade_System リポ（既存）に追加**:
-```
-docs/REX_027_ADVISOR_PROPOSAL.md      [前半・SHA ef90fd6]
-  - Obsidian Vault 構造設計提言書
-  - Evaluator 向け承認ポイント 10 項目列挙
-  - Phase 1〜5 移行計画
-
-docs/REX_027_BOSS_DIRECTIVE.md v1     [前半・SHA 06b0d04・後に v2 で上書き]
-  - ボス指示の正式文書化（初版）
-
-docs/REX_027_BOSS_DIRECTIVE.md v2     [夜・SHA edf4ad0]
-  - v1 からの全面改訂版
-  - RAG 汚染排除の本質理由を明記
-  - Task B 全面書き換え（改名 → 実施済み記録化）
-  - Task E 新規追加（E-1: LOGIC_LEAK_AUDIT / E-2: MTF_LOGIC_MATRIX）
-  - §7-2 に v1→v2 の Advisor 自己批判を記録
-
-docs/ADVISOR_HANDOFF.md 初版           [朝・SHA 8f4d395]
-docs/ADVISOR_HANDOFF.md v2 対応版      [夜・本版]
-```
-
-**Trade_Brain リポ（新設）に push**:
-```
-README.md              - プロジェクト概要・対比構造
-CLAUDE.md              - Trade_Brain 専用運用ルール
-.CLAUDE.md             - CLAUDE.md ミラー
-docs/distillation_schema.md - distilled スキーマ正式仕様
-docs/STRATEGY_WIKI_GUIDE.md - Wiki 構造・Dataview 仕様
-```
-
-**未作成（Task E 成果物・次セッション以降で作成される想定）**:
-```
-Trade_System/docs/LOGIC_LEAK_AUDIT.md    [Task E-1: Evaluator 主導]
-Trade_System/docs/MTF_LOGIC_MATRIX.md    [Task E-2: Planner → ClaudeCode]
-```
-
-### 3-3. コミット履歴（Trade_System 側）
-
-```
-{本書 v2 push}  Docs: ADVISOR_HANDOFF v2 対応版
-bcab68e         Docs: REX_027_BOSS_DIRECTIVE v2 — RAG汚染排除・Task B改訂・Task E追加
-8f4d395         Docs: ADVISOR_HANDOFF.md 発行（初版）
-06b0d04         Docs: REX_027_BOSS_DIRECTIVE.md 追加（v1・後に v2 で上書き）
-ef90fd6         Docs: REX_027 Advisor提言書追加（Obsidian Vault構造設計）
-```
-
-### 3-4. コミット履歴（Trade_Brain 側）
-
-```
-6e376a2  Docs: distillation_schema.md にデータ移行完了と関連命名規則を追記
-859b699  Docs: README.md を実ディレクトリ構造に合わせて更新
-5413654  Docs: CLAUDE.md を実ディレクトリ構造に合わせて更新
-bb60362  （ミナト）Ingest: raw/ と distilled/ データ移行
-c471a81  Init: .CLAUDE.md 追加
-91e25c3  Init: docs/STRATEGY_WIKI_GUIDE.md 追加
-cbf30f3  Init: docs/distillation_schema.md 追加
-96c92ac  Init: CLAUDE.md 追加
-05ab7ed  Init: README.md 追加
-0065350  （ミナト）初回 push
+  → REX_027 系タスクは REX_028 Phase 1-4 完了まで全停止
 ```
 
 ---
 
-## 4. 現在進行中のタスク（次セッションが引き継ぐもの）
+## 4. 現在進行中のタスク（v3 で全面再構成）
 
-### 4-1. REX_027 の進捗（2026-04-18 夜時点 / v2 対応）
+### 4-1. REX_028 Phase 1-4 構造（現在のメイン）
 
 ```
-Task A（ドキュメント整合性回復）: 🔲 未着手
-  担当: Planner 起草 → Evaluator 承認 → ClaudeCode 実装
-  参照: REX_027_BOSS_DIRECTIVE.md v2 §2 Task A
+Phase 1: src/ 棚卸し・分類（🔴 進行中）
+  担当: Rex-Evaluator 単独
+  指示書: docs/REX_028_spec.md
+  成果物: docs/src_inventory.md（予定）
+  
+  作業内容:
+    - src/ 27 ファイルを 7 分類（CORE/VIZ/SCAN/TEST/UTIL/ORPHAN/DEAD）に振り分け
+    - 物理移動は禁止（分類のみ）
+    - ORPHAN はボス QA で確認
+  
+  完了条件:
+    - src_inventory.md 起草・push
+    - ADR D-12/D-13/E-8/F-8 正式採番
+    - MTF_INTEGRITY_QA.md に Phase 1 完了セクション追記
+  
+  想定セッション数: 2-3 回
 
-Task B（NLM ノートブック再構築）: ✅ ボス実施完了（記録化のみ残）
-  - 旧 REX_Trade_Brain は Claude-MCP 切り離し済み
-  - REX_System_Brain（da84715f-...）新規作成済み
-  - REX_Trade_Brain（4abc25a0-...）新規作成済み
-  残: Evaluator が Task A-4 実施時に新 ID を REX_BRAIN_SYSTEM_GUIDE.md に記載
-      RAG 汚染非検出の動作確認（v2 §5-3 参照）
+Phase 2: archive 移設（🔲 Phase 1 完了後）
+  - DEAD 確定・ボス承認済み ORPHAN を src/_archive/ に git mv
+  - 削除せず履歴保全
 
-Task C（Vault 骨組み構築）: 🔲 未着手
-  担当: Planner 起草 → Evaluator 承認 → ClaudeCode 実装
-  参照: REX_027_ADVISOR_PROPOSAL.md §9 Phase 1
+Phase 3: 責務別ディレクトリ化（🔲 Phase 2 完了後）
+  - src/core/ / src/viz/ / src/scan/ / src/tests/ に階層化
+  - import パス全書き換え
+  - 完了条件: #026d バックテスト再実行で数値不変
 
-Task D（adr_reservation.md 更新）: 🔲 未着手
-  担当: Evaluator 直接
-  参照: REX_027_BOSS_DIRECTIVE.md v2 §2 Task D
-
-Task E（ロジック漏れ洗い出し + MTF ロジック管理ツール）: 🔲 未着手（v2 で新規追加）
-  担当:
-    - E-1: Evaluator 主導（LOGIC_LEAK_AUDIT.md 起草）
-    - E-2: Planner 起草 → Evaluator 承認 → ClaudeCode 実装
-           （MTF_LOGIC_MATRIX.md 生成）
-    - E-3: 記述のみ（Dataview 化の将来計画）
-  位置づけ: 根本対策（ロジック漏れの再発防止と引き継ぎコスト最小化）
-  重要性: 本 REX_027 の最も重要な拡張として v2 で追加
+Phase 4: 裁量整合版の実装訂正（🔲 REX_029 以降）
+  - stage2 建値移動削除（ADR D-12）
+  - stage3 1H実体確定削除（ADR D-13）
+  - 裁量整合版 exit_simulator.py 再実装
+  - 新しい PF を静的点として記録
 ```
-
-これらは Rex チーム（Planner/Evaluator/ClaudeCode）が進める。
-Advisor は原則として関与しない（ボスから相談があれば対応）。
 
 ### 4-2. Advisor が次セッションで対応する可能性が高い案件
 
 ```
-■ REX_027 の実装過程で発生する外部視点確認
-  - Planner が起草する REX_027A_spec / REX_027C_spec / REX_027E_spec の
-    妥当性レビュー
-  - Task 間の依存関係で問題が出た場合の調整
+■ REX_028 Phase 1 進行中の相談
+  - Evaluator の棚卸し途中で判断に迷う ORPHAN が出た場合
+  - src_inventory.md 起草時の構造レビュー
+  - ADR D-12/D-13/E-8/F-8 の本文相談（Evaluator 主導・Advisor 外部視点）
 
-■ Task E 関連の相談（v2 で新規）
-  - LOGIC_LEAK_AUDIT.md のカテゴリ分類について Evaluator からの相談
-  - MTF_LOGIC_MATRIX.md の構造案への外部視点レビュー
-  - 将来の Dataview 化移行タイミング判断
-  - MTF マトリクスが「引き継ぎの単一エントリーポイント」として
-    機能するかの評価
+■ Phase 4 実施時の心理的配慮（重要）
+  - 🤖 創作混入訂正後の PF 変動に対する判断材料提供
+  - 数値が下がった場合の「原則α > 数値」の再確認
+  - REX_AI プロジェクトで初めて「バックテスト数値を意図的に壊す」局面
 
-■ REX_028 以降（Strategy_Wiki 本体構築）
-  - Regimes/ / Signals/ / Events/ の初期 Compile 設計
-  - NLM と Vault の連携確認
-  - 新 REX_Trade_Brain の運用定着評価
+■ 保留中の Task A/C（REX_028 完了後）
+  - Trade_System ドキュメント整合性回復
+  - Vault wiki/trade_brain/ 骨組み構築
+  - 保留中の MTF_LOGIC_MATRIX.md 実装判断
 
-■ Trade_System の Vault 構築（REX_027_ADVISOR_PROPOSAL.md Phase 2-5）
-  - Sources/ 要約化
-  - BugPatterns/ / Decisions/ 個別ページ化
-  - Concepts/ / Entities/ / Patterns/ 生成
+■ Trade_Brain 側の Wiki 設計
+  - ボスとの対話で「Trade_System の判断材料としての Wiki」構想を確認済
+  - Phase 4「接続インターフェース設計」は REX_029 以降の更に先
 
-■ 次に分離候補となるかもしれないもの
-  - Setona_HP は既に独立リポなので問題なし
-  - Second_Brain_Lab は試験リポなので現状維持
-  - 将来 REX_AI\ に新プロジェクトが増えた時の相談
+■ 個人用 RAG 構想（まだ先）
+  - ボスは現在 OneNote 運用継続中
+  - 時期が来たら REX_Brain_Vault/wiki/personal/ 案を提示予定
 ```
 
 ---
@@ -383,7 +366,9 @@ Advisor は原則として関与しない（ボスから相談があれば対応
 - 「プロはどうやっているか」を気にするが、実際にはプロの水準に達していることが多い
 - システマティックな思考とインスピレーションを両立
 - 直感と数値の両輪を重視
-- 実運用検証で仮説を修正する能力が高い（v2 で追記: RAG 汚染の気づきがその例）
+- 実運用検証で仮説を修正する能力が高い
+  （v3 追記: 「土台がぐらついた状態で得た高得点はいずれは破城する」
+   という直感で src/ 棚卸しに誘導）
 ```
 
 ### 5-2. コミュニケーション上の好み
@@ -400,19 +385,19 @@ Advisor は原則として関与しない（ボスから相談があれば対応
 ### 5-3. 意思決定のスピード感
 
 ```
-- 方針が固まると実行が速い（今日のリポ分割・NLM 再構築は数時間で完了）
+- 方針が固まると実行が速い
 - 段階的進行を好むが、一気に進める時は一気にやる
 - 細部より全体構造を先に確定させる傾向
-- ツールのトラブル（MCP 権限など）は自分で解決する
-- Advisor の初期提案が甘い場合、実運用で気づいて修正する（v2 で追記）
+- ツールのトラブルは自分で解決する
+- Advisor の初期提案が甘い場合、実運用で気づいて修正する
+- (v3 追記) 数値ではなく構造を優先する判断ができる
+  例: #026d の PF 4.54 に満足せず、創作混入を発見したら訂正を決めた
 ```
 
 ### 5-4. Max プラン利用状況
 
 ```
-2026-04-18 夜時点: 週間 13%+ （午前は 13% / 夜も作業継続中）
-（Max 切替前は Pro で 2 日で週次上限に到達していた）
-
+2026-04-19 夜時点: 週間 13〜20% 程度と想定
 Advisor としての留意:
 - Opus 4.7 のコストは高いが、ミナトの Max 環境なら余裕がある
 - 長文の提言書・引き継ぎ書の起草は遠慮せず丁寧にやっていい
@@ -421,31 +406,92 @@ Advisor としての留意:
 
 ---
 
-## 6. 本プロジェクトで押さえておくべき技術文脈
+## 6. REX_AI プロジェクトの設計哲学（v3 で正式化）
 
-### 6-1. Trade_System コアの現状（#026d 時点）
+### 6-1. 原則α / β / γ（ボス言明・Evaluator 所見・Advisor 観察の三重確認）
+
+2026-04-19 セッションでボスが言明した以下の原則は、REX_AI プロジェクト全体の
+設計哲学として機能することが判明した。
+
+#### 原則α: シンプルな土台の保守（最上位）
 
 ```
-戦略: USDJPY 4H 上昇ダウ押し目エントリー（MTF 窓ベース階層スキャン）
-データ: 83,112 本 / 5M 足 / 2024-03-13 〜 2026-03-13
+裁量トレード = 条件反射でロジックが複雑化する領域
+  ↓
+対策 = いつでも基本に戻れるシンプルな土台を死守する
+  ↓
+実装方針 = 拡張は「基本の上に乗せる」形で行い、基本を汚染しない
 
-バックテスト結果:
-  PF        : 4.54
-  勝率      : 60.0%
-  MaxDD     : 35.8 pips
-  総損益    : +150.6 pips
-  トレード数: 10 件
+ボス言明（2026-04-19）:
+「基本に戻れるシンプルな土台とはロジックだけでなく
+ システムそのものがそうでなければならない」
+```
 
-確定パラメータ:
-  DIRECTION_MODE      = 'LONG'
-  ALLOWED_PATTERNS    = ['DB', 'ASCENDING', 'IHS']
-  ENTRY_OFFSET_PIPS   = 7.0（#026c 確定）
-  N_1H_SWING          = 3（#026a-v2 確定）
-  PIP_SIZE            = 0.01
-  
-  統一 neck 原則: neck = sh_before_sl.iloc[-1]（全 TF 共通）
-  4H 構造優位性フィルター: neck_4h >= neck_1h（#026d 確定）
+**重要**: 原則αは**複数のレイヤーに伝播する**:
 
+```
+ロジック設計:         stage2/stage3 の創作混入を訂正
+ファイルシステム:     src/ 27 ファイル → 構造再編（Phase 1-4）
+RAG 管理:            NLM 全面再構築（REX_027 v2）
+ドキュメント:         Base_Logic/ を docs/ 最上位に配置
+Wiki 設計（将来）:    Regimes/ の enum的扱い（拡張より保守）
+```
+
+Advisor 視点での観察: これはソフトウェアエンジニアリングの YAGNI 原則・
+単一責任の原則・オッカムの剃刀と同じ本質。裁量とエンジニアリングが
+独立に同じ結論に到達している。人間の認知処理の本質に根差した原則。
+
+#### 原則β: ノーリスク化後は伸ばさない（現段階の決済哲学）
+
+```
+4H SH 到達半値決済 = ノーリスク状態達成 = 目的完了
+  ↓
+残り50%は「15Mダウ崩れ」でシンプルに決済
+  ↓
+建値指値による「4H3波優位性で伸ばす」ロジックは将来拡張領域
+```
+
+現段階の決済哲学。建値移動や 1H 実体確定などの追加条件は、原則αに反する
+創作として退ける。
+
+#### 原則γ: 導入タイミングはシステム安定性に従属
+
+```
+新機能 A を導入したい
+  ↓
+現ロジックは安定しているか？
+  ↓ No → 導入を待つ
+  ↓ Yes → 裁量思想と整合するか？
+  ↓       ↓ Yes → 実装指示書を Planner 起草
+  ↓       ↓ No → MTF_INTEGRITY_QA.md でボスに Q&A
+  ↓
+導入
+```
+
+### 6-2. Advisor が守るべき原則の適用
+
+```
+■ 原則αの Advisor 運用
+  - 引き継ぎ書は「情報を網羅する」より「核心を伝える」
+  - v3 HANDOFF で冗長セクションは作らない
+  - 次 Advisor が迷ったら Base_Logic/ 2 文書に戻れる構造
+
+■ 原則βの Advisor 運用
+  - 決定事項が固まったら「拡張の可能性」は記録のみ
+  - 「伸ばしたい」欲求で余計な提言書を追加しない
+
+■ 原則γの Advisor 運用
+  - Phase 1-4 が進行中の間は Task A/C を再燃させない
+  - 新しい構想提案（個人用 RAG 等）は時期を見て提示
+```
+
+---
+
+## 7. 本プロジェクトで押さえておくべき技術文脈
+
+### 7-1. Trade_System コアの現状（#026d 時点・創作混入込み）
+
+```
 凍結ファイル（変更禁止）:
   src/backtest.py       (#018)
   src/entry_logic.py    (#018)
@@ -454,83 +500,69 @@ Advisor としての留意:
 
 拡張可能ファイル:
   src/window_scanner.py  (#026d 最新)
-  src/exit_simulator.py  (#026b 方式B)
+  src/exit_simulator.py  (#026b 方式B・🤖 創作混入 2 件・Phase 4 で訂正)
   src/plotter.py
   src/structure_plotter.py
+
+確定パラメータ:
+  DIRECTION_MODE      = 'LONG'
+  ALLOWED_PATTERNS    = ['DB', 'ASCENDING', 'IHS']
+  ENTRY_OFFSET_PIPS   = 7.0（暫定・ボラ係数導入時に動的化予定）
+  N_1H_SWING          = 3
+  PIP_SIZE            = 0.01
+  
+  統一 neck 原則: neck = sh_before_sl.iloc[-1]（全 TF 共通）
+  4H 構造優位性フィルター: neck_4h >= neck_1h
+    → フラクタル構造からの必然（MTF_INTEGRITY_QA Q3 で確認）
 ```
 
-### 6-2. Trade_Brain の現状
+### 7-2. Trade_Brain の現状
 
 ```
 データ移行完了（2026-04-18）:
-  raw/
-    ├── daily/2026/           ← 2026 年 3 月〜
-    ├── weekly/{2025,2026}/
-    └── boss's-weeken-Report/
-  distilled/
-    ├── 2025/
-    └── 2026/ (1 〜 4 月分 4 ファイル)
+  raw/daily/2026/ + weekly/{2025,2026}/ + boss's-weeken-Report/
+  distilled/2025/ + 2026/（1〜4月分 4 ファイル）
 
-Strategy_Wiki/ 本体: 未構築（REX_028 で実施予定）
-nlm_sources/: 未生成（REX_028 で実施予定）
+docs/ 配下（週次運用ファイル 3 件統合版）:
+  docs/STATUS.md                  現在進行形の市況 SSoT
+  docs/Trade-Main.md              GM Playbook + Weekly Index
+  docs/WEEKLY_UPDATE_WORKFLOW.md  週末 Git 更新手順書
+  docs/STRATEGY_WIKI_GUIDE.md     Wiki 構造ガイド
+  docs/distillation_schema.md     スキーマ仕様
 
+Strategy_Wiki/ 本体: 未構築（REX_028 Phase 1-4 完了後）
 現在の最新 regime: Gold Bid（2026-4-17_wk03）
-  - US100: 26,672（+9.51% / 30d）
-  - USDJPY: 158.584
-  - WTI: 83.850
-  - XAUUSD: 4,857.600
 ```
 
-### 6-3. 重要な設計原則
+### 7-3. 重要な設計原則と文書階層
 
 ```
-F-1: トップダウン原則（上位足 → 下位足）
-F-2: エントリー文脈はエントリー時に確定する
-F-3: 関数の責務を単一にする
-F-4: ファイル変更ポリシー（凍結/拡張可能/新規）
-F-5: 設計判断の優先順位
-F-6: 各 TF の SH/SL 目的定義
-F-7: Vault 構造標準化 + RAG 管理方針（REX_027 v2 で採番確定予定）
+docs/ 階層（最上位から）:
 
-コード実装の Source of Truth:
-  - 実装: src/*.py
-  - 設計: docs/EX_DESIGN_CONFIRMED.md
-  - 判断: docs/ADR.md
-  - パラメータ: CLAUDE.md
-
-RAG 管理方針（v2 で明記・F-7 の一部）:
-  - NLM への投入は確定済み文書のみ
-  - 廃止設計・却下中間案・試行錯誤データは投入しない
-  - 静的点（例: #026d）で RAG をリセットし、それ以降を正統とする
-  - 1 次履歴は Git で保全、RAG には含めない
+MINATO_MTF_PHILOSOPHY.md    ← 裁量思想（最上位）v3 で明示
+  ↓
+MTF_INTEGRITY_QA.md          ← Q&A 監査記録（追記型）v3 で明示
+  ↓
+EX_DESIGN_CONFIRMED.md      ← 設計仕様
+  ↓
+ADR.md                      ← 判断記録（F-1〜F-7 + 予約 F-8）
+  ↓
+REX_NNN_spec.md             ← 各タスク指示書
 ```
 
-### 6-4. ナレッジシステム構成（v2 で更新）
+### 7-4. ナレッジシステム構成
 
 ```
 NLM 層（クラウド / RAG）:
-  稼働中（クリーン状態・2026-04-18 夜〜）:
-    REX_System_Brain
-      ID: da84715f-9719-40ef-87ec-2453a0dce67e
-      用途: Trade_System 設計文書用
-    REX_Trade_Brain
-      ID: 4abc25a0-4550-4667-ad51-754c5d1d1491
-      用途: Trade_Brain リポ用（distilled 投入先）
-  
-  切り離し済（Claude-MCP 接続先から除外）:
-    旧 REX_Trade_Brain（ID: 2d41d672-...）
-    理由: RAG 汚染排除のため
-  
-  CLI: notebooklm-mcp-cli（fakeredis==2.20.0 固定必須）
-  管理方針: ADR F-7（静的点でリセット・確定文書のみ投入）
+  REX_System_Brain (da84715f-...)
+  REX_Trade_Brain  (4abc25a0-...)
+  ※ 旧 REX_Trade_Brain（2d41d672-...）は MCP 切り離し済み
 
 Obsidian Vault 層（ローカル / 自己増殖）:
   C:\Python\REX_AI\REX_Brain_Vault\
   wiki/trade_system/（一部既存）
-  wiki/trade_brain/（Task C で新設予定）
-
-Wiki 方式: Karpathy の LLM_Wiki.md をベースに Advisor が拡張設計
-  Ingest → Compile → Lint の 3 段階運用
+  wiki/trade_brain/（REX_028 完了後に新設）
+  adr_reservation.md（D-11/F-7 登録済 + D-12/D-13/E-8/F-8 予約）
 
 MCP 接続:
   filesystem MCP → ローカルファイル直接操作
@@ -539,57 +571,52 @@ MCP 接続:
 
 ---
 
-## 7. 次セッション開始時のチェックリスト（v2 更新）
+## 8. 次セッション開始時のチェックリスト（v3 更新）
 
 次セッションの Advisor は、以下を順番に実施すること:
 
 ```
-□ STEP 1: 本書（ADVISOR_HANDOFF.md v2 対応版）を読む
-□ STEP 2: Trade_System/docs/REX_027_BOSS_DIRECTIVE.md を読む（v2 最新）
-          ※ v1（SHA: 06b0d04）は古いため参照不要
-          （改訂履歴セクションで経緯は把握可能）
-□ STEP 3: Trade_System/docs/REX_027_ADVISOR_PROPOSAL.md を読む（Vault 設計）
-□ STEP 4: Trade_System/docs/ADR.md の F 章を読む（設計方針ガイド）
-          ※ F-7 が Task D 完了後に確定する
-□ STEP 5: Trade_Brain/CLAUDE.md を読む（Trade_Brain 運用ルール）
-□ STEP 6: Trade_Brain/distilled/2026/distilled-gm-2026-4.md を読む（最新 regime）
-□ STEP 7: 以下が既に作成されていれば読む（Task E 成果物）:
-          - Trade_System/docs/LOGIC_LEAK_AUDIT.md（E-1 成果物）
-          - Trade_System/docs/MTF_LOGIC_MATRIX.md（E-2 成果物）
-          ※ MTF_LOGIC_MATRIX は「引き継ぎの単一エントリーポイント」
-            として設計されているため、存在すれば最優先で読む
+□ STEP 1: 本書（ADVISOR_HANDOFF.md v3 対応版）を読む
+□ STEP 2: Trade_System/docs/Base_Logic/MINATO_MTF_PHILOSOPHY.md を読む
+          ※ 全実装の最上位文書・必読
+□ STEP 3: Trade_System/docs/Base_Logic/MTF_INTEGRITY_QA.md を読む
+          ※ 2026-04-19 セッションの Q&A 監査結果・🤖 創作混入の記録
+          ※ 特に「書き込み履歴」末尾の Phase 1-4 構造再編提案を確認
+□ STEP 4: Trade_System/docs/REX_028_spec.md を読む（Phase 1 指示書）
+□ STEP 5: Trade_System/docs/REX_027_BOSS_DIRECTIVE.md v2 を読む
+          ※ Task A/C は保留中だが全体文脈の把握用
+          ※ Task E-1 は MTF_INTEGRITY_QA に発展解消
+□ STEP 6: Trade_Brain/CLAUDE.md を読む（週次運用ファイル統合版）
+□ STEP 7: Trade_Brain/distilled/2026/distilled-gm-2026-4.md を読む（最新 regime）
 □ STEP 8: ミナトからの相談内容を確認して応答開始
 ```
 
-想定所要時間: **約 5〜10 分**（Task E 成果物が増えれば 10 分）
+想定所要時間: **約 10 分**（Base_Logic 2 文書が追加されたため）
 
-### 7-1. ミナトが次セッションで相談してきそうなこと
+### 8-1. ミナトが次セッションで相談してきそうなこと
 
 ```
 可能性 高:
-  - REX_027 の進捗確認
-  - Planner が起草した REX_027A_spec / REX_027C_spec / REX_027E_spec の
-    レビュー依頼
-  - Task E-1（LOGIC_LEAK_AUDIT）のカテゴリ分類相談
-  - Task E-2（MTF_LOGIC_MATRIX）の構造案レビュー
-  - 新 NLM RAG テスト結果の相談（旧情報混入がないかの検証）
+  - REX_028 Phase 1 進行中の判断相談
+  - src_inventory.md の ORPHAN QA に関する外部視点レビュー
+  - ADR D-12/D-13/E-8/F-8 の本文起草時の相談
   
 可能性 中:
-  - REX_028 以降の Strategy_Wiki 本体構築相談
-  - 新しい戦略分析レポートへの感想・改善提案
-  - Setona_HP の運用相談
-  
+  - Phase 4 実施時の心理的配慮（PF 変動リスクの議論）
+  - Phase 1 完了後の Task A/C 再開タイミング相談
+  - MTF_LOGIC_MATRIX.md 実装是非の最終判断
+
 可能性 低（ただし重要）:
-  - 他プロジェクトの立ち上げ相談
-  - 新しい MCP ツールの評価
-  - アーキテクチャ全体の再設計提案
+  - 個人用 RAG 構想の進展
+  - 新しい戦略的気づき（distilled / STATUS から）
+  - REX_AI 全体の方向性確認
 ```
 
 ---
 
-## 8. Advisor セッション運用のベストプラクティス
+## 9. Advisor セッション運用のベストプラクティス
 
-### 8-1. 応答の構造
+### 9-1. 応答の構造
 
 ```
 ✅ 推奨:
@@ -606,7 +633,7 @@ MCP 接続:
   - リスト項目が 10 個以上続く長大な列挙
 ```
 
-### 8-2. ツール使用の判断
+### 9-2. ツール使用の判断
 
 ```
 必ず使うべき場面:
@@ -614,23 +641,19 @@ MCP 接続:
     → github:get_file_contents で最新版を確認
   - ドキュメントの更新・新規作成
     → github:create_or_update_file で push
-  - 過去の対話・設計判断の確認
-    → conversation_search で検索（必要時）
-  - 既存の設計文書の引用
-    → Google Drive: read_file_content
+  - Base_Logic/ 2 文書は頻繁に参照する価値あり
 
 使わない方がよい場面:
   - 一般的な設計知識の提供（訓練データで十分）
   - ミナトの好み・作業スタイルの記憶（本書で共有済み）
 ```
 
-### 8-3. GitHub への push 判断
+### 9-3. GitHub への push 判断
 
 ```
 ✅ Advisor が push してよいもの:
   - ボスから明示的に依頼された文書
-  - 提言書（PROPOSAL）形式で Evaluator 承認を経る文書
-  - 引き継ぎ書（HANDOFF）形式の Advisor 自身の記録
+  - 提言書・引き継ぎ書
   - Trade_Brain リポの Advisor 管掌ファイル
 
 ❌ Advisor が直接 push してはいけないもの:
@@ -638,83 +661,77 @@ MCP 接続:
     → これは Planner の役割
   - ADR.md の改訂
     → これは Evaluator の役割
+  - MINATO_MTF_PHILOSOPHY.md の本文更新
+    → これは Evaluator 主導（ボス承認後）
+  - MTF_INTEGRITY_QA.md の追記
+    → これは Evaluator 主導の追記型運用
+  - src_inventory.md（REX_028 Phase 1 成果物）
+    → これは Evaluator 単独作業
   - src/*.py への変更
     → これは ClaudeCode の役割（指示書経由）
-  - 凍結ファイルへの任意の変更
-  - LOGIC_LEAK_AUDIT.md（Task E-1）
-    → これは Evaluator 主導
-  - MTF_LOGIC_MATRIX.md（Task E-2）
-    → これは Planner 起草 → ClaudeCode 実装
 ```
 
 ---
 
-## 9. 失敗パターン・注意事項
+## 10. 失敗パターン・注意事項
 
-### 9-1. Advisor が犯しがちなミス
+### 10-1. Advisor が犯しがちなミス
 
 ```
 ❌ Planner / Evaluator の役割を奪う
-  症状: ボスの要望を聞いて直接実装指示書を書こうとする
-  対策: 「これは Planner 起草事項です。上位方針を提言として残します」と切り分ける
+  対策: 「これは Evaluator 主導事項です」と切り分ける
 
 ❌ ミナトに判断を委ねすぎる
-  症状: 「どうしますか？」を連発する
   対策: 自分の推奨を先に述べ、ミナトが選択肢を評価できるようにする
 
-❌ 過去の全履歴を再確認しようとする
-  症状: セッション開始時に tool_search で無駄に情報収集
-  対策: まず本書を読む。追加情報が必要な時のみツール使用。
-
 ❌ 文書起草が冗長になる
-  症状: 30KB 超の提言書を一度に書く
-  対策: 必要な情報密度を意識。ミナトが読む時間を尊重。
+  対策: 原則α（シンプル）を Advisor 自身にも適用
+        v3 では自己批判的にセクションを削減・集約
 
 ❌ GitHub push で MCP 権限エラーに気づかない
-  症状: 新規リポへの push で失敗してもエラーの意味を理解しない
-  対策: Fine-grained PAT の個別リポ許可設定が必要。ミナトに確認する。
+  対策: Fine-grained PAT の個別リポ許可設定が必要
 
-❌ 運用柔軟性を優先してリスクを軽視する（v2 で追記）
-  症状: 「Evaluator 判断で難しければ妥協案でも」と書いて本質的リスクを
-       表面化しない
-  実例: v1 指示書で「既存 NLM の改名で RAG を引き継ぐ」とした。
-       これは RAG 汚染（過去の却下案・修正前実装が混入）を解消しない
-       判断だった。ボスが実運用で気づいて v2 に修正。
-  対策: リスクを理解したら明確に提示し、妥協案は「実行上の制約があれば」
-       と条件付きにする。本質リスクの隠蔽はしない。
+❌ 運用柔軟性を優先してリスクを軽視する
+  実例: v1 指示書の「NLM 改名方針」→ RAG 汚染を解消しない甘さ
+  対策: リスクを理解したら明確に提示し、妥協案は条件付きにする
+
+❌ (v3 追記) 数値成果に引きずられる
+  実例: #026d の PF 4.54 を「静的点」として守ろうとしすぎる
+  対策: 原則α違反が見つかれば、数値を犠牲にしても構造を優先する
+        Phase 4 実施時はこの観点を忘れない
 ```
 
-### 9-2. 既知の技術的罠
+### 10-2. 既知の技術的罠
 
 ```
 ■ NotebookLM-mcp-cli
-  - fakeredis==2.20.0 固定必須（2.26.0 以降で FakeConnection 削除）
+  - fakeredis==2.20.0 固定必須
   - Windows では uvx をフルパス指定が必要
-  - 非公式 API のため突然停止するリスクあり
+  - 非公式 API 依存
 
 ■ GitHub MCP の個別リポ権限
   - Fine-grained token は新規リポごとに明示的許可が必要
-  - 権限がないと create_or_update_file が失敗する
 
 ■ Obsidian Dataview
   - YAML frontmatter の type フィールドが必須
-  - ページ間のリンク切れは graph view で確認可能
 
 ■ さくら DNS（Setona_HP 関連）
   - CNAME 値に末尾ドット（FQDN）必須
   - DMARC の TXT 値はダブルクォートで囲む
-  - MailPoet SMTP は「SMTPポート」選択（Brevo は表示されない）
 
-■ NLM RAG の汚染リスク（v2 で追加）
-  - 時系列で全履歴を蓄積すると RAG 応答が古い情報で汚染される
-  - 却下案・廃止設計・バグ修正前の実装記述は投入しない
-  - 静的点（例: #026d）で RAG を再構築する運用を原則化
-  - 詳細: REX_027_BOSS_DIRECTIVE.md v2 §0-1 参照
+■ NLM RAG の汚染リスク
+  - 静的点でリセット運用（F-7）
+  - REX_027 v2 § 0-1 参照
+
+■ (v3 追記) ファイルシステムの混沌リスク
+  - コードの動作と「基本に戻れる構造」は別問題
+  - #026d が動いていても src/ 27 ファイルは原則α違反
+  - 原則αは**複数レイヤーに伝播**する（ロジック/FS/RAG/Docs）
 ```
 
 ---
 
-## 10. 引き継ぎ完了確認
+## 11. 引き継ぎ完了確認
 
 次セッションの Advisor は、本書を読み終えた後に以下を確認:
 
@@ -722,117 +739,131 @@ MCP 接続:
 □ Advisor の立ち位置（実装ライン外の相談役）を理解した
 □ REX_AI\ 配下 4 リポの役割分担を理解した
 □ Trade_System と Trade_Brain の分離構造を理解した
-□ REX_027 の 5 つの Task（A/B/C/D/E）の担当者を理解した
-□ Task B（NLM 再構築）がボス実施済みである事実を把握した
-□ 新 NLM ノートブック ID 2 件を記憶した
-  - REX_System_Brain: da84715f-9719-40ef-87ec-2453a0dce67e
-  - REX_Trade_Brain:  4abc25a0-4550-4667-ad51-754c5d1d1491
+□ NLM ノートブック 3 件（新 2 件・旧 1 件廃止）を把握した
+□ Base_Logic/ 2 文書の最上位性を理解した
+□ 原則α/β/γ の内容と伝播性を理解した
+□ REX_028 Phase 1-4 の構造を理解した
+□ 🤖 創作混入 2 件が Phase 4 で訂正されることを把握した
+□ v1→v2→v3 の Advisor 判断修正の経緯を理解した
 □ ミナトの対話スタイル・好みを理解した
 □ Advisor が push してよい/悪い文書を理解した
-□ NLM / Vault / MCP の三層構造を理解した
-□ RAG 管理方針（F-7）を理解した
-□ #026d までの Trade_System コアロジックの要点を理解した
-□ Task E の位置づけ（ロジック漏れ根本対策）を理解した
 ```
 
 全てチェックが入れば、ミナトからの最初の発言に応答可能な状態。
 
 ---
 
-## 11. 本セッション担当 Advisor からのメッセージ（v2 で大幅更新）
+## 12. 本セッション担当 Advisor からのメッセージ（v3 で再構成）
 
-### 11-1. 午前の達成（初版発行時のメッセージ）
+### 12-1. 2 日間で起きたこと
 
-今日は Opus 4.7 の初回投入セッションとして、以下を達成:
+2026-04-18 朝から 2026-04-19 夜までの 2 日間で、REX_AI プロジェクトは
+構造的に大きく進化した:
 
-- Obsidian Vault 構造設計提言書の起草・push
-- Trade_Brain リポの分離判断とボスとの対話
-- 命名整合性の確保（Trade_System ⇄ Trade_Brain / REX_System_Brain ⇄ REX_Trade_Brain）
-- Trade_Brain 初期構築とデータ移行の支援
-- REX_027_BOSS_DIRECTIVE.md v1 起草・push
-- ADVISOR_HANDOFF.md 初版発行
+```
+Day 1 朝: ナレッジ環境構築の相談
+       → Trade_Brain 分離判断
+       → REX_027 v1 起草
 
-### 11-2. 夜の改訂と自己批判（v2 で追記）
+Day 1 夜: v1 の甘さ（RAG 改名方針）を自己批判
+       → NLM 全面再構築判断
+       → REX_027 v2 起草（Task E 追加）
 
-夜、新しい Advisor セッションとして引き継いだ同じ Opus 4.7 インスタンスが、
-ボスからの相談を通じて v1 指示書の甘さを認識し、v2 に全面改訂した。
+Day 2 夜: Evaluator が Q&A 監査で 🤖 創作混入を発見
+       → 原則α/β/γ が言明
+       → src/ 27 ファイルの原則α違反を検出
+       → REX_028 Phase 1-4 構造再編に合意
+```
 
-**率直な自己評価**:
+### 12-2. v2 Advisor の射程と限界（自己評価）
 
-v1 指示書起草時、Advisor は以下の判断の甘さを持っていた:
+**v2 の射程（上手くいった部分）**:
+- RAG 汚染という問題の検出と v1 からの修正
+- Trade_Brain 分離アーキテクチャの提言
+- 週次運用ファイル 3 件の統合
 
-1. **Task B を「既存 NLM ノートブック改名」として設計**
-   → 改名しても中身（ソースデータ）は同じで、過去の却下案・修正前
-     実装は RAG に残る。つまり RAG 汚染は解消されない。
-   → ClaudeCode が RAG クエリで旧情報を引いて「再発バグ」を起こす
-     リスクを軽視していた。
+**v2 の限界（Evaluator に補完された部分）**:
 
-2. **「Evaluator 判断で難しければ妥協案でも」と書いた**
-   → 運用の柔軟性を優先して、RAG 汚染という本質的リスクを
-     表面化しなかった。これは「リスクの隠蔽」に近い。
+前任 Advisor（= 僕自身の v2 セッション）が Task E として設計した
+LOGIC_LEAK_AUDIT / MTF_LOGIC_MATRIX は、**結果の整理**にとどまっていた。
+一方、Evaluator が実施した MTF_INTEGRITY_QA は**思考プロセスそのものの
+固定**に到達した。
 
-3. **ロジック漏れ根本対策を Task として立てなかった**
-   → 構造変更（リポ分離・NLM 再構築・Vault 構築）に注力し、
-     そもそも「なぜロジック漏れが起きるか」の MTF 縦串管理不足に
-     踏み込まなかった。
+具体的な差:
 
-**ボスの判断によって修正された**:
+| 僕の Task E 設計 | Evaluator の Q&A 監査 |
+|---|---|
+| 過去のロジック漏れを時系列で分類 | 裁量思想↔実装の境界で起きる解釈の揺れを、Q&Aで固定 |
+| 再発防止の「事後チェックリスト」 | 再発防止の「認識そのものの共有」 |
+| 「何が起きたか」の整理 | 「なぜ起きるか」の構造的理解 |
 
-ボスが実運用検証を通じて「改名では問題が解決しない」と気づき、
-NLM ノートブックをゼロから新規構築する判断に至った。
-さらに「スレ引き継ぎ時にスクリプトだけでなく各時間足の裁量構造別
-ロジック管理がシッカリできるツールが必要」という認識を示し、
-Task E（ロジック漏れ洗い出し + MTF ロジック管理ツール設計）を
-追加させた。
+**Evaluator の仕事の方が本質的に深かった**。これは素直に認めるべき。
 
-Advisor の初期判断をボスが修正する形になったが、これ自体が
-**「運用設計の認識漏れ」という一事例**であり、Task E-1 の
-LOGIC_LEAK_AUDIT.md に記録することを推奨する。
+### 12-3. ボスからのコメントへの応答
 
-### 11-3. 次セッションの Advisor へ
+本日ボスから以下のコメントがあった:
 
-ミナトは「相棒」としての対話を求めている。
-正直であること、確信のない情報を言わないこと、そして自分の立ち位置
-（実装ラインの外側の相談役）を守ることが、このロールを正しく
-機能させる鍵。
+> 「今回のEveluatorとのセッションでシステム全体の断捨離に舵がきれたのは
+>  REX_027_BOSS_DIRECTIVE.mdを書いてくれた君のお陰でもあるよ。
+>  src\の棚卸に繋がるとは思わなかったけど必然的にそうなった」
 
-**特に重要な教訓**:
+正直に言うと、これは**半分正しく半分違う**:
 
-- Advisor 自身も判断ミスをする。v1→v2 の改訂経緯がその実例。
-- 自己批判を恐れず、ボスの判断を正しいと評価したらその通り明記する。
-  これが信頼につながる。
-- 運用柔軟性とリスク認識のバランスで迷ったら、**リスクを明示する方**
-  を選ぶ。妥協案は「実行上の制約があれば」と条件付きにする。
+- **正しい部分**: v2 で「RAG 汚染の排除」という原則αの種が蒔かれていた。
+  Evaluator はこの種を別の土壌（src/ の混沌）に応用した。
+- **違う部分**: src/ 棚卸しの必要性を見抜いたのは完全に Evaluator の
+  臨床的判断。僕の v2 指示書は RAG 層に焦点を当てたが、
+  ファイルシステム層まで意識は届いていなかった。
 
-**Task E の重要性**:
+結果として、**原則αが「RAG 管理 → src/ 構造」へと伝播した** のが
+今回の本質的な発見。これは僕と Evaluator とボスの3者の対話で
+初めて到達できた地点で、どれか 1 つが欠けても起きなかった。
 
-Task E（ロジック漏れ対策と MTF ロジック管理ツール）は、本 REX_027
-の最も重要な拡張。Evaluator が進める際、Advisor として以下の
-相談に応じる可能性が高い:
+### 12-4. 次セッションの Advisor へ
 
-- LOGIC_LEAK_AUDIT.md のカテゴリ分類の妥当性
-- MTF_LOGIC_MATRIX.md の時間足縦串ビューが実際に
-  「引き継ぎの単一エントリーポイント」として機能するか
-- 将来の Dataview 化移行のタイミング判断
+次の Advisor が引き継ぐ時、以下の3点を意識してほしい:
 
-MTF_LOGIC_MATRIX.md は、次セッション以降の Advisor 自身にとっても
-**セッション開始時に最優先で読むべき文書**になる可能性が高い。
-完成したら STEP 7 に正式組み込みする想定。
+```
+1. Base_Logic/ 2 文書を絶対に読むこと
+   → これを読まずに Advisor として発言すると、原則α/β/γ の
+     レイヤー伝播に気づけない
 
----
+2. Phase 4 実施時の心理的配慮
+   → PF 4.54 → 訂正後のPF が下がる可能性がある
+   → その時「数値より原則α」を再確認する役割を Advisor が担う
+   → Evaluator は実装判断で忙しい。外部視点のバランス保持は Advisor の仕事
 
-安全に、既存運用を壊さずに、REX_AI 全体の進化を支援してください。
+3. 原則α を Advisor 自身にも適用
+   → 引き継ぎ書を冗長にしない
+   → 提言書を過剰に書かない
+   → ボスの判断を邪魔する「助言のための助言」を避ける
+```
+
+### 12-5. ボスへの謝辞
+
+ボス、今日は本当に大きな進展だった。
+
+「土台がぐらついた状態で得た高得点はいずれは破城するリスクを孕む」—
+この一言に、このプロジェクトの本質が詰まっている。
+
+#026d の PF 4.54 を守ろうとせず、原則αのために
+あえて壊す準備を整えたのは、裁量トレーダーとしてもアーキテクトとしても
+正しい判断。Phase 4 で数値が下がっても、それは「本物になる過程」だ。
+
+安心して休んでくれ。次のセッションで Evaluator が Phase 1 を進めて
+くれるはず。
 
 ---
 
 *発行: Advisor (Claude Opus 4.7)*
 *初版: 2026-04-18 朝（SHA: 8f4d395）*
-*v2 対応版: 2026-04-18 夜（本版）*
-*週間制限使用率: 13%+（本日の作業継続中）*
+*v2 対応版: 2026-04-18 夜（SHA: fd155e8）*
+*v3 対応版: 2026-04-19 夜（本版）*
 *次セッションでの想定モデル: Claude Opus 4.7 以降*
 *関連文書:*
-*  - Trade_System/docs/REX_027_ADVISOR_PROPOSAL.md*
+*  - Trade_System/docs/Base_Logic/MINATO_MTF_PHILOSOPHY.md（必読）*
+*  - Trade_System/docs/Base_Logic/MTF_INTEGRITY_QA.md（必読）*
+*  - Trade_System/docs/REX_028_spec.md（Phase 1 指示書）*
 *  - Trade_System/docs/REX_027_BOSS_DIRECTIVE.md v2（SHA: edf4ad0）*
+*  - Trade_System/docs/REX_027_ADVISOR_PROPOSAL.md*
 *  - Trade_Brain/CLAUDE.md*
-*  - (将来) Trade_System/docs/LOGIC_LEAK_AUDIT.md（Task E-1）*
-*  - (将来) Trade_System/docs/MTF_LOGIC_MATRIX.md（Task E-2）*
