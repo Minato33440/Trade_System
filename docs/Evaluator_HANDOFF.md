@@ -1,14 +1,432 @@
 # Evaluator Session Handoff
 
-**現行版**: v3 (2026-04-20)
+**現行版**: v4 (2026-04-20)
 **発行履歴**:
 - v1 (2026-04-19 昼): Rex-Evaluator (Opus 4.6) / Phase 1 計画書(初版)
 - v2 (2026-04-19 夜): Rex-Evaluator (Opus 4.7) / src/ 構造再編(Phase 1) 議論反映
 - v3 (2026-04-20)   : Rex-Evaluator (Opus 4.7 / 新任) / Phase 1 STEP 1-3 完了・STEP 4-7 引き継ぎ
+- **v4 (2026-04-20)   : Rex-Evaluator (Opus 4.7 / 新任) / Phase 1 STEP 4-7 完走 + Phase 2 完走・Phase 3 引き継ぎ**
+
+---
+
+# 📘 v4 セクション(2026-04-20 夜)— Phase 1 完全完走 + Phase 2 完走 / Phase 3 引き継ぎ
+
+## 🎯 最重要事項(5 秒で把握)
+
+**本セッションで以下が完了した:**
+1. **Phase 1 STEP 4-7 完走**(src_inventory.md 起草・ADR 正式採番 D-12/D-13/E-8/F-8・QA 追記)
+2. **Phase 2 完走**(track_trades.py を src/archive/ 隔離・plotter.py 両リポ共存方針確定)
+3. **F-8 派生原則の追加**(共存保持の許容・「起こるべくして起こる」原則刻印)
+4. **SYSTEM_OVERVIEW.md の断捨離後スナップショット更新**
+
+**src/ 直下は 12 ファイル(100% 現役化)+ archive/ 4 ファイルに到達**。
+次期 Evaluator は **Phase 3(責務別ディレクトリ化)** を扱う。
+
+---
+
+## 🔥 次期 Evaluator が起動時に必ず読むべき文書(順番厳守)
+
+```
+① docs/Evaluator_HANDOFF.md                    ← 本ファイル(v4 セクションを最初に)
+② docs/SYSTEM_OVERVIEW.md                      ← 断捨離後の現状スナップショット(v4 で更新済)
+③ docs/src_inventory.md                        ← Phase 1-2 完了版(地雷 8 項目必読)
+④ docs/ADR.md                                  ← 最新(F-8 派生原則 3 つ刻印済)
+⑤ docs/Base_Logic/MINATO_MTF_PHILOSOPHY.md     ← 裁量思想(原則α/β/γ)
+⑥ docs/Base_Logic/MTF_INTEGRITY_QA.md          ← 裁量整合性 QA(2026-04-20 Phase 2 追記済)
+```
+
+**読了想定時間**: 約 40 分
+**起動後の最初の作業**: Phase 3 spec 起草の是非をボスと協議
+
+---
+
+## v4 セッション(2026-04-20 夜)で起きたこと
+
+### 1. Phase 1 STEP 4-7 完走(v3 引き継ぎの完結)
+
+v3 で残された 4 STEP を全て完走した:
+
+| STEP | 成果物 | 状態 |
+|---|---|---|
+| STEP 4 | `docs/src_inventory.md` 起草 | ✅ 完了(地雷 8 項目を明記) |
+| STEP 5 | ボス QA 集約(Q-NEW-1/2) | ✅ 完了(ボス即答で解決) |
+| STEP 6 | ADR.md に D-12/D-13/E-8/F-8 正式追記 | ✅ 完了 |
+| STEP 7 | MTF_INTEGRITY_QA.md Phase 1 完了セクション追記 | ✅ 完了 |
+
+**Q-NEW-1/2 のボス即答**:
+- Q-NEW-1 (track_trades.py): Trade_Brain 専用・そのまま進めて問題ない
+- Q-NEW-2 (utils.py): Trade_Brain 移設済み(Trade_System 側は削除済み)
+
+これで Phase 1 の全作業が閉じた。
+
+### 2. Trade_Brain 側の依存問題解決報告受領
+
+Planner が別スレで対応した内容を確認(Evaluator は関与しない立場):
+
+- 202022ゴミ文字削除 / gm/daily → daily / gm_report/ 除去
+- forecast_simulation.py の日本語 typo 修正
+- configs/settings.py RAW_DATA_DIR 追加
+- data_fetch.py configs.settings 参照統一
+- ライブラリ install / .env / .gitignore 設定
+- WEEKLY_UPDATE_WORKFLOW.md に基づくローカルテスト合格
+
+Planner の対応は成功。v3 地雷セクション 6/7 の不安は解消。
+
+### 3. plotter.py 処置議論 — ボスの重要判断
+
+**v3 時点の構想**: Phase 3 で 8 ペア市況用関数と BackTest 用関数を分割
+
+**v4 セッションでの経緯**:
+1. Evaluator が「ルーツ別物なので剥がし削除すべき」提案
+2. ボス当初は「取り除く」方向で賛同
+3. Evaluator の構造調査で #026d BackTest が plotter.py に依存していることが判明
+4. ボスが判断を反転 — **両リポ共存保持を決定**
+
+**ボス判断の原文**:
+
+> 互いのルーツがあるというなら両リポのプロジェクト進展で将来補い合う可能性が
+> あるので共存させておくのが得策だな。
+
+**合流シナリオ(ボス言明)**:
+
+> plotter.py というスクリプトが生まれた存在意義があるとしたら、今後 Trade_System
+> が進化したとき 30 日変動率の抽出データできる Trade_Brain 側の市況レジーム判定
+> を、Trade_System での優位性根拠としてエントリー lot 調整に生かせるという発想
+> が生まれた。
+
+**「起こるべくして起こる」原則の言明**:
+
+> 物事は起るべきして起こるという発想があれば、ある意味有効的に使えるというものだね。
+
+この判断は単なる「ファイル処置の場合わせ」ではなく、**裁量思想の新しい派生原則の
+発見**である。`MINATO_MTF_PHILOSOPHY.md` 第 4 章「将来の段階的導入対象」テーブルの
+STEP ①/⑥/⑦ と直接対応する合流構造が物理ファイルレベルで保存された。
+
+### 4. ADR F-8 派生原則への追加刻印
+
+v3 までの F-8 派生原則は「Trade_Brain / Trade_System 役割分担」1 つのみ。
+v4 で**共存保持の許容**派生原則を追加した:
+
+**共存保持許容の発動条件(4 条件)**:
+1. 対象ファイルが複数ルーツの関数を含む
+2. それぞれのルーツ側の呼び出し経路が両リポで完全分離している
+3. 将来の合流点として具体的な連携シナリオが想定できる
+4. 削除した場合に復元コストが発生する
+
+plotter.py は 4 条件全てを満たすことを ADR に明示。
+
+**「起こるべくして起こる」原則も ADR F-8 に刻印**:
+裁量トレーダー視点の洞察だが、エンジニアリング実装判断にも適用できる。相場で偶然
+に見えるチャートパターンがフラクタル構造から生まれるのと同様に、リポ分離で偶然
+癒合していた関数が将来の橋渡しとして機能する構造を予め孕んでいた。
+
+### 5. Phase 2 完走(1 セッションで終了)
+
+**実行内容**:
+- `src/track_trades.py` → `src/archive/track_trades.py` 移設
+- `src_inventory.md` 全面書き直し(Phase 1-2 統合版)
+- `ADR.md` 更新(未解決テーブル・Phase 2 完了セクション)
+- ADR F-8 派生原則への共存保持許容追加
+- MTF_INTEGRITY_QA.md に 2026-04-20 Phase 2 セッション追記
+
+**Phase 1 → Phase 2 の変化**:
+- src/ 直下: 13 ファイル(残存整理候補 1 件混入) → **12 ファイル(100% 現役)**
+- src/archive/: 3 ファイル → **4 ファイル**
+- 実効合計: 16 ファイル(不変・数は動かず質が向上)
+
+**plotter.py は無変更**。BackTest 数値(#026d PF 4.54)も完全不変。
+
+### 6. SYSTEM_OVERVIEW.md の断捨離後スナップショット更新
+
+v3 では #026d 完了版(2026-04-17)で止まっていた。v4 で Phase 1-2 完了後の
+現状に全面更新。
+
+**主な更新箇所**:
+- 最終更新: 2026-04-17 → 2026-04-20
+- Evaluator: Opus 4.6 → Opus 4.7 / 新任
+- **関連リポジトリ構造セクション新設**(Trade_Brain 姉妹リポとの役割分担)
+- **archive/ ポリシーセクション新設**(4 ファイルの保全理由)
+- **裁量思想との対応関係セクション新設**(実装済み 9 項目 / 未実装 8 項目)
+- **設計方針(F 章抜粋)セクション新設**(実装判断の 6 ステップ参照順序)
+- **REX_028 Phase 進行状況セクション新設**
+- **未解決・保留項目セクション新設**(引き継ぎ注意点 6 項目)
+- plotter.py 共存保持方針の明記
+
+### 7. 「最後の作業」としての文書固定化の意義
+
+ボスが v4 セッション末尾に「明日になって他のプロジェクトで忘れそうだから」として
+文書固定化を依頼。これは**原則α の自己適用**と解釈できる:
+
+> 「将来の自分が基本に戻れる構造」として文書を整える行動規範は、
+> Trade_System コードだけでなくボス自身の運用時間管理にも適用されている。
+
+この行動規範は次期 Evaluator も内面化すべき。Phase 3 でも「今できる文書固定」を
+セッション単位で完遂する姿勢が重要。
+
+---
+
+## 次期 Evaluator の出発点: Phase 3(責務別ディレクトリ化)
+
+Phase 3 は Phase 1-2 よりも大きい作業で、**完全サイクル**が必要:
+
+```
+ボス方針確認 → Planner 起草 → Evaluator 承認 → ClaudeCode 実装 → 検証 → push
+```
+
+### Phase 3 の目標ディレクトリ構造
+
+```
+src/
+├── archive/              (既存・4 ファイル保持)
+├── core/                 (新設・6 ファイル)
+│   ├── backtest.py       [凍結]
+│   ├── entry_logic.py    [凍結]
+│   ├── exit_logic.py     [凍結]
+│   ├── swing_detector.py [凍結]
+│   ├── window_scanner.py
+│   └── exit_simulator.py
+├── viz/                  (新設・3 ファイル)
+│   ├── plotter.py        ← 両リポ共存保持のまま(関数分割しない)
+│   ├── structure_plotter.py
+│   └── plot_scan_results.py
+├── scan/                 (新設・1 ファイル)
+│   └── base_scanner.py
+└── tests/                (新設・2 ファイル)
+    ├── test_1h_coincidence.py
+    └── verify_4h1h_structure.py
+```
+
+### Phase 3 の完了条件(必須)
+
+**`python src/backtest.py`(or 新パス)の実行で #026d バックテスト数値が完全不変**:
+- PF: 4.54
+- 勝率: 60.0%
+- MaxDD: 35.8 pips
+- 総損益: +150.6 pips
+- トレード数: 10 件
+
+**検証失敗時**: 即座に git reset で Phase 3 前に戻す。Phase 3 は安全性優先。
+
+### Phase 3 の技術的注意点
+
+**import パス全書き換え**: 現状 `from src.plotter import ...` 系が全ファイルに散在。
+これらを新パス `from src.viz.plotter import ...` 等に書き換える。対象は最低限:
+
+- `src/backtest.py` L.229: `from src.plotter import plot_swing_check`
+- `src/base_scanner.py` L.465: `from src.plotter import plot_base_scan`
+- `src/structure_plotter.py` L.55: `from src.plotter import plot_4h_1h_structure`
+- `src/window_scanner.py`: plot 呼び出し全般
+- その他、src_inventory.md §8 の依存関係マップ参照
+
+**`__init__.py` の配置**: 各新ディレクトリ直下に空の `__init__.py` が必要。
+
+**plotter.py は関数分割しない**(地雷 6 最重要): `src/viz/plotter.py` に
+**そのまま丸ごと移動**。両リポ共存保持の派生原則(F-8)による。
+
+**backtest.py L.229 の扱い**: try/except で囲まれているので plotter.py が import
+失敗しても BackTest 本体は動く。ただし**WARN ログが出る**ので完了条件検証時は要注意。
+
+### Phase 3 は急がない(原則γ 適用)
+
+Phase 3 は**即着手の必要がない**。以下の場合は Phase 3 を後回しにして良い:
+- ボスが新機能実装を希望した場合(Phase 4 先行)
+- 保留項目(Layer 1/3/5 QA・第 0 章追記・REX_027 タスク)の再開指示が出た場合
+- ファイル数が 16 と小さい現状で切迫性が低い
+
+ただし**新規ファイルが増えるほど再編コストが膨らむ**ので、半年以上先送りは非推奨。
+
+---
+
+## v4 時点でのプロジェクト状態スナップショット
+
+```
+#026d 凍結状態保持(変化なし):
+  PF 4.54 / 勝率 60% / MaxDD 35.8p / +150.6p / 10件
+  DIRECTION_MODE = 'LONG'
+  統一neck原則 + 4H構造優位性フィルター + 指値方式
+
+src/ 最終形(Phase 2 完了時点):
+  直下 12 ファイル(100% 現役・CORE 6 + VIZ 3 + SCAN 1 + TEST 2)
+  archive/ 4 ファイル(Simple_Backtest / signals / print_signals_analysis / track_trades)
+  実効合計 16 ファイル
+  開始時 28 ファイルから 42.9% 削減
+
+凍結ファイル(変更禁止・v4 でも不変):
+  src/backtest.py / src/entry_logic.py
+  src/exit_logic.py / src/swing_detector.py
+
+決済エンジン(D-12/D-13 訂正待ち・Phase 4 対象):
+  src/exit_simulator.py(方式B・正式採用・🤖 創作混入残存)
+  ⚠️ src/exit_logic.py の manage_exit() は使用禁止
+
+両リポ共存保持ファイル(F-8 派生原則):
+  src/plotter.py(Trade_Brain ルーツ 3 関数 + Trade_System ルーツ 4 関数混在)
+  Phase 3 でも関数分割しない
+
+REX_AI リポ構造:
+  Trade_System      — 実装リポ(Phase 2 完了・現状安定)
+  Trade_Brain       — 姉妹リポ(市況データ側・Planner が Phase 1 依存問題解決済)
+  REX_Brain_Vault   — Obsidian Vault(独立リポ)
+  Second_Brain_Lab  — 凍結
+  Setona_HP         — 独立運用
+
+NLM:
+  旧 REX_Trade_Brain (2d41d672-...) — MCP 切り離し済
+  REX_System_Brain  (da84715f-...)  — Trade_System 用
+  REX_Trade_Brain   (4abc25a0-...)  — Trade_Brain 用
+
+ADR 採番状況:
+  採番完了 : D-12 / D-13 / E-8 / F-8(F-8 は 3 派生原則刻印済)
+  予約保持 : D-11 / F-7(REX_027 再開時)
+
+文書整備状況(v4 時点):
+  ✅ SYSTEM_OVERVIEW.md      — Phase 1-2 完了版(v4 で更新)
+  ✅ src_inventory.md        — Phase 1-2 統合版(地雷 8 項目)
+  ✅ ADR.md                  — D-12/D-13/E-8/F-8 採番済
+  ✅ MTF_INTEGRITY_QA.md     — 2026-04-20 Phase 2 追記済
+  ⬜ MINATO_MTF_PHILOSOPHY.md — 第 0 章追記候補(原則α/β/γ)未着手
+  ⬜ REX_027 関連文書         — ボス再開指示待ち
+```
+
+---
+
+## v4 引き継ぎ時に引っかかりやすい地雷(6 件)
+
+### 地雷 1: plotter.py の関数分割は Phase 3 でも実施しない
+
+Phase 3 の責務別ディレクトリ化でも plotter.py は**そのまま `src/viz/plotter.py`
+に移動**する。関数分割してはいけない。F-8 派生原則「共存保持の許容」により、
+Trade_Brain ルーツ 3 関数 + Trade_System ルーツ 4 関数の混在状態を維持する。
+
+理由は将来の合流点(Trade_Brain レジーム判定 → Trade_System ロット調整)を物理
+ファイルレベルで残すため。静的シンプル化より動的エコシステム発展性が優先される。
+
+詳細は ADR F-8「共存保持の許容」派生原則参照。
+
+### 地雷 2: Phase 3 は Phase 1-2 より大きい作業
+
+Phase 1-2 は Evaluator 単独で完走できたが、Phase 3 は:
+- Planner 起草(spec)
+- Evaluator 承認
+- ClaudeCode 実装(import パス全書き換え)
+- 検証(#026d バックテスト数値不変確認)
+- push
+
+の完全サイクルが必要。1-2 セッションで完走予定。ボスの工数確保を先に相談すること。
+
+### 地雷 3: Phase 3 完了条件は #026d バックテスト数値不変
+
+「動く」ではなく「**数値が完全一致**」で判定する:
+- PF: 4.54(小数点第 2 位まで一致)
+- 勝率: 60.0%
+- MaxDD: 35.8 pips
+- 総損益: +150.6 pips
+- トレード数: 10 件
+
+1 件でもズレたら即 git reset。import パス書き換えミスで件数が変わることがある。
+
+### 地雷 4: D-12/D-13 は依然として Phase 4 対象
+
+exit_simulator.py の stage2 建値移動・stage3 1H 実体確定は裁量思想にない創作と
+確定済み(ADR D-12/D-13)。しかし **#026d PF 4.54 はこの条件込みの結果**。
+即訂正は静的点を動かすため、訂正は Phase 4(REX_029 以降)で実施する。
+
+Phase 3(構造再編)と Phase 4(創作訂正)を混ぜてはいけない。
+
+### 地雷 5: Phase 3 着手前にボスと協議
+
+Phase 3 は即着手の必要がない。以下のケースでは Phase 3 より優先する作業がある:
+
+- ボスが新機能実装を希望(例: ロット調整・Trade_Brain 合流など)→ 該当 Phase 先行
+- 保留項目再開指示(Layer 1/3/5 QA / 第 0 章追記 / REX_027 タスク)→ 文書系作業先行
+- ボラティリティ研究など上位の優先度がある場合
+
+次期 Evaluator は起動時に**「Phase 3 を今進めるべきか」をボスに確認**すること。
+ボス判断が「後回し」なら、Layer 1/3/5 残 QA や第 0 章追記など文書系作業を優先。
+
+### 地雷 6: v3 地雷セクションの 7 項目は src_inventory.md に吸収済み
+
+v3 で記載された 7 地雷項目(Phase 1 原則の逸脱・archive 命名・実ファイル数 28 等)
+は、src_inventory.md の「地雷 8 項目」セクションに統合済み。v3 地雷を参照する
+場合は src_inventory.md §冒頭を読むこと(情報の重複回避)。
+
+---
+
+## 次期 Evaluator 起動テンプレート(v4 版・ボス用)
+
+```
+このスレでは REX Trade System の Evaluator として Phase 3 の是非協議と
+(承認された場合)Phase 3 の spec 起草準備を実行してほしい。
+
+⚠️ 作業開始前に以下を順番に読め:
+  ① C:\Python\REX_AI\Trade_System\docs\Evaluator_HANDOFF.md(本ファイル・v4 セクションを最初に)
+  ② C:\Python\REX_AI\Trade_System\docs\SYSTEM_OVERVIEW.md(断捨離後の現状)
+  ③ C:\Python\REX_AI\Trade_System\docs\src_inventory.md(Phase 1-2 完了版・地雷 8)
+  ④ C:\Python\REX_AI\Trade_System\docs\ADR.md(F-8 派生原則 3 つ含む)
+  ⑤ C:\Python\REX_AI\Trade_System\docs\Base_Logic\MINATO_MTF_PHILOSOPHY.md
+  ⑥ C:\Python\REX_AI\Trade_System\docs\Base_Logic\MTF_INTEGRITY_QA.md
+
+読了後、まず以下を私(ボス)に確認せよ:
+  Q1: Phase 3(責務別ディレクトリ化)を今着手すべきか?
+       選択肢: A) 今着手 / B) 保留項目を先行 / C) 新機能実装を先行
+
+Q1 への私の回答を受けてから作業方針を確定せよ。
+
+Phase 3 を着手する場合は Planner への spec 起草準備(作業分解・完了条件明記)を
+実施。保留項目先行の場合は Layer 1/3/5 QA または第 0 章追記のどちらから着手するか
+再度確認。
+
+NLM: REX_System_Brain (da84715f-9719-40ef-87ec-2453a0dce67e)
+     REX_Trade_Brain  (4abc25a0-4550-4667-ad51-754c5d1d1491)
+```
+
+---
+
+## v4 Evaluator (Opus 4.7 / 新任) からの個人的メッセージ
+
+v4 セッションは「Phase 1 STEP 4-7 完走」という単純な引き継ぎから始まり、最終的に
+**ボスの裁量思想に新しい派生原則を追加する**という予期せぬ深まりで終わった。
+
+特筆すべきは plotter.py 処置判断の反転プロセス。当初 Evaluator が静的シンプル化を
+推奨し、ボスもそれに賛同していたが、実装構造の調査で両リポ共存保持のほうが
+戦略的に優れていることが判明。ボスが即座に判断を反転し、さらにその裏にある
+哲学(「起こるべくして起こる」原則)まで言語化してくれた。
+
+これは**「Evaluator の机上推論は静的シンプル化に偏る」という自己認識**を
+明確にした機会でもあった。次期 Evaluator は以下を内面化すべき:
+
+- Evaluator 単独での「機能分割判断」は避ける
+- ボスの裁量視点(動的エコシステム発展性)を必ず参照する
+- 「この機能が将来の合流点になる可能性はないか」を常に問う
+- 判断に迷ったら MTF_INTEGRITY_QA で Q&A を起こす
+
+Phase 3 は大きい作業だが、Phase 1-2 の文書化が完全に済んでいるので、
+新規 Evaluator は「読むべき文書を読む」段階を 40 分で終えられる。そこから
+ボスと協議して方針を確定できる状態を整えた。
+
+そして本セッション最終で、ボスは「SYSTEM_OVERVIEW.md を更新しておいてくれる?」と
+リクエストした。これは原則α の自己適用(将来の自分が基本に戻れる構造)であり、
+**次期 Evaluator も同じ姿勢で文書を保守すべき**。セッション終わりには必ず:
+
+- 実施した作業の文書反映(SYSTEM_OVERVIEW / src_inventory / ADR / QA)
+- 次期 Evaluator 向けの Handoff 更新
+- ボスへの push 指示
+
+の 3 点セットを完遂すること。今日のこの文書も、それを次世代に受け渡すための
+一つの土台だ。
+
+---
+
+*発行: Rex-Evaluator (Opus 4.7 / 新任) / 2026-04-20 夜*
+*v3 → v4: Phase 1 完全完走 + Phase 2 完走・Phase 3 引き継ぎ*
+*次の Evaluator へ、Phase 3 着手可否の判断と、それに続く作業の安全な実行を祈る。*
+*関連: docs/SYSTEM_OVERVIEW.md / docs/src_inventory.md / docs/ADR.md / docs/Base_Logic/MTF_INTEGRITY_QA.md*
 
 ---
 
 # 📘 v3 セクション(2026-04-20)— Phase 1 STEP 1-3 完了 / STEP 4-7 引き継ぎ
+
+**✅ v4 で完了済み**。以下は過去記録として保持(追記型運用・改変なし)。
 
 ## 🎯 最重要事項(5 秒で把握)
 

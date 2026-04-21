@@ -365,7 +365,9 @@ plot_scan_results.py <- window_scan_entries.csv(CSV から直接読み込み)
 引き継ぎ    : docs/Evaluator_HANDOFF.md
 
 Vault       : C:\Python\REX_AI\REX_Brain_Vault\
-NLM         : REX_Trade_Brain (2d41d672-f66f-4036-884a-06e4d6729866)
+NLM         : REX_System_Brain (da84715f-9719-40ef-87ec-2453a0dce67e) ← Trade_System 用
+              REX_Trade_Brain  (4abc25a0-4550-4667-ad51-754c5d1d1491) ← 姉妹リポ Trade_Brain 用
+              (旧 REX_Trade_Brain (2d41d672-...) は REX_027 v2 で MCP 接続切り離し済・廃止)
 GitHub      : Minato33440/Trade_System(本リポ)
               Minato33440/Trade_Brain(姉妹リポ・市況データ側)
 ```
