@@ -1009,4 +1009,4 @@ MTF_INTEGRITY_QA.md を必ず更新せよ。
 ---
 
 *本文書は追記型運用。セッションごとに日付見出しで追記し、過去の記録は改変しない。*
-*Source of Truth: 本文書の内容は `MINATO_MTF_PHILOSOPHY.md` `ADR.md` の更新トリガーとなる。*
+*Source of Truth: 本文書の内容は `MINATO_MTF_PHILOSOPHY.md` `ADR.md` の更新トリガーとなる。*　
