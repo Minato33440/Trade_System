@@ -132,7 +132,6 @@ Trade_System/
     ├── Evaluator_HANDOFF.md            # Evaluator 引き継ぎ文書 v3
     ├── src_inventory.md                # src/ 分類・地雷集(Phase 1-2)
     ├── PLOT_DESIGN_CONFIRMED.md        # プロット設計
-    ├── REX_BRAIN_SYSTEM_GUIDE.md       # セカンドブレイン利用ガイド
     │
     └── Base_Logic/                     # 裁量思想・整合性対話記録
         ├── MINATO_MTF_PHILOSOPHY.md    # 裁量思想の最上位辞書
