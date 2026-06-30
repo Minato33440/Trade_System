@@ -29,3 +29,11 @@
 - 実施: git rm（履歴はGitに保全）
 - 効果: ガバナンス3重化→2本／最後の非・死亡注記 2d41d672 残存を除去
 - 残課題: CLAUDE.md→@AGENTS.mdシム化は D-2b（AGENTS.md 中立化・パス修正後）
+
+---
+
+## 2026-06-30 D-2b 完了確認
+- CLAUDE.md → @AGENTS.md シム化 push 済（claudeレーンも新AGENTS.mdに収束）
+- 旧 AGENTS.md/CLAUDE.md は logs/archive/ へ退避（snapshot/CLAUDE-2026-6-30）
+- 検証: 生governance=AGENTS.md(源)+CLAUDE.md(シム)のみ／2d41d672 生ポインタ=0／logs/Codex 生参照=0
+- 残: D-3継続（docs/の Rex役割の著者・QA帰属）／D-4 Handover／D-6 週次系
