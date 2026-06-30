@@ -1,9 +1,7 @@
 # AGENTS.md — REX AI Trade System
-# 更新: 2026-06-29（D-2b/D-3: harness中立化・logs/claudecode パス修正・役割地の文除去・全engine共有 Project canon 化）
-# このファイルは Project canon（全engine共有）。
-#   - grok / codex … Hermes dir-scope で起動時に自動注入
-#   - ClaudeCode  … root CLAUDE.md（@AGENTS.md シム）経由で読む
-# 各engineはセッション開始時に必読。
+# 更新: 2026-04-25（役割別編集経路の追加 + 過去事故事例の記録）
+# このファイルはCodexがTrade_Systemリポジトリで作業する際に自動で読み込まれる
+# Codex.ai セッション（Advisor / Evaluator / Planner）も最初に手動で読むこと
 
 ---
 
@@ -15,13 +13,17 @@ USDJPY アルゴリズミック・トレーディングシステム（Minato流M
 
 ---
 
-## 体制（最小）
+## チーム構成
 
-- **最終判断**: Minato（ボス）
-- **実装**: 各engine（Hermes gateway / ClaudeCode）
-- **canon（ロジック・設計）の変更**: ボス承認（昇格判定）を経てのみ
+| 役割 | 担当 | 権限 |
+|---|---|---|
+| ディレクター | Minato（ボス） | 全ての最終判断 |
+| Advisor | Rex-Advisor（Opus 4.7） | 外部視点レビュー・戦略提言（実装ラインの外） |
+| Planner | Rex-Planner（Sonnet 4.6） | 指示書作成・設計 |
+| Evaluator | Rex-Evaluator（Opus 4.7） | 監査・承認・ADR管理 |
+| 実装 | Codex（Sonnet 4.6） | コード実装・Git管理 |
 
-> 役割・人格は各 Profile（Hermes\Profile\<engine>\）の管轄。本 Project canon には載せない（register最小・権威はcanon自身）。
+ロジック変更は Evaluator 承認後のみ。
 
 ---
 
@@ -29,13 +31,13 @@ USDJPY アルゴリズミック・トレーディングシステム（Minato流M
 
 ```
 STEP 1: このファイル（AGENTS.md）を読む
-        ← grok / codex は dir-scope 自動注入
-        ← ClaudeCode は CLAUDE.md（@AGENTS.md シム）経由で読む
+        ← Codex は自動読込
+        ← Codex.ai セッション（Advisor / Evaluator / Planner）は手動で必読
 STEP 2: docs/ 直下のファイルを確認（最新版のみ存在するはず）
-STEP 3: 指示書を確認（logs/claudecode/instructions/ の該当ファイル）
+STEP 3: 指示書を確認（logs/Codex/instructions/ の該当ファイル）
 STEP 4: 不明点があれば Vault の設計文書を参照
          パス: C:\Python\REX_AI\REX_Brain_Vault\
-         または @notebooklm-mcp にクエリ（※ REX_System_Brain は現状空・RAG未稼働）
+         または @notebooklm-mcp にクエリ
 STEP 5: 不明点が解消しない場合はボスに報告して停止
 ```
 
@@ -66,7 +68,7 @@ git diff -- src/backtest.py src/entry_logic.py src/exit_logic.py src/swing_detec
 ## ⚠️ 拡張可能ファイル（機能追加OK・ロジック変更は要確認）
 
 ```
-src/window_scanner.py   — カラム追加・出力OK / スキャンロジック変更は要ボス確認（昇格判定）
+src/window_scanner.py   — カラム追加・出力OK / スキャンロジック変更は要Evaluator確認
 src/exit_simulator.py   — 方式Bとして独立運用 / exit_logic.pyと混同しない
 src/plotter.py          — 表示機能の追加は自由
 src/structure_plotter.py
@@ -101,7 +103,7 @@ src/structure_plotter.py
 ```
 docs/ 直下のファイルのみが「現在有効な設計」
   - EX_DESIGN_CONFIRMED.md   — 設計確定文書（最新版）
-  - ADR.md                   — バグパターン集 + 設計方針ガイド
+  - ADR.md                   — バグパターン集 + 設計方针ガイド
   - PLOT_DESIGN_CONFIRMED.md — プロット設計
   - SYSTEM_OVERVIEW.md       — ファイル構成・依存関係
 
@@ -152,7 +154,7 @@ neck_4h  — 半値決済トリガー（段階2: High >= neck_4h → 50%決済�
 
 ---
 
-## 決済ロジック（4段階・exit_simulator.py 方式B）
+## 決済ロジック（4段階シ・exit_simulator.py 方式B）
 
 ```
 初動SL: 15M ダウ崩れ → 全量損切
@@ -174,10 +176,10 @@ neck_4h  — 半値決済トリガー（段階2: High >= neck_4h → 50%決済�
 
 ### 結果報告の出力先
 ```
-logs/claudecode/execution_results/REX_{番号}_result.md
+logs/Codex/execution_results/REX_{番号}_result.md
 ```
 
-### Git コミット手順（ローカル実装：ClaudeCode 等の自走harness向け）
+### Git コミット手順（Codex のローカル作業向け）
 ```bash
 # ⚠️ 必ず最初に実行（MCP経由pushと競合防止）
 git pull --rebase
@@ -188,7 +190,7 @@ git push
 ```
 
 **git pull --rebase が必須の理由:**
-MCP経由セッションとローカル実装の両方からpushが発生するため、
+Codex.ai（MCP経由）とCodex（ローカル）の両方からpushが発生するため、
 pull なしで push すると diverge（分岐）が起きる。
 rebase を使うことでコミット履歴をクリーンに保つ。
 
@@ -203,24 +205,24 @@ Phase A: "Phase A: ..."
 
 ---
 
-## 編集経路（重要・事故防止）
+## 役割別の編集経路（重要・事故防止 / 2026-04-25 追加）
 
 ### 編集経路の分離
 
-| 起動形態 | 編集ツール | コミット経路 |
+| 役割 | 編集ツール | コミット経路 |
 |---|---|---|
-| ローカル実装（ClaudeCode 等の自走harness） | filesystem 直接 | ローカル `git pull --rebase` → `git commit` → `git push` |
-| MCP接続セッション（全engine） | **GitHub MCP のみ使用** | `get_file_contents` で SHA → `create_or_update_file`（content 全文渡し）|
+| Codex（ローカル端末起動） | filesystem 直接 | ローカル `git pull --rebase` → `git commit` → `git push` |
+| Codex.ai Advisor / Evaluator / Planner | **GitHub MCP のみ使用** | `get_file_contents` で SHA → `create_or_update_file`（content 全文渡し）|
 
-### 運用前提（ボス確認）
+### 運用前提（ボス 2026-04-25 確認）
 
 - 全リポ（Trade_System / Trade_Brain / REX_Brain_Vault / Setona_HP / Second_Brain_Lab）が
-  Git リポ化 + MCP 接続済み → 全書き込みは GitHub MCP 経由で完結する
-- ボスは MCP接続セッション中にローカル実装を同時に動かさない（二系統 push の同時発生なし）
-- セッション開始時は `nothing to commit, working tree clean` をボスが事前確認
-- フローは「MCP接続セッションが GitHub MCP で push → ボスがローカルで pull」の単方向で完結
+  Git リポ化 + Codex MCP 接続済み → 全書き込みは GitHub MCP 経由で完結する
+- ボスは Codex.ai セッション中に Codex を動かさない（二系統 push の同時発生なし）
+- Codex.ai セッション開始時は `nothing to commit, working tree clean` をボスが事前確認
+- フローは「Codex.ai が GitHub MCP で push → ボスがローカルで pull」の単方向で完結
 
-### MCP接続セッションの絶対ルール
+### Codex.ai セッションの絶対ルール
 
 GitHub MCP 接続リポ配下のファイルを **filesystem MCP の `write_file` / `edit_file`
 で書き換えてはいけない**。
@@ -233,7 +235,7 @@ GitHub MCP 接続リポ配下のファイルを **filesystem MCP の `write_file
 - `write_file` / `edit_file`（GitHub 接続リポでは事故の温床）
 
 理由:
-1. ボスが pull するタイミングを MCP接続セッション側が制御できない（diverge リスク）
+1. ボスが pull するタイミングを Codex.ai 側が制御できない（diverge リスク）
 2. `edit_file` は日本語 MD ファイルで連鎖失敗のリスク（過去事例参照）
 3. GitHub MCP `create_or_update_file` の全文渡しなら文字化けバイト混入なく
    ファイル整合性が一括保証される
@@ -244,35 +246,42 @@ GitHub MCP 接続リポ配下のファイルを **filesystem MCP の `write_file
 2 回目を試すならアプローチを変える（例: edit_file → 全文渡し push に切替）。
 それでも失敗するならボスに報告して停止。
 
-### 過去事故事例（歴史記録・教訓）
+### 過去事故事例
 
 #### 2026-04-23: filesystem:edit_file 連鎖失敗による MTF_INTEGRITY_QA.md 末尾構造破損
-- **当時の担当**: 第六代 Evaluator（Opus）
-- **触発要因**: 過去セッションで残った文字化けバイト（\ufffd）が edit_file の oldText マッチを通らなかった
-- **伝播経路**: 削除試行を 5 回以上連鎖 → 区切り線と見出しが消失 → 文書構造破損 → 次セッションで修復タスク発生
-- **教訓**:
-  - 日本語 MD ファイルの構造的修正は edit_file ではなく GitHub MCP `create_or_update_file` 全文渡しで行うこと
-  - 1 回失敗で即停止する（連鎖試行禁止）
+
+**担当**: 第六代 Evaluator（Opus）
+**触発要因**: 過去セッションで残った文字化けバイト（\ufffd）が edit_file の
+oldText マッチを通らなかった
+**伝播経路**: 削除試行を 5 回以上連鎖 → 「---」区切り線と
+「## 第六代Evaluatorから未来のCodex」見出しが消失 → 文書構造破損 →
+次セッションで修復タスクが発生
+**教訓**:
+- 日本語 MD ファイルの構造的修正は edit_file ではなく
+  GitHub MCP `create_or_update_file` 全文渡しで行うこと
+- 1 回失敗で即停止する（連鎖試行禁止）
 
 #### 2026-04-25: filesystem 経由ローカル編集による diverge リスク
-- **当時の担当**: Advisor（Opus 4.7）
-- **触発要因**: AGENTS.md 未読 + 編集経路が AGENTS.md に未記載
-- **伝播経路**: filesystem:edit_file でローカルのみ編集 → リモート未反映 → ボスが git checkout で破棄 → GitHub MCP で push し直し
-- **教訓**:
-  - 全engineはセッション開始時に AGENTS.md を必ず読むこと（自動注入でない場合は手動で）
-  - MCP接続セッションは filesystem write 系を使わず GitHub MCP のみ使うこと
+
+**担当**: Advisor（Opus 4.7）
+**触発要因**: AGENTS.md 未読 + Advisor 役の編集経路が AGENTS.md に未記載
+**伝播経路**: filesystem:edit_file でローカルのみ編集 → リモート未反映 →
+ボスが git checkout で破棄 → GitHub MCP で push し直し
+**教訓**:
+- Codex.ai セッション開始時は AGENTS.md を必ず読むこと（自動読込でない場合は手動で）
+- Codex.ai 役は filesystem write 系を使わず GitHub MCP のみ使うこと
+- 本ルールは本セクションの新設で固定化
 
 ---
 
-## 推論深度の制御（harness側・canonには書かない）
+## 思考フラグ（指示書ヘッダーに記載）
 
-推論の深さは各 harness 側で制御する。指示書ヘッダに思考フラグは書かない。
-- **ClaudeCode**: `/effort low|medium|high|max`（恒久設定）。`ultrathink` は per-turn の簡易nudge
-- **API（claude gateway 等）**: `output_config.effort` + `thinking:{type:adaptive}`（プロンプト内キーワードは無効）
-- **grok / codex**: 各 provider 側の設定に従う（ClaudeCode キーワードは無効）
-
-> 旧「思考フラグ表（think / think hard / think harder / ultrathink）」は ClaudeCode 専用かつ
-> 2026-01 に階層が `/effort` へ刷新されたため、全engine共有 canon からは除去（D-2b）。
+| フラグ | タイミング |
+|---|---|
+| think | 単純な修正・パラメータ変更 |
+| think hard | 複数ファイル修正・バグ修正 |
+| think harder | 設計判断が必要な実装 |
+| ultrathink | アーキテクチャ全体変更・最適化 |
 
 ---
 
@@ -280,8 +289,8 @@ GitHub MCP 接続リポ配下のファイルを **filesystem MCP の `write_file
 
 ```
 Vault:      C:\Python\REX_AI\REX_Brain_Vault\（Git リポ化済み: Minato33440/REX_Brain_Vault）
-NLM:        REX_System_Brain  (da84715f-9719-40ef-87ec-2453a0dce67e)  ← Trade_System 用（現状空）
-            REX_Trade_Brain   (4abc25a0-4550-4667-ad51-754c5d1d1491)  ← 姉妹リポ Trade_Brain 用
+NLM:        REX_System_Brain  (da84715f-9719-40ef-87ec-2453a0dce67e)
+            REX_Trade_Brain   (4abc25a0-4550-4667-ad51-754c5d1d1491)
             ※ 旧 REX_Trade_Brain (2d41d672-...) は RAG 汚染により MCP 切離済み（D-11 経由）
 GitHub:     Minato33440/Trade_System
             Minato33440/Trade_Brain
