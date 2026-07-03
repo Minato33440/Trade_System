@@ -1,3 +1,10 @@
+<!-- HISTORICAL-RECORD: 本ファイルは #026d 実装当時（2026-04-15）の指示書。
+     発行者表記（Rex-Planner / Rex-Evaluator）は旧マルチAgent時代の役割記録で、
+     現行のHermes Runtime-Hub構成では無効。governance正本は AGENTS.md。
+     完了済み指示書として温存（内容は改訂しない・歴史的帰属）。 -->
+
+---
+
 # REX 指示書 #026d — 4H構造優位性フィルター追加
 # 発行: Rex-Planner（Sonnet）→ ClaudeCode 直接
 # 承認: ボス（2026-04-15）

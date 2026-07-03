@@ -32,7 +32,7 @@ STEP 1: このファイル（AGENTS.md）を読む
         ← grok / codex は dir-scope 自動注入
         ← ClaudeCode は CLAUDE.md（@AGENTS.md シム）経由で読む
 STEP 2: docs/ 直下のファイルを確認（最新版のみ存在するはず）
-STEP 3: 指示書を確認（logs/claudecode/instructions/ の該当ファイル）
+STEP 3: 指示書を確認（logs/coordination/instructions/ の該当ファイル）
 STEP 4: 不明点があれば Vault の設計文書を参照
          パス: C:\Python\REX_AI\REX_Brain_Vault\
          または @notebooklm-mcp にクエリ（※ REX_System_Brain は現状空・RAG未稼働）
@@ -93,6 +93,14 @@ src/structure_plotter.py
 8. エラーが出たら自分で「想像で」修正しない。ボスに報告して停止
 9. window_scanner.py はカラム追加・出力OK。スキャンロジック変更は要確認
 ```
+
+---
+
+## logs/ 領域の分担
+- logs/coordination/ … 実装ループ（instructions/ 指示書・execution_results/ 実行結果）＋整理オペ（maintenance_log）＋索引（INDEX）。全engine共有・append-only
+- logs/scratch/<engine>/ … 各engineの検索/探索ログ（claude/codex/grok レーン別）
+- logs/archive/ … 旧版canon/governanceの凍結退避（参照禁止）
+- logs/docs_archive/ … 旧版設計文書（参照禁止）
 
 ---
 
@@ -174,7 +182,7 @@ neck_4h  — 半値決済トリガー（段階2: High >= neck_4h → 50%決済�
 
 ### 結果報告の出力先
 ```
-logs/claudecode/execution_results/REX_{番号}_result.md
+logs/coordination/execution_results/REX_{番号}_result.md
 ```
 
 ### Git コミット手順（ローカル実装：ClaudeCode 等の自走harness向け）

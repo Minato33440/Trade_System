@@ -1,3 +1,11 @@
+<!-- HISTORICAL-RECORD: 本ファイルは REX_027（2026-04-17〜18）の指示書。
+     宛先の役割（Advisor / Planner / Evaluator）は旧マルチAgent時代の構成で、
+     現行のHermes Runtime-Hub構成では無効。governance正本は AGENTS.md。
+     ★記載のNLM ID 2d41d672-... は廃止済み（RAG汚染排除・MCP切離済／D-1）。
+     完了済み・ボス発行記録として温存（改訂しない・歴史的帰属）。 -->
+
+---
+
 # REX 指示書 #027 — 設計文書整理・完全版作成
 # 発行: Rex（設計責任者）→ Rex-Planner（Sonnet）
 # 承認: ボス（2026-04-17）

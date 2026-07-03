@@ -1,4 +1,4 @@
-# INDEX.md — ClaudeCode 指示書・実装結果 時系列一覧
+# INDEX.md — coordination 実装ループ索引（指示書 instructions/ ・実行結果 execution_results/・全engine共有）
 # 更新: 2026-04-16
 # 手動更新（要望7: 自動化はObsidian MCP実装後）
 
@@ -50,3 +50,16 @@
   2. 本INDEXの「実装結果一覧」を更新・ステータスを変更
   3. git commit -m "Docs: #026x 結果記録"
 ```
+
+---
+
+## 2026-07-02 運用構成の移行注記（append・履歴は温存）
+
+本INDEX #026a-v2〜#026d の「発行者」列（Planner / Evaluator）は、
+旧マルチAgent時代（プロンプトインジェクション期）の役割記録である。
+現行は Hermes Runtime-Hub 構成に移行済みで、Planner/Evaluator/Advisor の
+role分担は無効。governance正本は Trade_System\AGENTS.md（源1枚）。
+以降のengine動作は AGENTS.md に従う。
+
+上表は当時の実装ループの事実記録として温存する（書き換えない）。
+「発行者」列は "誰が発行したか" の歴史的帰属であり、生きた権限記述ではない。

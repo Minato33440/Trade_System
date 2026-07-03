@@ -1,3 +1,12 @@
+<!-- HISTORICAL-RECORD: 本ファイルは REX_028 Phase 1（2026-04-19）の指示書。
+     発行者・実施担当表記（Rex-Evaluator 単独）は旧マルチAgent時代の役割記録で、
+     現行のHermes Runtime-Hub構成では無効。governance正本は AGENTS.md。
+     §9 起動テンプレの role起動手順（「Evaluatorとして実行」）も無効。
+     Phase 1-2 は完了済み（src_inventory.md が成果物・SYSTEM_OVERVIEW参照）。
+     完了済み指示書として温存（改訂しない・歴史的帰属）。 -->
+
+---
+
 # REX_028_spec.md — Phase 1: src/ 棚卸し・分類
 
 **発行**: Rex-Evaluator (Opus 4.7) / 2026-04-19
