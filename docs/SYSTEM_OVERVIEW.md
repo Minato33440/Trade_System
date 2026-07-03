@@ -106,20 +106,23 @@ Trade_System/
 │       └── usdjpy_multi_tf_2years.parquet  # 83,112 本 / 5M 足
 │
 ├── logs/
-│   ├── coordination/
+│   ├── coordination/             # 実装ループ+整理オペ（全engine共有・append-only）
 │   │   ├── instructions/         # 指示書ファイル群（完了済み・歴史的帰属）
 │   │   ├── execution_results/    # 実行結果ファイル群（一次記録・append-only）
 │   │   ├── INDEX.md              # 実装ループ索引
-│   │   ├── maintenance_log.md    # governance整理オペ ログ（append-only）
+│   │   ├── maintenance_log.md    # governance整理オペ ログ（M-x・append-only）
 │   │   └── README.md             # 運用ルール
+│   ├── scratch/                  # 各engineの検索/探索ログ（claude/codex/grok レーン別）
+│   │   ├── claude/  ├── codex/  └── grok/
 │   ├── archive/                  # 旧版 canon・governance の凍結退避先（参照禁止）
-│   ├── window_scan_entries.csv   # 12 カラム CSV（#026a-v2 最終版）
-│   ├── window_scan_exits.csv     # 決済シミュレーション結果（#026d）
-│   ├── window_scan_plots/        # プロット群（#026d 最新）
+│   ├── docs_archive/             # 旧版設計文書（参照禁止）
+│   ├── debug/                    # デバッグ出力
+│   ├── plots/ ├── png_data/      # プロット/画像出力
+│   ├── text_log/                 # 会話履歴等（conversation_history.json）
 │   ├── verify_4h1h/              # 4H/1H 構造検証プロット
-│   ├── base_scan/                # base_scanner 実行結果
-│   ├── structure_plots/          # structure_plotter 出力
-│   └── docs_archive/             # 旧版設計文書（参照禁止）
+│   ├── window_scan_plots/        # プロット群（#026d 最新）
+│   ├── window_scan_entries.csv   # 12 カラム CSV（#026a-v2 最終版）
+│   └── window_scan_exits.csv     # 決済シミュレーション結果（#026d）
 │
 ├── docs/
 ├── SYSTEM_OVERVIEW.md              # 本ファイル

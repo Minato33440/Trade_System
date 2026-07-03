@@ -1,5 +1,5 @@
 # AGENTS.md — REX AI Trade System
-# 更新: 2026-06-29（D-2b/D-3: harness中立化・logs/claudecode パス修正・役割地の文除去・全engine共有 Project canon 化）
+# 更新: 2026-07-02（D-3: canon role中立化・logs/coordination リネーム追従・STEP3/結果パス修正・logs領域分担節追加。D-2b harness中立化は 6-30）
 # このファイルは Project canon（全engine共有）。
 #   - grok / codex … Hermes dir-scope で起動時に自動注入
 #   - ClaudeCode  … root CLAUDE.md（@AGENTS.md シム）経由で読む

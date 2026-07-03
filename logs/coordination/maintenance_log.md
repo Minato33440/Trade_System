@@ -1,12 +1,17 @@
 <!-- KPS-REGION: coordination / maintenance（governance整理オペの時系列ログ・append-only）
      実装ループ(instructions/・execution_results/)とは別系統。書き換え禁止・追記のみ。
-     索引は INDEX.md（#番号の実装ループ専用）。本ファイルは整理オペ(D-x)専用チャンネル。 -->
+     索引は INDEX.md（#番号の実装ループ専用）。本ファイルは整理オペ(M-x)専用チャンネル。 -->
 
 # maintenance_log.md — Governance / 整理オペ 時系列ログ
 
-> 用途: KPS 層B（governance整理・ドリフト解消 D-1〜）の時系列記録。append-only。
+> 用途: KPS 層B（governance整理・ドリフト解消 M-1〜）の時系列記録。append-only。
 > 実装ループ（指示書#XXX・結果#XXX）は INDEX.md 系統。混ぜない。
 > 各エントリ: 日付 / 対象 / 実施 / 理由 / 残課題。
+>
+>★採番: 整理オペは M-x（maintenance）で採番する。既存の D-1〜D-3 は
+>   ADR の D章（パラメータ設計ミス D-1〜D-13）と番号空間が衝突していたため、
+>   2026-07-03 以降 M-x に切替。過去の D-1〜D-3 エントリは append-only 原則で
+>   温存（本log内では M-1〜M-3 と読み替える）。以降の新規オペは M-4〜。
 
 ---
 
@@ -81,3 +86,18 @@
 - **温存（歴史的帰属・書き換えず）**: AGENTS.md ヘッダ更新行「logs/claudecode パス修正」／過去事故事例の Evaluator・Advisor 担当表記／本log D-3エントリの logs/claudecode パス（いずれも当時の事実記録）
 - **理由**: 全engineが同一の調整領域名で収束。名前が「誰の領域か」でなく「何の領域か」を示す状態に
 - **残課題**: 両canon（SYSTEM_OVERVIEW/EX_DESIGN）のコードフェンス剥離（push副作用でツリー・データフロー・依存マップ等が地の文化）→ 次のcanon編集時に ``` 再囲み。層A（AGENTS.md領域マップ節の拡充）は着手可。system_logs/配下RTK重複の確認
+
+---
+
+## 2026-07-03 M-4 Fable5レビュー指摘の反映（canon精度修正・書き換え最小）
+
+- **契機**: Fable5（新規リリース）に D-3 後の canon をレビューさせ、5件の指摘を得た（A中立化漏れ／B番号空間衝突／Cツリー実態ズレ／D自己記述日付ズレ／E宛先名残存）
+- **実施**:
+  - **A** ADR.md 冒頭「目的」節: 「設計者（Rex-Planner / Rex-Evaluator）は」を主語ごと除去 → 「新セッションはコンテキストが薄い」の中立形。D-3①〜⑪の取りこぼし（供給view常載位置の生きたrole記述）を回収
+  - **B** maintenance採番を D-x → M-x に切替: ADR D章（設計ミス D-1〜D-13）との番号空間衝突を解消。過去 D-1〜D-3 は append-only で温存、注記で M-1〜M-3 と読み替え。以降 M-4〜
+  - **C** SYSTEM_OVERVIEW / EX_DESIGN §5 の logs/ ツリー実態化: 実在しない `base_scan/ structure_plots/` 削除、実在する `scratch/ debug/ plots/ png_data/ text_log/` 追加。scratch（KPS化の核心新設）を現状スナップショットに反映
+  - **D** AGENTS.md ヘッダ日付: 6-29 → 7-02（D-3・coordinationリネーム追従の実態に合わせ、D-2b=6-30 を併記）
+  - **E** ADR.md 末尾見出し「ClaudeCode 向け不変ルール」→「不変ルール（全engine共通）」: AGENTS.md 側の中立形と統一。grok/codex の「自分向けでない」誤読を除去。中の10項目は不変（技術ルール・温存）
+- **判断の型**: A/B/E＝engineが読んで誤動作しうる生きた記述の除去、C/D＝現状スナップショットの正確性回復。いずれも設計事実・数値・歴史的帰属は不変、生きた誤誘導と実態ズレのみ修正
+- **外部レビューの位置づけ**: 別モデル（Fable5）に自己の canon をレビューさせる手順が、D-3 の取りこぼし（A）と番号空間の潜在衝突（B）を検出。canon整理の品質ゲートとして有効だった
+- **残課題**: 層A（scratch運用ルール）は grok/codex が実際に使い始めてから追加（早すぎる構造化＝過剰分割を避ける・保留）。archive の REDIUM.md は D-6 週次系除去の対象（未処理）。system_logs/配下 RTK 重複確認
