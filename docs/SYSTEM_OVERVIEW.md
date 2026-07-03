@@ -113,7 +113,9 @@ Trade_System/
 │   │   ├── maintenance_log.md    # governance整理オペ ログ（M-x・append-only）
 │   │   └── README.md             # 運用ルール
 │   ├── scratch/                  # 各engineの検索/探索ログ（claude/codex/grok レーン別）
-│   │   ├── claude/  ├── codex/  └── grok/
+│   │   ├── claude/  
+│   │   ├── codex/  
+│   │   └── grok/
 │   ├── archive/                  # 旧版 canon・governance の凍結退避先（参照禁止）
 │   ├── docs_archive/             # 旧版設計文書（参照禁止）
 │   ├── debug/                    # デバッグ出力

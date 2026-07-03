@@ -99,8 +99,7 @@ src/structure_plotter.py
 ## logs/ 領域の分担
 - logs/coordination/ … 実装ループ（instructions/ 指示書・execution_results/ 実行結果）＋整理オペ（maintenance_log）＋索引（INDEX）。全engine共有・append-only
 - logs/scratch/<engine>/ … 各engineの検索/探索ログ（claude/codex/grok レーン別）
-- logs/archive/ … 旧版canon/governanceの凍結退避（参照禁止）
-- logs/docs_archive/ … 旧版設計文書（参照禁止）
+- logs/archive/ … 旧版canon/governance/設計文書の凍結退避（参照禁止）
 
 ---
 
@@ -113,7 +112,7 @@ docs/ 直下のファイルのみが「現在有効な設計」
   - PLOT_DESIGN_CONFIRMED.md — プロット設計
   - SYSTEM_OVERVIEW.md       — ファイル構成・依存関係
 
-logs/docs_archive/ は旧版保管庫 — 参照禁止
+logs/archive/ は旧版 canon・設計文書の保管庫 — 参照禁止
 複数バージョンが docs/ にある場合はボスに報告して停止
 ```
 

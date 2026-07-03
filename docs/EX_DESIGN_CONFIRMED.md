@@ -195,25 +195,27 @@ src/
 ├── base_scanner.py         完了（#015）
 ├── test_1h_coincidence.py  完了（#020 v2）
 ├── verify_4h1h_structure.py 完了（#026a-verify）
-├─ archive/                履歴保全（Simple_Backtest / signals / print_signals_analysis / track_trades）
-├── logs/
-│   ├── coordination/             # 実装ループ+整理オペ（全engine共有・append-only）
-│   │   ├── instructions/         # 指示書ファイル群（完了済み・歴史的帰属）
-│   │   ├── execution_results/    # 実行結果ファイル群（一次記録・append-only）
-│   │   ├── INDEX.md              # 実装ループ索引
-│   │   ├── maintenance_log.md    # governance整理オペ ログ（M-x・append-only）
-│   │   └── README.md             # 運用ルール
-│   ├── scratch/                  # 各engineの検索/探索ログ（claude/codex/grok レーン別）
-│   │   ├── claude/  ├── codex/  └── grok/
-│   ├── archive/                  # 旧版 canon・governance の凍結退避先（参照禁止）
-│   ├── docs_archive/             # 旧版設計文書（参照禁止）
-│   ├── debug/                    # デバッグ出力
-│   ├── plots/ ├── png_data/      # プロット/画像出力
-│   ├── text_log/                 # 会話履歴等（conversation_history.json）
-│   ├── verify_4h1h/              # 4H/1H 構造検証プロット
-│   ├── window_scan_plots/        # プロット群（#026d 最新）
-│   ├── window_scan_entries.csv   # 12 カラム CSV（#026a-v2 最終版）
-│   └── window_scan_exits.csv     # 決済シミュレーション結果（#026d）
+└─ archive/                履歴保全（Simple_Backtest / signals / print_signals_analysis / track_trades）
+
+logs/
+├── coordination/             # 実装ループ+整理オペ（全engine共有・append-only）
+│   ├── instructions/         # 指示書ファイル群（完了済み・歴史的帰属）
+│   ├── execution_results/    # 実行結果ファイル群（一次記録・append-only）
+│   ├── INDEX.md              # 実装ループ索引
+│   ├── maintenance_log.md    # governance整理オペ ログ（M-x・append-only）
+│   └── README.md             # 運用ルール
+├── scratch/                  # 各engineの検索/探索ログ（claude/codex/grok レーン別）
+│   ├── claude/  
+│   ├── codex/  
+│   └── grok/
+├── archive/                  # 旧版 canon / governance / 設計文書の凍結退避（参照禁止）
+├── debug/                    # デバッグ出力
+├── plots/ ├── png_data/      # プロット/画像出力
+├── text_log/                 # 会話履歴等（conversation_history.json）
+├── verify_4h1h/              # 4H/1H 構造検証プロット
+├── window_scan_plots/        # プロット群（#026d 最新）
+├── window_scan_entries.csv   # 12 カラム CSV（#026a-v2 最終版）
+└── window_scan_exits.csv     # 決済シミュレーション結果（#026d）
 ```
 
 ---
@@ -267,6 +269,6 @@ src/
 ## 9. docs/ 管理原則
 
 - 不変原則: 一度確定した設計文書は編集しない
-- 新規作成原則: 設計変更時は新ファイルを作成（旧版は logs/docs_archive/ へ）
+- 新規作成原則: 設計変更時は新ファイルを作成（旧版は logs/archive/ へ日付き退避）
 - docs/ 直下のファイルのみが「現在有効な設計」
-- logs/docs_archive/ ・ logs/archive/ は参照禁止
+- logs/archive/ は参照禁止
