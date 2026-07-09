@@ -1,5 +1,5 @@
 # AGENTS.md — REX AI Trade System
-# 更新: 2026-07-02（D-3: canon role中立化・logs/coordination リネーム追従・STEP3/結果パス修正・logs領域分担節追加。D-2b harness中立化は 6-30）
+# 更新: 2026-07-09（外部リソースに Rex 記憶層ポインタ追加）/ 2026-07-02（D-3: canon role中立化・logs/coordination リネーム追従・STEP3/結果パス修正・logs領域分担節追加。D-2b harness中立化は 6-30）
 # このファイルは Project canon（全engine共有）。
 #   - grok / codex … Hermes dir-scope で起動時に自動注入
 #   - ClaudeCode  … root CLAUDE.md（@AGENTS.md シム）経由で読む
@@ -287,6 +287,8 @@ GitHub MCP 接続リポ配下のファイルを **filesystem MCP の `write_file
 
 ```
 Vault:      C:\Python\REX_AI\REX_Brain_Vault\（Git リポ化済み: Minato33440/REX_Brain_Vault）
+Rex記憶層:  C:\Python\REX_AI\REX_Brain_Vault\REX\
+            データと検証は本リポへ。判断の驚き・プロジェクトを跨ぐパターンはそちらへ（義務ではない）
 NLM:        REX_System_Brain  (da84715f-9719-40ef-87ec-2453a0dce67e)  ← Trade_System 用（現状空）
             REX_Trade_Brain   (4abc25a0-4550-4667-ad51-754c5d1d1491)  ← 姉妹リポ Trade_Brain 用
             ※ 旧 REX_Trade_Brain (2d41d672-...) は RAG 汚染により MCP 切離済み（D-11 経由）
