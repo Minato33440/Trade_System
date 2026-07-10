@@ -287,8 +287,8 @@ GitHub MCP 接続リポ配下のファイルを **filesystem MCP の `write_file
 
 ```
 Vault:      C:\Python\REX_AI\REX_Brain_Vault\（Git リポ化済み: Minato33440/REX_Brain_Vault）
-Rex記憶層:  C:\Python\REX_AI\REX_Brain_Vault\REX\
-            データと検証は本リポへ。判断の驚き・プロジェクトを跨ぐパターンはそちらへ（義務ではない）
+Rex記憶層:  C:\Python\REX_AI\REX_Brain_Vault\REX\Rex-Vault.md
+            実装・バックテストは本リポへ、設計の驚き・跨ぐパターンは Vault へ（義務ではない）
 NLM:        REX_System_Brain  (da84715f-9719-40ef-87ec-2453a0dce67e)  ← Trade_System 用（現状空）
             REX_Trade_Brain   (4abc25a0-4550-4667-ad51-754c5d1d1491)  ← 姉妹リポ Trade_Brain 用
             ※ 旧 REX_Trade_Brain (2d41d672-...) は RAG 汚染により MCP 切離済み（D-11 経由）
